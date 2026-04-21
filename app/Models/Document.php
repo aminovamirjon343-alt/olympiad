@@ -15,10 +15,6 @@ class Document extends Model
         'deadline'
     ];
 
-    public function creator()
-    {
-        return $this->belongsTo(User::class, 'created_by');
-    }
 
     // Подписи
     public function signatures()
@@ -48,5 +44,10 @@ class Document extends Model
     public function versions()
     {
         return $this->hasMany(documentVersion::class);
+    }
+
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'created_by');
     }
 }

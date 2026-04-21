@@ -14,7 +14,7 @@ return [
     |
     */
 
-    'default' => env('MAIL_MAILER', 'log'),
+    'default' => env('MAIL_MAILER', 'logs'),
 
     /*
     |--------------------------------------------------------------------------
@@ -30,7 +30,7 @@ return [
     | your mailers below. You may also add additional mailers if needed.
     |
     | Supported: "smtp", "sendmail", "mailgun", "ses", "ses-v2",
-    |            "postmark", "resend", "log", "array",
+    |            "postmark", "resend", "logs", "array",
     |            "failover", "roundrobin"
     |
     */
@@ -70,8 +70,8 @@ return [
             'path' => env('MAIL_SENDMAIL_PATH', '/usr/sbin/sendmail -bs -i'),
         ],
 
-        'log' => [
-            'transport' => 'log',
+        'logs' => [
+            'transport' => 'logs',
             'channel' => env('MAIL_LOG_CHANNEL'),
         ],
 
@@ -83,7 +83,7 @@ return [
             'transport' => 'failover',
             'mailers' => [
                 'smtp',
-                'log',
+                'logs',
             ],
             'retry_after' => 60,
         ],

@@ -11,33 +11,30 @@ class User extends Authenticatable
 {
     use HasFactory, Notifiable;
 
-    /**
-     * Массовое заполнение
-     */
     protected $fillable = [
         'name',
         'email',
         'password',
+        'role',
+        'phone'
     ];
 
-    /**
-     * Скрытые поля
-     */
+    protected $attributes = [
+        'role' => 'user',
+    ];
+
     protected $hidden = [
         'password',
         'remember_token',
     ];
 
-    /**
-     * Приведение типов
-     */
     protected $casts = [
         'email_verified_at' => 'datetime',
         'password' => 'hashed',
     ];
 
     /**
-     * Документы пользователя (кто создал)
+     * Документы пользователя
      */
     public function documents()
     {

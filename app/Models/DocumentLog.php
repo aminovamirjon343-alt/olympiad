@@ -9,7 +9,8 @@ class DocumentLog extends Model
     protected $fillable = [
         'document_id',
         'user_id',
-        'action'
+        'action',
+        'description',
     ];
 
     public function document()

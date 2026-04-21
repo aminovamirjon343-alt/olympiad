@@ -6,25 +6,28 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::create('document_comments', function (Blueprint $table) {
             $table->id();
-            $table->id();
-            $table->foreignId('document_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('user_id')->constrained()->cascadeOnDelete();
+
+            $table->foreignId('document_id')
+                ->constrained('documents')
+                ->cascadeOnDelete();
+
+            $table->foreignId('user_id')
+                ->constrained('users')
+                ->cascadeOnDelete();
+
             $table->text('comment');
+
             $table->timestamps();
-            $table->timestamps();
+
+            // 🚀 ускоряет выборку комментариев по документу
+            $table->index(['document_id']);
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('document_comments');
