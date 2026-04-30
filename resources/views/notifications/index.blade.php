@@ -1,95 +1,193 @@
+<div class="notif-container">
 
-    <div class="container py-5">
-        <div class="row mb-4 align-items-end">
-            <div class="col-md-6">
-                <h2 class="fw-bold text-dark mb-1">Центр уведомлений</h2>
-                <p class="text-muted mb-0">Управляйте вашими системными оповещениями и событиями ЭДО</p>
-            </div>
-            <div class="col-md-6 text-md-end mt-3 mt-md-0">
-                <a href="{{ route('notifications.create') }}" class="btn btn-primary shadow-sm">
-                    <i class="fas fa-plus me-1"></i> Создать уведомление
-                </a>
-            </div>
-        </div>
+    <div class="notif-list">
 
-        @if(session('success'))
-            <div class="alert alert-success alert-dismissible fade show border-0 shadow-sm mb-4" role="alert">
-                <i class="fas fa-check-circle me-2"></i> {{ session('success') }}
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-            </div>
-        @endif
+        @forelse($notifications as $n)
 
-        <div class="card border-0 shadow-sm overflow-hidden">
-            <div class="list-group list-group-flush">
-                @forelse($notifications as $n)
-                    <div class="list-group-item p-4 border-0 {{ !$n->is_read ? 'bg-light-blue' : '' }} border-bottom">
-                        <div class="row">
-                            <div class="col-auto">
-                                <div class="icon-shape rounded-circle
-                                @if($n->type == 'sign') bg-warning-soft text-warning
-                                @elseif($n->type == 'document') bg-success-soft text-success
-                                @elseif($n->type == 'reject') bg-danger-soft text-danger
-                                @else bg-primary-soft text-primary @endif">
-                                    <i class="fas
-                                    @if($n->type == 'sign') fa-pen-nib
-                                    @elseif($n->type == 'document') fa-file-alt
-                                    @elseif($n->type == 'reject') fa-times-circle
-                                    @else fa-info-circle @endif"></i>
-                                </div>
-                            </div>
+            @php
+                $data = is_array($n->data) ? $n->data : json_decode($n->data, true);
 
-                            <div class="col ms-2">
-                                <div class="d-flex justify-content-between">
-                                    <h6 class="mb-1 fw-bold {{ !$n->is_read ? 'text-primary' : 'text-dark' }}">
-                                        {{ $n->message }}
-                                    </h6>
+                $type = $data['type'] ?? 'system';
+                $user = $data['user'] ?? 'Пользователь';
 
-                                    {{-- Кнопка "Прочитано" остается сверху справа, если не прочитано --}}
-                                    @if(!$n->is_read)
-                                        <form action="{{ route('notifications.read', $n->id) }}" method="POST">
-                                            @csrf
-                                            <button class="btn btn-sm btn-light border shadow-sm text-success" title="Отметить прочитанным">
-                                                <i class="fas fa-check"></i>
-                                            </button>
-                                        </form>
-                                    @endif
-                                </div>
+                $doc = $data['document'] ?? ($data['document_title'] ?? 'документ');
+                $signature = $data['signature'] ?? null;
+            @endphp
 
-                                <div class="small text-muted mb-3">
-                                    <i class="far fa-clock me-1"></i> {{ $n->created_at ? $n->created_at->diffForHumans() : 'Неизвестно' }}
-                                </div>
+            <div class="notif-item {{ !$n->read_at ? 'unread' : '' }}">
 
-                                <form action="{{ route('notifications.destroy', $n->id) }}" method="POST">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit" class="btn btn-sm btn-outline-danger px-3 rounded-pill"
-                                            onclick="return confirm('Удалить это уведомление?')">
-                                        <i class="fas fa-trash-alt me-1"></i> Удалить уведомление
-                                    </button>
-                                </form>
-                            </div>
-                        </div>
+                {{-- ICON --}}
+                <div class="notif-icon">
+                    @switch($type)
+                        @case('assigned') 📌 @break
+                        @case('sent') 📤 @break
+                        @case('received') 📥 @break
+                        @case('signed') ✍️ @break
+                        @case('created') 📄 @break
+                        @case('completed') ✅ @break
+                        @case('rejected') ❌ @break
+                        @default 🔔
+                    @endswitch
+                </div>
+
+                {{-- CONTENT --}}
+                <div class="notif-content">
+
+                    <div class="notif-title">
+
+                        @switch($type)
+
+                            @case('assigned')
+                                {{ $user }} должен подписать документ "<b>{{ $doc }}</b>"
+                                @if($signature)
+                                    <div class="notif-sub">
+                                        Ожидается подпись: <b>{{ $signature }}</b>
+                                    </div>
+                                @endif
+                                @break
+
+                            @case('sent')
+                                {{ $user }} отправил документ "<b>{{ $doc }}</b>" на подпись
+                                @break
+
+                            @case('received')
+                                {{ $user }} получил документ "<b>{{ $doc }}</b>"
+                                @break
+
+                            @case('signed')
+                                {{ $user }} подписал документ "<b>{{ $doc }}</b>"
+                                @if($signature)
+                                    <div class="notif-sub">
+                                        Подписал: <b>{{ $signature }}</b>
+                                    </div>
+                                @endif
+                                @break
+
+                            @case('created')
+                                {{ $user }} создал документ "<b>{{ $doc }}</b>"
+                                @break
+
+                            @case('completed')
+                                Документ "<b>{{ $doc }}</b>" полностью подписан
+                                @break
+
+                            @case('rejected')
+                                {{ $user }} отклонил подпись документа "<b>{{ $doc }}</b>"
+                                @break
+
+                            @default
+                                {{ $data['message'] ?? 'Системное уведомление' }}
+
+                        @endswitch
+
                     </div>
-                @empty
-                    <div class="text-center py-5">
-                        <h5 class="text-muted">Уведомлений нет</h5>
-                    </div>
-                @endforelse
-            </div>
-        </div>
 
-        <div class="mt-4 d-flex justify-content-center">
-            {{ $notifications->links('pagination::bootstrap-5') }}
-        </div>
+                    {{-- META --}}
+                    <div class="notif-meta">
+                        <span class="notif-user">{{ $user }}</span>
+                        <span class="notif-time">{{ $n->created_at->diffForHumans() }}</span>
+                    </div>
+
+                </div>
+
+            </div>
+
+        @empty
+
+            <div class="notif-empty">
+                Нет уведомлений
+            </div>
+
+        @endforelse
+
     </div>
 
-    <style>
-        .bg-light-blue { background-color: #f0f7ff; }
-        .icon-shape { width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; }
-        .bg-primary-soft { background-color: #e7f1ff; }
-        .bg-success-soft { background-color: #e6fcf5; }
-        .bg-warning-soft { background-color: #fff9db; }
-        .bg-danger-soft { background-color: #fff5f5; }
-        .btn-outline-danger:hover { color: white; }
-    </style>
+</div>
 
+
+<style>
+    .notif-container {
+        max-width: 720px;
+        margin: 0 auto;
+        font-family: Inter, sans-serif;
+    }
+
+    /* LIST */
+    .notif-list {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    /* ITEM */
+    .notif-item {
+        display: flex;
+        gap: 12px;
+        padding: 14px 16px;
+        border-radius: 12px;
+        background: #ffffff;
+        border: 1px solid #e5e7eb;
+        transition: 0.2s ease;
+        cursor: pointer;
+    }
+
+    /* hover как Notion */
+    .notif-item:hover {
+        background: #f9fafb;
+        transform: translateY(-1px);
+        box-shadow: 0 6px 20px rgba(0,0,0,0.06);
+    }
+
+    /* unread */
+    .notif-item.unread {
+        border-left: 3px solid #4f46e5;
+        background: #f8faff;
+    }
+
+    /* ICON */
+    .notif-icon {
+        font-size: 18px;
+        width: 32px;
+        height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #f3f4f6;
+        border-radius: 10px;
+    }
+
+    /* CONTENT */
+    .notif-content {
+        flex: 1;
+    }
+
+    /* TITLE */
+    .notif-title {
+        font-size: 14px;
+        font-weight: 500;
+        color: #111827;
+        line-height: 1.4;
+    }
+
+    /* META */
+    .notif-meta {
+        margin-top: 4px;
+        font-size: 12px;
+        color: #6b7280;
+        display: flex;
+        gap: 10px;
+    }
+
+    /* USER */
+    .notif-user {
+        font-weight: 600;
+        color: #4f46e5;
+    }
+
+    /* EMPTY */
+    .notif-empty {
+        padding: 20px;
+        text-align: center;
+        color: #9ca3af;
+    }
+</style>

@@ -22,4 +22,7 @@ class DocumentSignature extends Model
     {
         return $this->belongsTo(User::class);
     }
+    protected $casts = [
+        'signed_at' => 'datetime',
+    ];
 }

@@ -76,10 +76,18 @@
                             </div>
 
                             <div class="d-grid gap-2 d-md-flex justify-content-md-end border-top pt-3">
-                                <a href="{{ route('notifications.index') }}" class="btn btn-light px-4">Отмена</a>
-                                <button type="submit" class="btn btn-primary px-5 shadow-sm">
-                                    <i class="fas fa-save me-1"></i> Отправить
-                                </button>
+                                <a href="{{ route('notifications.index') }}" class="relative inline-block text-gray-500 hover:text-blue-600">
+                                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+                                    </svg>
+
+                                    {{-- Показываем цифру, только если уведомлений больше 0 --}}
+                                    @if(($unreadCount ?? 0) > 0)
+                                        <span id="notifBadge" class="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] w-5 h-5 rounded-full flex items-center justify-center border-2 border-white">
+            {{ $unreadCount }}
+        </span>
+                                    @endif
+                                </a>
                             </div>
                         </form>
                     </div>

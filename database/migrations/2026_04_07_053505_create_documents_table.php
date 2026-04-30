@@ -16,8 +16,19 @@ return new class extends Migration
             $table->string('title');
             $table->text('content')->nullable();
             $table->string('file_path')->nullable();
+            $table->string('type');
             $table->string('status')->default('draft');
-            $table->foreignId('created_by')->constrained('users')->cascadeOnDelete();
+
+            $table->foreignId('created_by')
+                ->constrained('users')
+                ->cascadeOnDelete();
+
+            // 💣 FIX HERE
+            $table->foreignId('receiver_id')
+                ->nullable()
+                ->constrained('users')
+                ->nullOnDelete();
+
             $table->timestamp('deadline')->nullable();
             $table->timestamps();
         });

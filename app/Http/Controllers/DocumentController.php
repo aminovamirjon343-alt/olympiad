@@ -1,182 +1,143 @@
 <?php
-//
-//namespace App\Http\Controllers;
-//
-//use App\Models\Document;
-//use Illuminate\Http\Request;
-//use Illuminate\Support\Facades\Storage;
-//use App\Models\DocumentLog;
-//
-//class DocumentController extends Controller
-//{
-////    public function __construct()
-////    {
-////        // 🔒 ОБЯЗАТЕЛЬНО
-////        $this->middleware('auth');
-////    }
-//
-//    public function index()
-//    {
-//        $documents = Document::with('user')->latest()->paginate(10);
-//
-//        return view('document.index', compact('documents'));
-//    }
-//
-//    public function create()
-//    {
-//        return view('document.create');
-//    }
-//
-//    public function store(Request $request)
-//    {
-//        // ✅ ВАЛИДАЦИЯ
-//        $request->validate([
-//            'title' => 'required|string|max:255',
-//            'content' => 'nullable|string',
-//            'file_path' => 'nullable|file|mimes:pdf,doc,docx|',
-//            'status' => 'required|in:active,pending,approved,rejected',
-//            'deadline' => 'nullable|date',
-//        ]);
-//
-//        // 📎 файл
-//        $filePath = null;
-//        if ($request->hasFile('file_path')) {
-//            $filePath = $request->file('file_path')->store('documents', 'public');
-//        }
-//
-//        // 💾 СОЗДАНИЕ (ВАЖНО!)
-//        Document::create([
-//            'title' => $request->title,
-//            'content' => $request->content,
-//            'file_path' => $filePath,
-//            'status' => $request->status,
-//            'created_by' => 1, // 🔥 ПРАВИЛЬНО
-//            'deadline' => $request->deadline,
-//        ]);
-//
-//        return redirect()->route('documents.index')
-//            ->with('success', 'Документ создан');
-//    }
-//
-//    public function show(Document $document)
-//    {
-//        return view('document.show', compact('document'));
-//    }
-//
-//    public function edit(Document $document)
-//    {
-//        return view('document.edit', compact('document'));
-//    }
-//
-//    public function update(Request $request, Document $document)
-//    {
-//        $request->validate([
-//            'title' => 'required|string|max:255',
-//            'content' => 'nullable|string',
-//            'file_path' => 'nullable|file|mimes:pdf,doc,docx|',
-//            'status' => 'required|in:active,pending,approved,rejected',
-//            'deadline' => 'nullable|date',
-//        ]);
-//
-//        if ($request->hasFile('file_path')) {
-//
-//            if ($document->file_path) {
-//                Storage::disk('public')->delete($document->file_path);
-//            }
-//
-//            $document->file_path = $request->file('file_path')->store('documents', 'public');
-//        }
-//
-//        $document->update([
-//            'title' => $request->title,
-//            'content' => $request->content,
-//            'status' => $request->status,
-//            'deadline' => $request->deadline,
-//        ]);
-//
-//        return redirect()->route('documents.index')
-//            ->with('success', 'Документ обновлён');
-//    }
-//
-//    public function destroy(Document $document)
-//    {
-//        if ($document->file_path) {
-//            Storage::disk('public')->delete($document->file_path);
-//        }
-//
-//        $document->delete();
-//
-//        return redirect()->route('documents.index')
-//            ->with('success', 'Документ удалён');
-//    }
-//}
-
 
 namespace App\Http\Controllers;
 
 use App\Models\Document;
 use App\Models\DocumentComment;
 use App\Models\DocumentLog;
+use App\Models\DocumentSignature;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Auth;
+use App\Notifications\DocumentAssigned;
+use App\Notifications\DocumentStatusChanged;
 
 class DocumentController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $documents = Document::with('user')->latest()->paginate(10);
+        $query = Document::with(['createdBy', 'receiver']);
+
+        // 🔍 УМНЫЙ ПОИСК
+        if ($request->filled('search')) {
+            $search = $request->search;
+
+            $query->where(function($q) use ($search) {
+                $q->where('title', 'LIKE', "%{$search}%")
+                    ->orWhere('content', 'LIKE', "%{$search}%")
+                    ->orWhere('id', 'LIKE', "%{$search}%");
+            })
+                /**
+                 * Сортировка по релевантности:
+                 * 1. Сначала те, у кого заголовок начинается на запрос (Ам -> Амир)
+                 * 2. Потом те, где запрос есть в середине заголовка
+                 * 3. Потом всё остальное
+                 */
+                ->orderByRaw("CASE
+            WHEN title LIKE ? THEN 1
+            WHEN title LIKE ? THEN 2
+            ELSE 3
+            END", ["{$search}%", "%{$search}%"]);
+        } else {
+            // Если поиска нет, показываем последние документы
+            $query->latest();
+        }
+
+        // 📥 Incoming (Входящие)
+        if ($request->type === 'incoming') {
+            $query->where('receiver_id', auth()->id());
+        }
+
+        // 📤 Outgoing (Исходящие)
+        if ($request->type === 'outgoing') {
+            $query->where('created_by', auth()->id());
+        }
+
+        // ✍️ Signed (Подписанные)
+        if ($request->type === 'signed') {
+            $query->where('status', 'signed');
+        }
+
+        // Пагинация с сохранением всех фильтров и поиска в ссылках
+        $documents = $query->paginate(10)->withQueryString();
 
         return view('document.index', compact('documents'));
     }
 
     public function create()
     {
-        $users = User::all();
-        return view('document.create', compact('users'));
+        return view('document.create', [
+            'users' => User::all()
+        ]);
     }
 
     public function store(Request $request)
     {
         $request->validate([
-            'title' => 'required|string|max:255',
-            'content' => 'nullable|string',
-            'file_path' => 'nullable|file|mimes:pdf,doc,docx',
-            'status' => 'required|in:active,pending,approved,rejected',
-            'user_id' => 'required|exists:users,id',
-            'deadline' => 'nullable|date',
+            'title'          => 'required|string|max:255',
+            'content'        => 'nullable|string',
+            'type'           => 'required|string',
+            'status'         => 'required|in:active,pending,approved,rejected,draft',
+            'deadline'       => 'nullable|date',
+            'receiver_email' => 'required|email',
+            'file_path'      => 'nullable|file|mimes:pdf,doc,docx|max:10240',
         ]);
 
-        // 📎 файл
-        $filePath = null;
-        if ($request->hasFile('file_path')) {
-            $filePath = $request->file('file_path')->store('documents', 'public');
+        // 🔥 НАЙТИ ПОЛУЧАТЕЛЯ
+        $receiver = User::where('email', $request->receiver_email)->first();
+
+        if (!$receiver) {
+            return back()->withErrors([
+                'receiver_email' => 'Пользователь не найден'
+            ]);
         }
 
-        // 💾 создаём документ
+        // 📁 файл
+        $filePath = $request->file('file_path')
+            ? $request->file('file_path')->store('documents', 'public')
+            : null;
+
+        // 📄 СОЗДАНИЕ ДОКУМЕНТА
         $document = Document::create([
-            'title' => $request->title,
-            'content' => $request->content,
-            'file_path' => $filePath,
-            'status' => $request->status,
-            'created_by' => $request->user_id, // ✅ ВАЖНО
-            'deadline' => $request->deadline,
+            'title'       => $request->title,
+            'content'     => $request->content,
+            'type'        => $request->type,
+            'status'      => $request->status,
+            'file_path'   => $filePath,
+
+            // 🔥 ВАЖНО
+            'created_by'  => Auth::id(),
+            'receiver_id' => $receiver->id,
+
+            'deadline'    => $request->deadline,
         ]);
 
-        // 🔥 ЛОГ (ТОЖЕ ИСПРАВЛЕНО)
+        // 🧾 LOG
         DocumentLog::create([
             'document_id' => $document->id,
-            'user_id' => $request->user_id, // ❗ НЕ 1
-            'action' => 'created',
-            'description' => 'Документ создан',
+            'user_id'     => Auth::id(),
+            'action'      => 'created',
+            'description' => 'Документ отправлен',
+        ]);
+        DocumentSignature::create([
+            'document_id' => $document->id,
+            'user_id'     => $receiver->id,
+            'status'      => 'pending',
+
+            'signature'   => null,
         ]);
 
+        // 🔔 NOTIFICATION
+        $receiver->notify(new DocumentAssigned($document));
+
         return redirect()->route('documents.index')
-            ->with('success', 'Документ создан');
+            ->with('success', 'Документ успешно отправлен');
     }
+
     public function show($id)
     {
-        $document = Document::findOrFail($id);
+        $document = Document::with(['createdBy', 'receiver'])->findOrFail($id);
 
         $comments = DocumentComment::with('user')
             ->where('document_id', $id)
@@ -188,42 +149,75 @@ class DocumentController extends Controller
 
     public function edit(Document $document)
     {
-        return view('document.edit', compact('document'));
+        return view('document.edit', [
+            'document' => $document,
+            'users' => User::all()
+        ]);
     }
 
     public function update(Request $request, Document $document)
     {
         $request->validate([
-            'title' => 'required|string|max:255',
-            'content' => 'nullable|string',
-            'file_path' => 'nullable|file|mimes:pdf,doc,docx',
-            'status' => 'required|in:active,pending,approved,rejected',
-            'deadline' => 'nullable|date',
+            'title'  => 'required|string|max:255',
+            'status' => 'required',
         ]);
 
-        if ($request->hasFile('file_path')) {
+        $oldStatus = $document->status;
 
+        // 🔥 сохраняем старый файл (для версии)
+        $oldFile = $document->file_path;
+
+        if ($request->hasFile('file_path')) {
             if ($document->file_path) {
                 Storage::disk('public')->delete($document->file_path);
             }
 
-            $document->file_path = $request->file('file_path')->store('documents', 'public');
+            $document->file_path = $request->file('file_path')
+                ->store('documents', 'public');
         }
 
-        $document->update([
-            'title' => $request->title,
-            'content' => $request->content,
-            'status' => $request->status,
-            'deadline' => $request->deadline,
+        $document->update($request->only([
+            'title',
+            'content',
+            'status',
+            'deadline'
+        ]));
+
+        // 🔥 1. создаём версию (ВАЖНО)
+        $lastVersion = \App\Models\DocumentVersion::where('document_id', $document->id)
+            ->max('version');
+
+        \App\Models\DocumentVersion::create([
+            'document_id'    => $document->id,
+            'user_id'        => auth()->id(),
+            'version'        => $lastVersion ? $lastVersion + 1 : 1,
+            'file_path'      => $document->file_path ?? $oldFile,
+            'original_name'  => $request->file('file_path')
+                ? $request->file('file_path')->getClientOriginalName()
+                : null,
+            'extension'      => $request->file('file_path')
+                ? $request->file('file_path')->getClientOriginalExtension()
+                : null,
+            'file_size'      => $request->file('file_path')
+                ? $request->file('file_path')->getSize()
+                : null,
+            'change_summary' => "Документ обновлён (title/status/content)",
         ]);
 
-        // 🔥 ЛОГ
+        // 🔥 лог
         DocumentLog::create([
             'document_id' => $document->id,
-            'user_id' => $request->user_id, // ❗ исправлено
-            'action' => 'updated',
-            'description' => 'Документ обновлён',
+            'user_id'     => Auth::id(),
+            'action'      => 'updated',
+            'description' => "Статус изменён на {$request->status}",
         ]);
+
+        // уведомление
+        if ($oldStatus !== $request->status) {
+            $document->receiver?->notify(
+                new DocumentStatusChanged($document, $request->status)
+            );
+        }
 
         return redirect()->route('documents.index')
             ->with('success', 'Документ обновлён');
@@ -231,20 +225,19 @@ class DocumentController extends Controller
 
     public function destroy(Document $document)
     {
-        // 🔥 ЛОГ (до удаления!)
         DocumentLog::create([
             'document_id' => $document->id,
-            'user_id' => $request->user_id, // ❗ исправлено
-            'action' => 'deleted',
+            'user_id'     => Auth::id(),
+            'action'      => 'deleted',
             'description' => 'Документ удалён',
         ]);
+
         if ($document->file_path) {
             Storage::disk('public')->delete($document->file_path);
         }
 
         $document->delete();
 
-        return redirect()->route('documents.index')
-            ->with('success', 'Документ удалён');
+        return back()->with('success', 'Документ удалён');
     }
 }

@@ -1,16 +1,84 @@
-@extends('layouts.app')
+@extends('layouts.admin')
 
 @section('content')
-    <div class="container">
-        <h2>Редактировать версию</h2>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
-        <form method="POST" action="{{ route('versions.update', $version->id) }}" enctype="multipart/form-data">
-            @csrf
-            @method('PUT')
+    <div class="min-h-screen bg-gray-50 px-6 py-8" style="font-family: Inter, sans-serif;">
 
-            <input type="file" name="file_path" class="form-control mb-2">
+        {{-- HEADER --}}
+        <div class="flex items-center justify-between mb-6">
+            <div>
+                <a href="{{ route('versions.index') }}"
+                   class="text-xs text-gray-500 hover:text-black transition">
+                    ← Back
+                </a>
 
-            <button class="btn btn-primary">Обновить</button>
-        </form>
+                <h1 class="text-2xl font-semibold text-gray-900 mt-1">
+                    Edit Version v{{ $version->version }}
+                </h1>
+
+                <p class="text-sm text-gray-500">
+                    Update file or change version data
+                </p>
+            </div>
+        </div>
+
+        {{-- FORM --}}
+        <div class="max-w-2xl bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+
+            <form action="{{ route('versions.update', $version->id) }}" method="POST" enctype="multipart/form-data">
+                @csrf
+                @method('PUT')
+
+                {{-- DOCUMENT --}}
+                <div class="mb-5">
+                    <label class="text-xs text-gray-400 uppercase">Document</label>
+                    <p class="text-sm font-semibold text-gray-900">
+                        {{ $version->document->title ?? 'Deleted' }}
+                    </p>
+                </div>
+
+                {{-- CURRENT FILE --}}
+                <div class="mb-5">
+                    <label class="text-xs text-gray-400 uppercase">Current File</label>
+                    <a href="{{ asset('storage/' . $version->file_path) }}"
+                       target="_blank"
+                       class="block text-blue-600 text-sm hover:underline">
+                        View current file
+                    </a>
+                </div>
+
+                {{-- UPLOAD NEW FILE --}}
+                <div class="mb-5">
+                    <label class="text-xs text-gray-400 uppercase">New File (optional)</label>
+                    <input type="file"
+                           name="file_path"
+                           class="w-full mt-2 p-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+
+                {{-- CHANGE NOTE --}}
+                <div class="mb-6">
+                    <label class="text-xs text-gray-400 uppercase">Change Summary</label>
+                    <textarea name="change_summary"
+                              rows="3"
+                              class="w-full mt-2 p-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              placeholder="What changed in this version?">{{ $version->change_summary }}</textarea>
+                </div>
+
+                {{-- BUTTONS --}}
+                <div class="flex justify-end gap-3">
+                    <a href="{{ route('versions.index') }}"
+                       class="px-4 py-2 rounded-xl bg-gray-100 text-gray-700 text-sm hover:bg-gray-200 transition">
+                        Cancel
+                    </a>
+
+                    <button type="submit"
+                            class="px-5 py-2 rounded-xl bg-black text-white text-sm font-medium hover:bg-gray-800 transition">
+                        Save Changes
+                    </button>
+                </div>
+
+            </form>
+        </div>
     </div>
 @endsection

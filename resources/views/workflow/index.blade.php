@@ -33,9 +33,9 @@
             </thead>
             <tbody>
 
-            @forelse($workflows as $workflow)
+            @forelse($workflows as $index =>$workflow)
                 <tr>
-                    <td>{{ $workflow->id }}</td>
+                    <td>{{ $index +1 }}</td>
 
                     <td>
                         {{ $workflow->user->name ?? '—' }}

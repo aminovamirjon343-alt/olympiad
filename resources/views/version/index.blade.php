@@ -1,80 +1,129 @@
+@extends('layouts.admin')
 
-    <div class="container mt-4">
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <h2 class="fw-bold text-secondary">История версий документов</h2>
-            <a href="{{ route('versions.create') }}" class="btn btn-primary px-4 shadow-sm">
-                <i class="fas fa-plus"></i> Добавить версию
-            </a>
-        </div>
+@section('content')
+    <div class="container mx-auto px-4 py-8 min-h-screen">
 
-        @if(session('success'))
-            <div class="alert alert-success shadow-sm">{{ session('success') }}</div>
-        @endif
+        <div class="max-w-7xl mx-auto">
 
-        <div class="card shadow-sm border-0">
-            <div class="card-body p-0">
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle mb-0" border="1">
-                        <thead class="table-light">
-                        <tr>
-                            <th class="ps-3">ID</th>
-                            <th>Документ</th>
-                            <th class="text-center">№ Версии</th>
-                            <th>Файл</th>
-                            <th class="text-end pe-3">Действия</th>
-                        </tr>
-                        </thead>
-                        <tbody>
-                        @forelse($versions as $v)
-                            <tr>
-                                <td class="ps-3 text-muted">#{{ $v->id }}</td>
-                                <td>
-                                    <span class="fw-semibold text-dark">{{ $v->document->title }}</span>
-                                </td>
-                                <td class="text-center">
-                                    <span class="badge bg-info text-dark">v.{{ $v->version }}</span>
-                                </td>
-                                <td>
-                                    <a href="{{ asset('storage/' . $v->file_path) }}"
-                                       target="_blank"
-                                       class="btn btn-link btn-sm text-decoration-none">
-                                        📄 Открыть файл
-                                    </a>
-                                </td>
-                                <td class="text-end pe-3">
-                                    <div class="btn-group shadow-sm">
-                                        <a href="{{ route('versions.show', $v->id) }}" class="btn btn-outline-info btn-sm">
-                                            Смотреть
-                                        </a>
-                                        <a href="{{ route('versions.edit', $v->id) }}" class="btn btn-outline-warning btn-sm">
-                                            Правка
-                                        </a>
-                                        <form action="{{ route('versions.destroy', $v->id) }}" method="POST" class="d-inline">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button type="submit" class="btn btn-outline-danger btn-sm"
-                                                    onclick="return confirm('Вы уверены? Это действие нельзя отменить.')">
-                                                Удалить
-                                            </button>
-                                        </form>
-                                    </div>
-                                </td>
-                            </tr>
-                        @empty
-                            <tr>
-                                <td colspan="5" class="text-center py-5 text-muted">
-                                    Версии пока не созданы. <a href="{{ route('versions.create') }}">Создать первую?</a>
-                                </td>
-                            </tr>
-                        @endforelse
-                        </tbody>
-                    </table>
+            {{-- HEADER --}}
+            <div class="flex items-center justify-between mb-6">
+                <div>
+                    <h1 class="text-2xl font-bold text-black">Версии документов</h1>
+                    <p class="text-xs text-gray-400 uppercase tracking-widest">
+                        История изменений файлов
+                    </p>
                 </div>
+
+                <a href="{{ route('versions.create') }}"
+                   class="bg-indigo-600 text-white px-4 py-2 rounded-lg text-xs font-bold uppercase hover:bg-indigo-700">
+                    + Добавить версию
+                </a>
             </div>
+
+            {{-- TABLE --}}
+            <div class="bg-white border rounded-xl shadow-sm overflow-hidden">
+
+                <table class="w-full text-sm">
+                    <thead class="bg-gray-50 border-b">
+                    <tr class="text-left text-xs uppercase text-gray-500">
+                        <th class="p-4">#</th>
+                        <th>Документ</th>
+                        <th class="text-center">Версия</th>
+                        <th class="text-center">Файл</th>
+                        <th class="text-center">Дата</th>
+                        <th class="text-right p-4">Действия</th>
+                    </tr>
+                    </thead>
+
+                    <tbody>
+
+                    @forelse($versions as $index =>$v)
+                        <tr class="border-b hover:bg-gray-50 transition">
+
+                            {{-- ID --}}
+                            <td class="p-4 font-bold text-gray-400">
+                                {{ $index + 1 }}
+                            </td>
+
+                            {{-- DOCUMENT --}}
+                            <td class="p-4">
+                                <div class="font-semibold text-black">
+                                    {{ $v->document->title ?? 'Удалённый документ' }}
+                                </div>
+
+                                <div class="text-xs text-gray-400">
+                                    ID: {{ $v->document_id }}
+                                </div>
+                            </td>
+
+                            {{-- VERSION --}}
+                            <td class="text-center">
+                            <span class="px-3 py-1 bg-indigo-50 text-indigo-700 rounded-lg font-bold text-xs">
+                                V{{ $v->version }}
+                            </span>
+                            </td>
+
+                            {{-- FILE --}}
+                            <td class="text-center">
+                                <a href="{{ asset('storage/'.$v->file_path) }}"
+                                   target="_blank"
+                                   class="text-blue-600 text-xs font-bold uppercase hover:underline">
+                                    Скачать
+                                </a>
+                            </td>
+
+                            {{-- DATE --}}
+                            <td class="text-center text-xs text-gray-500">
+                                {{ $v->created_at->format('d.m.Y') }}
+                            </td>
+
+                            {{-- ACTIONS --}}
+                            <td class="p-4 text-right space-x-3">
+
+                                <a href="{{ route('versions.show', $v->id) }}"
+                                   class="text-indigo-600 text-xs font-bold uppercase">
+                                    Show
+                                </a>
+
+                                <a href="{{ route('versions.edit', $v->id) }}"
+                                   class="text-yellow-600 text-xs font-bold uppercase">
+                                    Edit
+                                </a>
+
+                                <form action="{{ route('versions.destroy', $v->id) }}"
+                                      method="POST"
+                                      class="inline"
+                                      onsubmit="return confirm('Удалить версию?')">
+                                    @csrf
+                                    @method('DELETE')
+
+                                    <button class="text-red-600 text-xs font-bold uppercase">
+                                        Delete
+                                    </button>
+                                </form>
+
+                            </td>
+
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="6" class="text-center py-10 text-gray-400 uppercase text-xs">
+                                Нет версий
+                            </td>
+                        </tr>
+                    @endforelse
+
+                    </tbody>
+                </table>
+
+            </div>
+
+            {{-- PAGINATION --}}
+            <div class="mt-6">
+                {{ $versions->links() }}
+            </div>
+
         </div>
 
-        <div class="mt-4 d-flex justify-content-center">
-            {{ $versions->links() }}
-        </div>
     </div>
-
+@endsection

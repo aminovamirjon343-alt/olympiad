@@ -13,7 +13,7 @@ return new class extends Migration {
             $table->foreignId('document_id')->constrained()->cascadeOnDelete();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
 
-            $table->integer('step_order'); // порядок этапа
+            $table->integer('step_order');
             $table->enum('status', ['pending', 'approved', 'rejected'])->default('pending');
 
             $table->timestamps();

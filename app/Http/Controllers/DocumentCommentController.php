@@ -10,7 +10,6 @@ use Illuminate\Http\Request;
 
 class DocumentCommentController extends Controller
 {
-    // 💬 список комментариев по документу
     public function index($documentId)
     {
         $document = Document::findOrFail($documentId);
@@ -23,7 +22,6 @@ class DocumentCommentController extends Controller
         return view('comment.index', compact('document', 'comments'));
     }
 
-    // ➕ форма (если нужна отдельная страница)
     public function create($documentId)
     {
         $document = \App\Models\Document::findOrFail($documentId);
@@ -32,28 +30,28 @@ class DocumentCommentController extends Controller
         return view('comment.create', compact('document', 'users'));
     }
 
-    // 💾 сохранить комментарий
+
     public function store(Request $request)
     {
-        // 1. Валидация
+
         $request->validate([
             'document_id' => 'required|exists:documents,id',
             'comment' => 'required|string|max:1000'
         ]);
 
-        // 2. Проверяем, залогинен ли пользователь
+
         if (!auth()->check()) {
             return back()->with('error', 'Вы должны войти в систему, чтобы оставить комментарий');
         }
 
-        // 3. Создаем комментарий через текущего юзера
+
         $comment = DocumentComment::create([
             'document_id' => $request->document_id,
             'user_id' => auth()->id(), // Берем реальный ID из сессии
             'comment' => $request->comment,
         ]);
 
-        // 4. Уведомление автору документа
+
         $document = Document::find($request->document_id);
 
         // Проверяем, есть ли автор и не сам ли автор пишет комментарий
@@ -69,7 +67,6 @@ class DocumentCommentController extends Controller
         return back()->with('success', 'Комментарий успешно добавлен!');
     }
 
-    // 🗑 удалить
     public function destroy($id)
     {
         $comment = DocumentComment::findOrFail($id);

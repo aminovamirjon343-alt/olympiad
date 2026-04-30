@@ -4,49 +4,58 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Notifications\Notifiable;
 
 class UserController extends Controller
 {
-    // список
+    use Notifiable;
     public function index()
     {
         $users = User::all();
         return view('users.index', compact('users'));
     }
+    public function documents()
+    {
+        // Указываем 'created_by' в качестве внешнего ключа
+        return $this->hasMany(\App\Models\Document::class, 'created_by');
+    }
 
-    // форма создания
     public function create()
     {
         return view('users.create');
     }
 
-    // сохранить
+
     public function store(Request $request)
     {
-        User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'password' => bcrypt($request->password),
-            'phone' => $request->phone,
-            'role' => $request->role ?? 'user',
+        $data = $request->validate([
+            'name'     => 'required|string|max:255',
+            'email'    => 'required|email|unique:users,email',
+            'password' => 'required|min:6',
+            'phone'    => 'nullable|string',
+            'role'     => 'required|in:admin,employee,director,user',
         ]);
 
-        return redirect()->route('users.index')->with('success', 'User created');
+        $data['password'] = bcrypt($data['password']);
+
+        User::create($data);
+
+        return redirect()->route('users.index')->with('success', 'User created 👤');
     }
 
-    // показать
+
     public function show(User $user)
     {
         return view('users.show', compact('user'));
     }
 
-    // форма редактирования
+
     public function edit(User $user)
     {
         return view('users.edit', compact('user'));
     }
 
-    // обновить
+
     public function update(Request $request, User $user)
     {
         $user->update([
@@ -59,10 +68,11 @@ class UserController extends Controller
         return redirect()->route('users.index')->with('success', 'Updated');
     }
 
-    // удалить
+
     public function destroy(User $user)
     {
         $user->delete();
         return redirect()->route('users.index');
     }
+
 }

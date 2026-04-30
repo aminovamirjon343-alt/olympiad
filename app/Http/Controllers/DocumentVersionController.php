@@ -5,13 +5,17 @@ namespace App\Http\Controllers;
 use App\Models\Document;
 use App\Models\DocumentVersion;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 
 class DocumentVersionController extends Controller
 {
     public function index()
     {
-        $versions = DocumentVersion::with('document')->latest()->paginate(10);
+        $versions = DocumentVersion::with('document')
+            ->orderByDesc('created_at')
+            ->paginate(10);
+
         return view('version.index', compact('versions'));
     }
 
@@ -25,24 +29,40 @@ class DocumentVersionController extends Controller
     {
         $request->validate([
             'document_id' => 'required|exists:documents,id',
-            'file_path' => 'required|file|mimes:pdf,doc,docx|max:2048',
+            'file_path' => 'required|file',
         ]);
 
-        $filePath = $request->file('file_path')->store('versions', 'public');
+        return DB::transaction(function () use ($request) {
 
-        $lastVersion = DocumentVersion::where('document_id', $request->document_id)->max('version');
+            $file = $request->file('file_path');
 
-        DocumentVersion::create([
-            'document_id' => $request->document_id,
-            'version' => $lastVersion ? $lastVersion + 1 : 1,
-            'file_path' => $filePath,
-        ]);
+            $filePath = $file->store('versions', 'public');
 
-        return redirect()->route('versions.index')->with('success', 'Версия добавлена');
+            // 🔥 берём последнюю версию ТОЛЬКО этого документа
+            $lastVersion = DocumentVersion::where('document_id', $request->document_id)
+                ->lockForUpdate()
+                ->max('version');
+
+            $nextVersion = $lastVersion ? $lastVersion + 1 : 1;
+
+            $version = DocumentVersion::create([
+                'document_id' => $request->document_id,
+                'user_id' => auth()->id(),
+                'version' => $nextVersion,
+                'file_path' => $filePath,
+                'original_name' => $file->getClientOriginalName(),
+                'extension' => $file->getClientOriginalExtension(),
+                'file_size' => $file->getSize(),
+            ]);
+
+            return redirect()->route('versions.index')
+                ->with('success', "Версия V{$version->version} добавлена");
+        });
     }
 
     public function show(DocumentVersion $version)
     {
+        $version->load('document');
         return view('version.show', compact('version'));
     }
 
@@ -55,30 +75,34 @@ class DocumentVersionController extends Controller
     public function update(Request $request, DocumentVersion $version)
     {
         $request->validate([
-            'file_path' => 'nullable|file|mimes:pdf,doc,docx|max:2048',
+            'file_path' => 'nullable|file',
         ]);
 
         if ($request->hasFile('file_path')) {
-            if ($version->file_path) {
-                Storage::disk('public')->delete($version->file_path);
-            }
 
-            $version->file_path = $request->file('file_path')->store('versions', 'public');
+            Storage::disk('public')->delete($version->file_path);
+
+            $file = $request->file('file_path');
+
+            $version->update([
+                'file_path' => $file->store('versions', 'public'),
+                'original_name' => $file->getClientOriginalName(),
+                'extension' => $file->getClientOriginalExtension(),
+                'file_size' => $file->getSize(),
+            ]);
         }
 
-        $version->save();
-
-        return redirect()->route('versions.index')->with('success', 'Обновлено');
+        return redirect()->route('versions.index')
+            ->with('success', 'Обновлено');
     }
 
     public function destroy(DocumentVersion $version)
     {
-        if ($version->file_path) {
-            Storage::disk('public')->delete($version->file_path);
-        }
+        Storage::disk('public')->delete($version->file_path);
 
         $version->delete();
 
-        return redirect()->route('versions.index')->with('success', 'Удалено');
+        return redirect()->route('versions.index')
+            ->with('success', 'Удалено');
     }
 }

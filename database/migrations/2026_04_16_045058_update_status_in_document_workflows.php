@@ -45,14 +45,12 @@ return new class extends Migration {
 
     public function down(): void
     {
-        // 🔥 1. Сначала чистим данные
         DB::statement("
             UPDATE document_workflows
             SET status = 'pending'
             WHERE status NOT IN ('pending','approved','rejected')
         ");
 
-        // 🔥 2. Потом меняем ENUM
         DB::statement("
             ALTER TABLE document_workflows
             MODIFY status ENUM('pending','approved','rejected')

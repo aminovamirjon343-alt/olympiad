@@ -9,7 +9,6 @@ use Illuminate\Http\Request;
 
 class DocumentLogController extends Controller
 {
-    // 📄 список логов
     public function index()
     {
         $logs = DocumentLog::with(['document', 'user'])
@@ -19,7 +18,7 @@ class DocumentLogController extends Controller
         return view('logs.index', compact('logs'));
     }
 
-    // ➕ форма создания (опционально)
+
     public function create()
     {
         $documents = Document::all();
@@ -28,7 +27,6 @@ class DocumentLogController extends Controller
         return view('logs.create', compact('documents', 'users'));
     }
 
-    // 💾 сохранение (опционально)
     public function store(Request $request)
     {
         $request->validate([
@@ -49,7 +47,7 @@ class DocumentLogController extends Controller
             ->with('success', 'Лог создан');
     }
 
-    // 👁 просмотр одного лога
+
     public function show(DocumentLog $log)
     {
         $log->load(['document', 'user']);
@@ -57,7 +55,7 @@ class DocumentLogController extends Controller
         return view('logs.show', compact('log'));
     }
 
-    // ✏️ редактирование (опционально)
+
     public function edit(DocumentLog $log)
     {
         $documents = Document::all();
@@ -66,7 +64,7 @@ class DocumentLogController extends Controller
         return view('logs.edit', compact('log', 'documents', 'users'));
     }
 
-    // 🔄 обновление
+
     public function update(Request $request, DocumentLog $log)
     {
         $request->validate([
@@ -87,7 +85,7 @@ class DocumentLogController extends Controller
             ->with('success', 'Лог обновлен');
     }
 
-    // 🗑 удаление
+
     public function destroy(DocumentLog $log)
     {
         $log->delete();
@@ -95,7 +93,7 @@ class DocumentLogController extends Controller
         return back()->with('success', 'Лог удален');
     }
 
-    // 📄 история конкретного документа
+
     public function documentLogs($documentId)
     {
         $document = Document::with(['logs.user'])

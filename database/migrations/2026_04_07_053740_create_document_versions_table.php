@@ -4,30 +4,51 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration {
-    public function up()
+return new class extends Migration
+{
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
     {
         Schema::create('document_versions', function (Blueprint $table) {
             $table->id();
 
             $table->foreignId('document_id')
-                ->constrained()
+                ->constrained('documents')
                 ->cascadeOnDelete();
 
-            $table->integer('version');
-            $table->string('file_path')->nullable();
+            $table->foreignId('user_id')
+                ->nullable()
+                ->constrained('users')
+                ->nullOnDelete();
 
-            // Поле для описания изменений (полезно для Модуля №11: История)
+            $table->integer('version');
+
+            $table->string('original_name')->nullable();
+            $table->string('file_path');
+            $table->string('extension', 10)->nullable();
+            $table->bigInteger('file_size')->nullable();
+
             $table->text('change_summary')->nullable();
 
-            $table->timestamps();
+            // PRO
+            $table->string('status')->default('active');
 
-            // Уникальный индекс: у одного документа не может быть двух одинаковых номеров версий
+            $table->timestamps();
+            $table->softDeletes();
+
+            $table->index('document_id');
+            $table->index('user_id');
+
             $table->unique(['document_id', 'version']);
         });
     }
 
-    public function down()
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
     {
         Schema::dropIfExists('document_versions');
     }

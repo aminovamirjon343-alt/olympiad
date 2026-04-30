@@ -22,8 +22,6 @@ return new class extends Migration
             $table->text('comment');
 
             $table->timestamps();
-
-            // 🚀 ускоряет выборку комментариев по документу
             $table->index(['document_id']);
         });
     }

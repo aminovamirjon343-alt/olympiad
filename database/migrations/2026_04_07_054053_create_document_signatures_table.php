@@ -11,14 +11,15 @@ return new class extends Migration {
             $table->id();
 
             $table->foreignId('document_id')
-                ->constrained()
+                ->constrained('documents')
                 ->cascadeOnDelete();
 
             $table->foreignId('user_id')
-                ->constrained()
+                ->constrained('users')
                 ->cascadeOnDelete();
 
-            $table->longText('signature'); // base64
+            $table->longText('signature');
+
             $table->timestamp('signed_at')->nullable();
 
             $table->timestamps();
