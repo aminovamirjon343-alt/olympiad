@@ -262,6 +262,36 @@
 </head>
 
 <body>
+{{-- resources/views/layouts/admin.blade.php --}}
+
+<nav class="flex items-center justify-between p-4 bg-black text-white">
+    <div class="flex items-center gap-4">
+        <span class="font-[1000] uppercase tracking-widest text-sm">Olympiad Admin</span>
+
+        {{-- Вставляем переключатель здесь --}}
+        @if(app()->environment('local')) {{-- Показываем только на локалке --}}
+        <form action="{{ route('login.as') }}" method="POST" class="ml-4">
+            @csrf
+            <select name="user_id" onchange="this.form.submit()"
+                    class="bg-white text-black text-[10px] font-[1000] uppercase px-2 py-1 rounded border-2 border-blue-500 cursor-pointer shadow-[3px_3px_0px_rgba(59,130,246,1)] hover:scale-105 transition-all outline-none">
+                <option value="" disabled selected>👤 Switch User</option>
+                @foreach(\App\Models\User::all() as $user)
+                    <option value="{{ $user->id }}" {{ auth()->id() == $user->id ? 'selected' : '' }}>
+                        {{ $user->name }}
+                    </option>
+                @endforeach
+            </select>
+        </form>
+        @endif
+    </div>
+
+    <div class="flex items-center gap-2">
+        <span class="text-[10px] font-bold opacity-70 uppercase">Active: {{ auth()->user()->name }}</span>
+    </div>
+</nav>
+
+
+
 
 <div class="overlay" id="overlay" onclick="toggleSidebar()"></div>
 
@@ -299,22 +329,51 @@
 
         {{-- SUB MENU --}}
 
-            <div class="collapse ps-4 mt-1" id="documentsMenu">
+        <div class="collapse ps-4 mt-1 space-y-1" id="documentsMenu">
+            {{-- Глобальные категории --}}
+            <a href="{{ route('documents.index') }}" class="nav-link flex items-center justify-between gap-2 pr-4 py-1">
+                <div class="flex items-center gap-2">
+                    <span class="text-[9px]">📄</span>
+                    <span class="tracking-widest uppercase text-[9px] font-bold leading-none">All Docs</span>
+                </div>
+            </a>
 
-                <a href="{{ route('documents.index', ['type' => 'incoming']) }}" class="nav-link">
-                    📥 Incoming
-                </a>
+            <div class="my-1 border-t border-slate-100 mx-2"></div>
 
-                <a href="{{ route('documents.index', ['type' => 'outgoing']) }}" class="nav-link">
-                    📤 Outgoing
-                </a>
+            {{-- Потоки --}}
+            <a href="{{ route('documents.index', ['type' => 'incoming']) }}" class="nav-link flex items-center gap-2 py-1">
+                <span class="text-[9px]">📥</span>
+                <span class="tracking-widest uppercase text-[9px] font-bold leading-none">Incoming</span>
+            </a>
 
-                <a href="{{ route('documents.index') }}" class="nav-link">
-                    📄 All Documents
-                </a>
+            <a href="{{ route('documents.index', ['type' => 'outgoing']) }}" class="nav-link flex items-center gap-2 py-1">
+                <span class="text-[9px]">📤</span>
+                <span class="tracking-widest uppercase text-[9px] font-bold leading-none">Outgoing</span>
+            </a>
 
-            </div>
+            <div class="my-1 border-t border-slate-100 mx-2"></div>
 
+            {{-- СТАТУСЫ --}}
+            <a href="{{ route('documents.index', ['status' => 'waiting']) }}" class="nav-link flex items-center justify-between gap-2 pr-4 py-1 text-orange-600">
+                <div class="flex items-center gap-2">
+                    <span class="text-[9px]">⏳</span>
+                    <span class="tracking-widest uppercase text-[9px] font-bold leading-none">Waiting</span>
+                </div>
+            </a>
+
+            <a href="{{ route('documents.index', ['status' => 'signed']) }}" class="nav-link flex items-center justify-between gap-2 pr-4 py-1 text-green-600">
+                <div class="flex items-center gap-2">
+                    <span class="text-[9px]">✅</span>
+                    <span class="tracking-widest uppercase text-[9px] font-bold leading-none">Signed</span>
+                </div>
+            </a>
+
+            <a href="{{ route('documents.index', ['status' => 'draft']) }}" class="nav-link flex items-center justify-between gap-2 pr-4 py-1 text-slate-400">
+                <div class="flex items-center gap-2">
+                    <span class="text-[9px]">📝</span>
+                    <span class="tracking-widest uppercase text-[9px] font-bold leading-none">Drafts</span>
+                </div>
+            </a>
         </div>
     </li>
     <a href="/search" class="nav-link" data-page="search" onclick="showPage('search', this)">
@@ -322,9 +381,7 @@
     </a>
 
     <div class="nav-section" data-i18n="management">Management</div>
-    <a href="/workflow" class="nav-link" data-page="workflow" onclick="showPage('workflow', this)">
-        <i class="bi bi-diagram-3"></i> <span data-i18n="workflow">Workflow</span>
-    </a>
+
     <a href="/signatures" class="nav-link" data-page="signatures" onclick="showPage('signatures', this)">
         <i class="bi bi-pen"></i> <span data-i18n="signatures">Signatures</span>
     </a>
@@ -334,7 +391,9 @@
     <a href="/logs" class="nav-link" data-page="logs" onclick="showPage('logs', this)">
         <i class="bi bi-journal-text"></i> <span data-i18n="logs">Logs</span>
     </a>
-
+    <a href="/analysis" class="nav-link" data-page="analysis" onclick="showPage('analysis', this)">
+        <i class="bi bi-bar-chart-line"></i> <span data-i18n="analysis">Analysis</span>
+    </a>
     <div class="nav-section" data-i18n="admin">Admin</div>
     <a href="/users" class="nav-link" data-page="users" onclick="showPage('users', this)">
         <i class="bi bi-people"></i> <span data-i18n="users">Users</span>
@@ -363,16 +422,29 @@
         <button class="mobile-toggle" onclick="toggleSidebar()"><i class="bi bi-list"></i></button>
         <div class="search-box d-none d-md-block">
             {{-- Форма поиска --}}
+            <style>
+                .search-input-custom {
+                    width: 280px;
+                    background: transparent;
+                    border: 1px solid #ced4da; /* Базовый серый */
+                    transition: all 0.3s ease; /* Плавность */
+                }
+
+                .search-input-custom:focus {
+                    border-color: #86b7fe !important; /* Нежно-голубой при клике */
+                    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.15); /* Мягкое свечение */
+                    background-color: #fff;
+                }
+            </style>
+
             <form action="{{ route('search') }}" method="GET" class="search-box d-none d-md-block">
                 <i class="bi bi-search blue-text-fixed"></i>
                 <input
                     type="text"
                     name="query"
                     value="{{ request('query') }}"
-                    class="form-control form-control-sm blue-text-fixed"
-                    style="width:280px; background: transparent; border: 1px solid var(--table-border);"
+                    class="form-control form-control-sm blue-text-fixed search-input-custom"
                     placeholder="Поиск по сайту..."
-                    data-i18n-placeholder="searchPlaceholder"
                 >
             </form></div>
     </div>
@@ -761,22 +833,7 @@
     </section>
 
     <!-- Users Page -->
-    <section class="page-section" id="page-users">
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <h4 class="fw-bold mb-0" data-i18n="users">Users</h4>
-            <a href="/users/create" class="btn-primary-custom"><i class="bi bi-person-plus me-1"></i> <span data-i18n="addUser">Add User</span></a>
-        </div>
-        <div class="table-custom">
-            <table class="table mb-0">
-                <thead><tr><th>#</th><th data-i18n="name">Name</th><th>Email</th><th data-i18n="role">Role</th><th data-i18n="status">Status</th><th data-i18n="actions">Actions</th></tr></thead>
-                <tbody>
-                <tr><td>1</td><td><div class="d-flex align-items-center gap-2"><div class="profile-avatar-sm">АР</div><span>А. Рахимов</span></div></td><td>rahimov@doc.sys</td><td>Admin</td><td><span class="badge bg-success">Active</span></td><td><div class="d-flex gap-1"><a href="/users/1/edit" class="btn btn-sm btn-light"><i class="bi bi-pencil"></i></a><a href="/users/1" class="btn btn-sm btn-light text-danger"><i class="bi bi-trash"></i></a></div></td></tr>
-                <tr><td>2</td><td><div class="d-flex align-items-center gap-2"><div class="profile-avatar-sm" style="background:linear-gradient(135deg,#22c55e,#16a34a);">МС</div><span>М. Саидова</span></div></td><td>saidova@doc.sys</td><td>Manager</td><td><span class="badge bg-success">Active</span></td><td><div class="d-flex gap-1"><a href="/users/2/edit" class="btn btn-sm btn-light"><i class="bi bi-pencil"></i></a><a href="/users/2" class="btn btn-sm btn-light text-danger"><i class="bi bi-trash"></i></a></div></td></tr>
-                <tr><td>3</td><td><div class="d-flex align-items-center gap-2"><div class="profile-avatar-sm" style="background:linear-gradient(135deg,#f59e0b,#d97706);">КН</div><span>К. Назаров</span></div></td><td>nazarov@doc.sys</td><td>User</td><td><span class="badge bg-warning">Inactive</span></td><td><div class="d-flex gap-1"><a href="/users/3/edit" class="btn btn-sm btn-light"><i class="bi bi-pencil"></i></a><a href="/users/3" class="btn btn-sm btn-light text-danger"><i class="bi bi-trash"></i></a></div></td></tr>
-                </tbody>
-            </table>
-        </div>
-    </section>
+
 
     <!-- Notifications Page -->
     <section class="page-section" id="page-notifications">

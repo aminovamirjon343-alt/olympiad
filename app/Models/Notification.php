@@ -3,22 +3,27 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Notification extends Model
 {
     protected $fillable = [
         'user_id',
-        'message',
         'type',
-        'is_read'
+        'message',
+        'data',
+        'is_read',
+        'notifiable_type',
+        'notifiable_id',
+        'read_at'
     ];
 
+    // Это превратит JSON из базы в удобный массив для Blade автоматически
     protected $casts = [
+        'data' => 'array',
         'is_read' => 'boolean',
     ];
 
-    public function user(): BelongsTo
+    public function user()
     {
         return $this->belongsTo(User::class);
     }

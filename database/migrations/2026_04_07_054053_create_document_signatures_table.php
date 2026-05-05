@@ -9,17 +9,11 @@ return new class extends Migration {
     {
         Schema::create('document_signatures', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('document_id')->constrained('documents')->cascadeOnDelete();
+            $table->foreignId('user_id')->constrained('users')->cascadeOnDelete();
 
-            $table->foreignId('document_id')
-                ->constrained('documents')
-                ->cascadeOnDelete();
-
-            $table->foreignId('user_id')
-                ->constrained('users')
-                ->cascadeOnDelete();
-
-            $table->longText('signature');
-
+            $table->longText('signature')->nullable();
+            $table->timestamp('expires_at')->nullable(); // Сюда будет копироваться deadline
             $table->timestamp('signed_at')->nullable();
 
             $table->timestamps();

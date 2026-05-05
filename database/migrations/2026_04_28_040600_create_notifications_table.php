@@ -12,11 +12,21 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('notifications', function (Blueprint $table) {
-            $table->uuid('id')->primary();
+            $table->id();
             $table->string('type');
+
+            // Добавляем morphs для системы Laravel
             $table->morphs('notifiable');
-            $table->text('data');
+
+            // Оставляем твои поля для ручной записи (делаем их nullable)
+            $table->foreignId('user_id')->nullable()->constrained()->onDelete('cascade');
+            $table->text('message')->nullable();
+
+            // Стандартное поле данных Laravel
+            $table->text('data')->nullable();
+
             $table->timestamp('read_at')->nullable();
+            $table->boolean('is_read')->default(false);
             $table->timestamps();
         });
     }

@@ -33,34 +33,41 @@ class DocumentCommentController extends Controller
 
     public function store(Request $request)
     {
-
         $request->validate([
             'document_id' => 'required|exists:documents,id',
             'comment' => 'required|string|max:1000'
         ]);
 
-
         if (!auth()->check()) {
             return back()->with('error', 'Вы должны войти в систему, чтобы оставить комментарий');
         }
 
-
+        // 1. Сохраняем комментарий
         $comment = DocumentComment::create([
             'document_id' => $request->document_id,
-            'user_id' => auth()->id(), // Берем реальный ID из сессии
+            'user_id' => auth()->id(),
             'comment' => $request->comment,
         ]);
 
-
         $document = Document::find($request->document_id);
 
-        // Проверяем, есть ли автор и не сам ли автор пишет комментарий
+        // 2. Исправленное создание уведомления
         if ($document && $document->created_by && $document->created_by !== auth()->id()) {
             Notification::create([
+                // Генерируем UUID вручную, так как в миграции это первичный ключ
+                'id' => (string) \Illuminate\Support\Str::uuid(),
+
                 'user_id' => $document->created_by,
                 'message' => 'Новый комментарий к вашему документу: "' . $document->title . '"',
-                'type' => 'comment', // Добавь тип, если он есть в модели
+                'type' => 'comment',
                 'is_read' => false,
+
+                // ОБЯЗАТЕЛЬНЫЕ ПОЛЯ для morphs('notifiable') из твоей миграции:
+                'notifiable_type' => \App\Models\User::class, // К какому классу относится уведомление
+                'notifiable_id' => $document->created_by,     // К какому ID пользователя привязано
+
+                // Если в миграции есть поле data (текстовое), лучше передать пустой массив или null
+                'data' => json_encode(['comment_id' => $comment->id]),
             ]);
         }
 

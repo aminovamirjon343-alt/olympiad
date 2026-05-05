@@ -13,16 +13,24 @@ use Illuminate\Support\Facades\Auth;
 
 class DocumentSignatureController extends Controller
 {
-
+    /**
+     * Показ всех подписей (Админ видит всё, пользователь — только свои)
+     */
     public function index()
     {
-        $signatures = DocumentSignature::with('document', 'user')
-            ->where('user_id', auth()->id())
-            ->latest()
-            ->paginate(10);
+        $user = Auth::user();
+
+        $query = DocumentSignature::with(['document', 'user']);
+
+        // Если не админ, фильтруем только по текущему пользователю
+        if (!$user->is_admin) {
+            $query->where('user_id', $user->id);
+        }
+
+        $signatures = $query->latest()->paginate(12);
+
         return view('signatures.index', compact('signatures'));
     }
-
 
     public function create()
     {
@@ -30,24 +38,21 @@ class DocumentSignatureController extends Controller
         $users = User::all();
         return view('signatures.create', compact('documents', 'users'));
     }
-    public function edit(DocumentSignature $signature)
-    {
-       $documents = Document::all();
 
-        return view('signatures.edit', compact('signature', 'documents'));
-    }
-
+    /**
+     * ПРОЦЕСС СОЗДАНИЯ ПОДПИСИ
+     */
     public function store(Request $request)
     {
         $request->validate([
             'document_id' => 'required|exists:documents,id',
-            'signature' => 'required|string'
+            'signature'   => 'required|string'
         ]);
 
         $document = Document::findOrFail($request->document_id);
         $signer = Auth::user();
 
-
+        // 1. ПРОВЕРКА ОЧЕРЕДНОСТИ
         $currentWorkflow = DocumentWorkflow::where('document_id', $document->id)
             ->where('status', 'pending')
             ->orderBy('step_order')
@@ -66,33 +71,41 @@ class DocumentSignatureController extends Controller
             return back()->with('error', 'Вы уже подписали этот документ.');
         }
 
-
+        // 3. СОЗДАНИЕ ПОДПИСИ
         DocumentSignature::create([
             'document_id' => $document->id,
-            'user_id' => $signer->id,
-            'signature' => $request->signature,
-            'signed_at' => now(),
+            'user_id'     => $signer->id,
+            'signature'   => $request->signature,
+            'signed_at'   => now(),
+            'expires_at'  => $document->due_date ?? null,
         ]);
 
-
+        // 4. ЛОГИРОВАНИЕ
         DocumentLog::create([
             'document_id' => $document->id,
-            'user_id' => $signer->id,
-            'action' => 'signed',
+            'user_id'     => $signer->id,
+            'action'      => 'signed',
             'description' => 'Документ подписан пользователем ' . $signer->name,
         ]);
 
-
+        // 5. УВЕДОМЛЕНИЕ АВТОРУ
         if ($document->created_by) {
             Notification::create([
-                'user_id' => $document->created_by,
-                'message' => "Пользователь {$signer->name} подписал ваш документ: \"{$document->title}\"",
-                'type' => 'sign', // Наша иконка "перо"
-                'is_read' => false,
+                'user_id'         => $document->created_by,
+                'type'            => 'signed',
+                'message'         => "Пользователь {$signer->name} подписал ваш документ",
+                'is_read'         => false,
+                'notifiable_type' => User::class,
+                'notifiable_id'   => $document->created_by,
+                'data' => [
+                    'type'           => 'signed',
+                    'user'           => $signer->name,
+                    'document_title' => $document->title,
+                ],
             ]);
         }
 
-
+        // 6. ОБРАБОТКА ВОРКФЛОУ
         if ($currentWorkflow) {
             $currentWorkflow->update(['status' => 'approved']);
 
@@ -102,42 +115,55 @@ class DocumentSignatureController extends Controller
                 ->first();
 
             if ($nextWorkflow) {
-
                 $nextWorkflow->update(['status' => 'pending']);
 
-
                 Notification::create([
-                    'user_id' => $nextWorkflow->user_id,
-                    'message' => "Ваша очередь подписать документ: \"{$document->title}\"",
-                    'type' => 'document',
-                    'is_read' => false,
+                    'user_id'         => $nextWorkflow->user_id,
+                    'type'            => 'assigned',
+                    'message'         => "Ваша очередь подписать документ",
+                    'is_read'         => false,
+                    'notifiable_type' => User::class,
+                    'notifiable_id'   => $nextWorkflow->user_id,
+                    'data' => [
+                        'type'           => 'assigned',
+                        'user'           => $signer->name,
+                        'document_title' => $document->title,
+                    ],
                 ]);
             } else {
-
                 $document->update(['status' => 'approved']);
             }
         }
 
-        return redirect()->route('signatures.index')->with('success', 'Документ подписан, уведомления отправлены!');
+        return redirect()->route('signatures.index')->with('success', 'Документ успешно подписан!');
     }
 
-
+    /**
+     * ОБНОВЛЕНИЕ ПОДПИСИ
+     */
     public function update(Request $request, DocumentSignature $signature)
     {
+        // Проверка прав доступа (Security Check)
+        if (!Auth::user()->is_admin && $signature->user_id !== Auth::id()) {
+            abort(403, 'У вас нет прав на редактирование этой подписи.');
+        }
+
         $request->validate(['signature' => 'required|string']);
 
-        $signature->update(['signature' => $request->signature]);
+        $signature->update([
+            'signature' => $request->signature,
+            'signed_at' => now(),
+        ]);
 
         DocumentLog::create([
             'document_id' => $signature->document_id,
-            'user_id' => Auth::id(),
-            'action' => 'updated',
+            'user_id'     => Auth::id(),
+            'action'      => 'updated',
             'description' => 'Графическая подпись была обновлена',
         ]);
 
         return redirect()->route('signatures.index')->with('success', 'Подпись обновлена');
     }
-
 
     public function show(DocumentSignature $signature)
     {
@@ -145,17 +171,32 @@ class DocumentSignatureController extends Controller
         return view('signatures.show', compact('signature'));
     }
 
+    public function edit(DocumentSignature $signature)
+    {
+        // Проверка прав доступа
+        if (!Auth::user()->is_admin && $signature->user_id !== Auth::id()) {
+            abort(403);
+        }
+
+        $documents = Document::all();
+        return view('signatures.edit', compact('signature', 'documents'));
+    }
 
     public function destroy(DocumentSignature $signature)
     {
+        // Проверка прав доступа
+        if (!Auth::user()->is_admin && $signature->user_id !== Auth::id()) {
+            abort(403);
+        }
+
         DocumentLog::create([
             'document_id' => $signature->document_id,
-            'user_id' => Auth::id(),
-            'action' => 'deleted',
-            'description' => 'Подпись удалена из системы',
+            'user_id'     => Auth::id(),
+            'action'      => 'deleted',
+            'description' => 'Запись о подписи удалена из системы',
         ]);
 
         $signature->delete();
-        return back()->with('success', 'Запись о подписи удалена');
+        return back()->with('success', 'Запись удалена');
     }
 }

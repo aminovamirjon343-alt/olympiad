@@ -6,238 +6,273 @@ use App\Models\Document;
 use App\Models\DocumentComment;
 use App\Models\DocumentLog;
 use App\Models\DocumentSignature;
+use App\Models\Notification;
 use App\Models\User;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Auth;
-use App\Notifications\DocumentAssigned;
-use App\Notifications\DocumentStatusChanged;
+use setasign\Fpdi\Tcpdf\Fpdi;
 
 class DocumentController extends Controller
 {
+    /**
+     * Скачивание PDF версии (генерация из Blade)
+     */
+    public function downloadPdf($id)
+    {
+        $document = Document::with(['createdBy', 'receiver', 'signatures'])->findOrFail($id);
+        $pdf = Pdf::loadView('pdf.document', compact('document'));
+        return $pdf->download('document_' . ($document->number ?? $id) . '.pdf');
+    }
+
+    /**
+     * ПРОЦЕСС ПОДПИСАНИЯ: Вшивание Canvas-подписи в существующий PDF
+     */
+    public function sign(Request $request, $id)
+    {
+        $document = Document::findOrFail($id);
+
+        // 1. Получаем base64 подписи
+        $signatureData = $request->input('signature');
+        if (!$signatureData) return back()->with('error', 'Подпись пуста!');
+
+        // 2. Декодируем и сохраняем временную картинку PNG
+        $sigImage = str_replace('data:image/png;base64,', '', $signatureData);
+        $sigImage = str_replace(' ', '+', $sigImage);
+
+        // Создаем папку temp, если её нет
+        if (!Storage::disk('public')->exists('temp')) {
+            Storage::disk('public')->makeDirectory('temp');
+        }
+
+        $sigPath = 'temp/sig_' . time() . '.png';
+        Storage::disk('public')->put($sigPath, base64_decode($sigImage));
+
+        // 3. Пути для FPDI
+        $fullPathToPdf = storage_path('app/public/' . $document->file_path);
+        $fullPathToSig = storage_path('app/public/' . $sigPath);
+
+        if (!file_exists($fullPathToPdf)) {
+            return back()->with('error', 'Оригинальный файл PDF не найден!');
+        }
+
+        try {
+            // 4. Генерируем подписанный контент
+            $pdfContent = $this->generateSignedPdf($fullPathToPdf, $fullPathToSig);
+
+            // 5. Перезаписываем оригинальный файл
+            Storage::disk('public')->put($document->file_path, $pdfContent);
+
+            // 6. Обновляем статус в БД
+            DocumentSignature::where('document_id', $id)
+                ->where('user_id', Auth::id())
+                ->update([
+                    'signature' => $signatureData,
+                    'signed_at' => now()
+                ]);
+
+            // Логируем
+            DocumentLog::create([
+                'document_id' => $id,
+                'user_id' => Auth::id(),
+                'action' => 'signed',
+                'description' => 'Документ физически подписан (подпись вшита в PDF)',
+            ]);
+
+        } catch (\Exception $e) {
+            return back()->with('error', 'Ошибка при обработке PDF: ' . $e->getMessage());
+        } finally {
+            // Чистим временную картинку в любом случае
+            if (Storage::disk('public')->exists($sigPath)) {
+                Storage::disk('public')->delete($sigPath);
+            }
+        }
+
+        return redirect()->route('documents.show', $id)->with('success', 'Документ успешно подписан и обновлен!');
+    }
+
+    /**
+     * Статистика для Dashboard
+     */
+    public function getStats()
+    {
+        $totalDocs = Document::visibleToAuth()->count();
+        $previousDocsCount = Document::visibleToAuth()
+            ->where('created_at', '<', now()->startOfMonth())
+            ->count();
+
+        $docsGrowth = $previousDocsCount > 0
+            ? round((($totalDocs - $previousDocsCount) / $previousDocsCount) * 100, 1)
+            : ($totalDocs > 0 ? 100 : 0);
+
+        return view('dashboard', compact('totalDocs', 'docsGrowth'));
+    }
+
+    /**
+     * Список документов с фильтрами
+     */
     public function index(Request $request)
     {
-        $query = Document::with(['createdBy', 'receiver']);
+        $user = Auth::user();
 
-        // 🔍 УМНЫЙ ПОИСК
+        // Используем наш Scope, который мы прописали в модели
+        $query = Document::visibleToAuth()->with(['user', 'receiver', 'signatures']);
+
+        // 1. Поиск (Search)
         if ($request->filled('search')) {
             $search = $request->search;
-
             $query->where(function($q) use ($search) {
                 $q->where('title', 'LIKE', "%{$search}%")
-                    ->orWhere('content', 'LIKE', "%{$search}%")
-                    ->orWhere('id', 'LIKE', "%{$search}%");
-            })
-                /**
-                 * Сортировка по релевантности:
-                 * 1. Сначала те, у кого заголовок начинается на запрос (Ам -> Амир)
-                 * 2. Потом те, где запрос есть в середине заголовка
-                 * 3. Потом всё остальное
-                 */
-                ->orderByRaw("CASE
-            WHEN title LIKE ? THEN 1
-            WHEN title LIKE ? THEN 2
-            ELSE 3
-            END", ["{$search}%", "%{$search}%"]);
-        } else {
-            // Если поиска нет, показываем последние документы
-            $query->latest();
+                    ->orWhere('number', 'LIKE', "%{$search}%");
+            });
         }
 
-        // 📥 Incoming (Входящие)
+        // 2. Фильтр Входящие / Исходящие
         if ($request->type === 'incoming') {
-            $query->where('receiver_id', auth()->id());
+            $query->where('receiver_id', $user->id);
+        } elseif ($request->type === 'outgoing') {
+            $query->where('created_by', $user->id);
         }
 
-        // 📤 Outgoing (Исходящие)
-        if ($request->type === 'outgoing') {
-            $query->where('created_by', auth()->id());
+        // 3. СТРОГИЙ ФИЛЬТР ПО СТАТУСУ (Исправляем тут)
+        if ($request->filled('status')) {
+            $status = $request->status;
+
+            if ($status === 'waiting') {
+                // Ожидающие: статус active + нет подписи
+                $query->where('status', Document::STATUS_ACTIVE)
+                    ->whereDoesntHave('signatures', function($sq) {
+                        $sq->whereNotNull('signature')->where('signature', '!=', '');
+                    });
+            } elseif ($status === 'signed') {
+                // Подписанные: статус active + есть подпись
+                $query->where('status', Document::STATUS_ACTIVE)
+                    ->whereHas('signatures', function($q) {
+                        $q->whereNotNull('signature')->where('signature', '!=', '');
+                    });
+            } else {
+                // Для draft или rejected используем прямое сравнение
+                $query->where('status', $status);
+            }
         }
 
-        // ✍️ Signed (Подписанные)
-        if ($request->type === 'signed') {
-            $query->where('status', 'signed');
-        }
+        $documents = $query->latest()->paginate(10)->withQueryString();
 
-        // Пагинация с сохранением всех фильтров и поиска в ссылках
-        $documents = $query->paginate(10)->withQueryString();
+        // Счётчики для плиток (чтобы цифры в меню были правильные)
+        $totalDocs = Document::visibleToAuth()->count();
+        $activeCount = Document::visibleToAuth()->where('status', 'active')->count();
+        $draftCount = Document::visibleToAuth()->where('status', 'draft')->count();
+        $usersCount = User::count();
 
-        return view('document.index', compact('documents'));
+        return view('document.index', compact(
+            'documents', 'totalDocs', 'activeCount', 'draftCount', 'usersCount'
+        ));
     }
 
     public function create()
     {
-        return view('document.create', [
-            'users' => User::all()
-        ]);
+        return view('document.create', ['users' => User::all()]);
     }
 
+    /**
+     * Создание нового документа
+     */
     public function store(Request $request)
     {
         $request->validate([
             'title'          => 'required|string|max:255',
-            'content'        => 'nullable|string',
-            'type'           => 'required|string',
-            'status'         => 'required|in:active,pending,approved,rejected,draft',
-            'deadline'       => 'nullable|date',
+            'status'         => 'required|in:draft,active',
             'receiver_email' => 'required|email',
-            'file_path'      => 'nullable|file|mimes:pdf,doc,docx|max:10240',
+            'file_path'      => 'nullable|file|mimes:pdf|max:10240',
         ]);
 
-        // 🔥 НАЙТИ ПОЛУЧАТЕЛЯ
         $receiver = User::where('email', $request->receiver_email)->first();
-
         if (!$receiver) {
-            return back()->withErrors([
-                'receiver_email' => 'Пользователь не найден'
-            ]);
+            return back()->withErrors(['receiver_email' => 'Пользователь не найден!'])->withInput();
         }
 
-        // 📁 файл
         $filePath = $request->file('file_path')
             ? $request->file('file_path')->store('documents', 'public')
             : null;
 
-        // 📄 СОЗДАНИЕ ДОКУМЕНТА
         $document = Document::create([
+            'number'      => $request->number,
             'title'       => $request->title,
             'content'     => $request->content,
-            'type'        => $request->type,
+            'type'        => $request->type ?? 'document',
             'status'      => $request->status,
             'file_path'   => $filePath,
-
-            // 🔥 ВАЖНО
             'created_by'  => Auth::id(),
             'receiver_id' => $receiver->id,
-
             'deadline'    => $request->deadline,
         ]);
 
-        // 🧾 LOG
-        DocumentLog::create([
-            'document_id' => $document->id,
-            'user_id'     => Auth::id(),
-            'action'      => 'created',
-            'description' => 'Документ отправлен',
-        ]);
-        DocumentSignature::create([
-            'document_id' => $document->id,
-            'user_id'     => $receiver->id,
-            'status'      => 'pending',
+        if ($request->status === 'active') {
+            DocumentSignature::create([
+                'document_id' => $document->id,
+                'user_id'     => $receiver->id,
+                'signature'   => '',
+            ]);
 
-            'signature'   => null,
-        ]);
+            Notification::create([
+                'user_id' => $receiver->id,
+                'type' => 'assigned',
+                'message' => 'Новый документ на подпись: ' . $document->title,
+                'data' => ['document_id' => $document->id],
+                'notifiable_type' => User::class,
+                'notifiable_id' => $receiver->id,
+            ]);
+        }
 
-        // 🔔 NOTIFICATION
-        $receiver->notify(new DocumentAssigned($document));
-
-        return redirect()->route('documents.index')
-            ->with('success', 'Документ успешно отправлен');
+        return redirect()->route('documents.index')->with('success', 'Документ создан!');
     }
 
     public function show($id)
     {
-        $document = Document::with(['createdBy', 'receiver'])->findOrFail($id);
+        $document = Document::visibleToAuth()
+            ->with(['createdBy', 'receiver', 'logs', 'signatures.user'])
+            ->findOrFail($id);
 
-        $comments = DocumentComment::with('user')
-            ->where('document_id', $id)
-            ->latest()
-            ->get();
+        $comments = DocumentComment::with('user')->where('document_id', $id)->latest()->get();
 
         return view('document.show', compact('document', 'comments'));
     }
 
-    public function edit(Document $document)
-    {
-        return view('document.edit', [
-            'document' => $document,
-            'users' => User::all()
-        ]);
-    }
-
+    /**
+     * Обновление и перевод из черновика в активные
+     */
     public function update(Request $request, Document $document)
     {
-        $request->validate([
-            'title'  => 'required|string|max:255',
-            'status' => 'required',
-        ]);
+        if ($document->created_by !== Auth::id()) abort(403);
 
         $oldStatus = $document->status;
+        $document->update($request->only(['number', 'title', 'content', 'status', 'deadline']));
 
-        // 🔥 сохраняем старый файл (для версии)
-        $oldFile = $document->file_path;
-
-        if ($request->hasFile('file_path')) {
-            if ($document->file_path) {
-                Storage::disk('public')->delete($document->file_path);
-            }
-
-            $document->file_path = $request->file('file_path')
-                ->store('documents', 'public');
-        }
-
-        $document->update($request->only([
-            'title',
-            'content',
-            'status',
-            'deadline'
-        ]));
-
-        // 🔥 1. создаём версию (ВАЖНО)
-        $lastVersion = \App\Models\DocumentVersion::where('document_id', $document->id)
-            ->max('version');
-
-        \App\Models\DocumentVersion::create([
-            'document_id'    => $document->id,
-            'user_id'        => auth()->id(),
-            'version'        => $lastVersion ? $lastVersion + 1 : 1,
-            'file_path'      => $document->file_path ?? $oldFile,
-            'original_name'  => $request->file('file_path')
-                ? $request->file('file_path')->getClientOriginalName()
-                : null,
-            'extension'      => $request->file('file_path')
-                ? $request->file('file_path')->getClientOriginalExtension()
-                : null,
-            'file_size'      => $request->file('file_path')
-                ? $request->file('file_path')->getSize()
-                : null,
-            'change_summary' => "Документ обновлён (title/status/content)",
-        ]);
-
-        // 🔥 лог
-        DocumentLog::create([
-            'document_id' => $document->id,
-            'user_id'     => Auth::id(),
-            'action'      => 'updated',
-            'description' => "Статус изменён на {$request->status}",
-        ]);
-
-        // уведомление
-        if ($oldStatus !== $request->status) {
-            $document->receiver?->notify(
-                new DocumentStatusChanged($document, $request->status)
+        if ($oldStatus === 'draft' && $request->status === 'active') {
+            DocumentSignature::updateOrCreate(
+                ['document_id' => $document->id, 'user_id' => $document->receiver_id],
+                ['signature' => '']
             );
         }
 
-        return redirect()->route('documents.index')
-            ->with('success', 'Документ обновлён');
+        return redirect()->route('documents.index')->with('success', 'Документ обновлен!');
     }
 
     public function destroy(Document $document)
     {
-        DocumentLog::create([
-            'document_id' => $document->id,
-            'user_id'     => Auth::id(),
-            'action'      => 'deleted',
-            'description' => 'Документ удалён',
-        ]);
+        // Разрешаем, если пользователь автор ИЛИ он админ
+        if ($document->created_by !== Auth::id() && !Auth::user()->is_admin) {
+            abort(403, 'У вас нет прав на удаление этого документа');
+        }
 
         if ($document->file_path) {
             Storage::disk('public')->delete($document->file_path);
         }
 
         $document->delete();
-
-        return back()->with('success', 'Документ удалён');
+        return back()->with('success', 'Документ удален!');
     }
+
+
 }

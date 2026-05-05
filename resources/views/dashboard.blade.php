@@ -14,12 +14,14 @@
 
         <div class="row g-3 mb-4">
             <div class="col-6 col-lg-3">
-                <div class="stat-card">
+                <div class="stat-card" style="border: 1px solid #dee2e6; border-radius: 12px; padding: 15px;">
                     <div class="d-flex justify-content-between align-items-start mb-3">
                         <div class="stat-icon" style="background:#ede9fe;color:var(--primary);">
                             <i class="bi bi-folder2"></i>
                         </div>
-                        <span class="badge bg-success-subtle text-success">+12%</span>
+                        <span class="badge {{ $docsGrowth >= 0 ? 'bg-success-subtle text-success' : 'bg-danger-subtle text-danger' }}">
+                    {{ $docsGrowth >= 0 ? '+' : '' }}{{ $docsGrowth }}%
+                </span>
                     </div>
 
                     <div class="fw-bold fs-4">
@@ -31,23 +33,29 @@
                     </div>
                 </div>
             </div>
+
             <div class="col-6 col-lg-3">
-                <div class="stat-card">
+                <div class="stat-card" style="border: 1px solid #dee2e6; border-radius: 12px; padding: 15px;">
                     <div class="d-flex justify-content-between align-items-start mb-3">
                         <div class="stat-icon" style="background:#fef3c7;color:#d97706;"><i class="bi bi-clock-history"></i></div>
-                        <span class="badge bg-warning-subtle text-warning">+5%</span>
+                        <span class="badge bg-warning-subtle text-warning">Wait</span>
                     </div>
-                    <div class="fw-bold fs-4">42</div>
+                    <div class="fw-bold fs-4">
+                        {{ $stats['pending'] }}
+                    </div>
                     <div class="text-muted" style="font-size:13px;" data-i18n="pendingReview">Pending Review</div>
                 </div>
             </div>
+
             <div class="col-6 col-lg-3">
-                <div class="stat-card">
+                <div class="stat-card" style="border: 1px solid #dee2e6; border-radius: 12px; padding: 15px;">
                     <div class="d-flex justify-content-between align-items-start mb-3">
                         <div class="stat-icon" style="background:#dcfce7;color:#16a34a;">
                             <i class="bi bi-pen"></i>
                         </div>
-                        <span class="badge bg-success-subtle text-success">+8%</span>
+                        <span class="badge {{ $signedGrowth >= 0 ? 'bg-success-subtle text-success' : 'bg-danger-subtle text-danger' }}">
+                    {{ $signedGrowth >= 0 ? '+' : '' }}{{ $signedGrowth }}%
+                </span>
                     </div>
 
                     <div class="fw-bold fs-4">
@@ -59,13 +67,14 @@
                     </div>
                 </div>
             </div>
+
             <div class="col-6 col-lg-3">
-                <div class="stat-card">
+                <div class="stat-card" style="border: 1px solid #dee2e6; border-radius: 12px; padding: 15px;">
                     <div class="d-flex justify-content-between align-items-start mb-3">
                         <div class="stat-icon" style="background:#dbeafe;color:#2563eb;">
                             <i class="bi bi-people"></i>
                         </div>
-                        <span class="badge bg-info-subtle text-info">+3</span>
+                        <span class="badge bg-info-subtle text-info">Users</span>
                     </div>
 
                     <div class="fw-bold fs-4">
@@ -140,10 +149,10 @@
                             </thead>
 
                             <tbody>
-                            @foreach($documents as $doc)
+                            @foreach($documents as $index =>$doc)
                                 <tr style="font-size:14px; background-color: #fff !important;">
                                     <td style="padding:14px 12px;">
-                                        <span class="fw-semibold">#{{ $doc->id }}</span>
+                                        <span class="fw-semibold">#{{ $index + 1 }}</span>
                                     </td>
 
                                     <td style="padding:14px 12px;">

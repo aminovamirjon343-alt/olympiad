@@ -1255,7 +1255,6 @@
 
                 <form action="{{ route('documents.index') }}" method="GET" class="flex items-center gap-2">
                     <div class="relative flex items-center">
-                        {{-- Инпут с подсказками --}}
                         <input type="text"
                                name="search"
                                id="search-input"
@@ -1265,7 +1264,6 @@
                                placeholder="Search..."
                                autocomplete="off">
 
-                        {{-- Список подсказок --}}
                         <datalist id="documents-list">
                             @foreach($documents as $doc)
                                 <option value="{{ $doc->title }}">
@@ -1297,16 +1295,28 @@
                     </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-100">
-                    {{-- Используем forelse для проверки на пустоту --}}
                     @forelse($documents as $index=>$doc)
                         <tr class="group hover:bg-slate-50 transition-all">
-                            <td class="px-4 py-2 text-[10px] text-black font-normal italic">#{{ $index + 1 }}</td>
+                            <td class="px-4 py-2 text-[10px] text-black font-normal italic">#{{ ($documents->currentPage() - 1) * $documents->perPage() + $index + 1 }}</td>
 
                             <td class="px-4 py-2">
                                 <div class="flex flex-col">
-                                    <span class="text-[11px] font-medium text-black uppercase tracking-wider">
-                                        {{ Str::limit($doc->title, 45) }}
-                                    </span>
+                                    <div class="flex items-center gap-2">
+                                        <span class="text-[11px] font-medium text-black uppercase tracking-wider">
+                                            {{ Str::limit($doc->title, 45) }}
+                                        </span>
+                                        <span class="text-[10px] font-bold text-blue-600 italic">
+                                            №{{ $doc->number ?? $doc->id }}
+                                        </span>
+                                    </div>
+
+                                    {{-- Показываем автора только для Админа --}}
+                                    @if(auth()->user()->is_admin)
+                                        <span class="text-[8px] font-bold text-slate-400 uppercase tracking-tighter">
+                                            By: {{ $doc->createdBy->name ?? 'System' }}
+                                        </span>
+                                    @endif
+
                                     <span class="text-[9px] text-black font-normal opacity-80 mt-0.5">
                                         {{ Str::limit($doc->content, 40) ?: 'No description' }}
                                     </span>
@@ -1315,92 +1325,51 @@
 
                             <td class="px-4 py-2 text-center">
                                 <span class="text-[10px] font-normal text-black italic">
-                                    {{ $doc->deadline ? \Carbon\Carbon::parse($doc->deadline)->format('d.m.Y') : '—' }}
+                                    {{ $doc->deadline ? $doc->deadline->format('d.m.Y') : '—' }}
                                 </span>
+                            </td>
                             <td class="px-4 py-2 text-center">
                                 @php
                                     $status = strtolower($doc->status);
-
-                                    // Определяем цвета вручную (Фон, Текст, Рамка)
                                     $colors = match($status) {
-                                        'pending' => [
-                                            'bg' => '#fff7ed',
-                                            'text' => '#ea580c',
-                                            'border' => '#fdba74'
-                                        ],
-                                        'draft' => [
-                                            'bg' => '#f1f5f9',
-                                            'text' => '#475569',
-                                            'border' => '#cbd5e1'
-                                        ],
-                                        'active', 'approved' => [
-                                            'bg' => '#eff6ff',
-                                            'text' => '#1d4ed8',
-                                            'border' => '#93c5fd'
-                                        ],
-                                        'rejected' => [
-                                            'bg' => '#fef2f2',
-                                            'text' => '#dc2626',
-                                            'border' => '#fecaca'
-                                        ],
-                                        default => [
-                                            'bg' => '#f8fafc',
-                                            'text' => '#64748b',
-                                            'border' => '#e2e8f0'
-                                        ],
+                                        'draft' => ['bg' => '#f1f5f9', 'text' => '#475569', 'border' => '#cbd5e1'],
+                                        'active', 'approved' => ['bg' => '#eff6ff', 'text' => '#1d4ed8', 'border' => '#93c5fd'],
+                                        'rejected' => ['bg' => '#fef2f2', 'text' => '#dc2626', 'border' => '#fecaca'],
+                                        default => ['bg' => '#fff7ed', 'text' => '#ea580c', 'border' => '#fdba74'],
                                     };
                                 @endphp
 
-                                <span style="
-        display: inline-flex !important;
-        align-items: center !important;
-        justify-content: center !important;
-        background-color: {{ $colors['bg'] }} !important;
-        color: {{ $colors['text'] }} !important;
-        border: 1px solid {{ $colors['border'] }} !important;
-        padding: 4px 12px !important;
-        border-radius: 6px !important;
-        font-weight: 800 !important;
-        font-size: 9px !important;
-        text-transform: uppercase !important;
-        letter-spacing: 0.5px !important;
-        min-width: 90px !important;
-    ">
-        {{ $doc->status }}
-    </span>
+                                <span style="display: inline-flex; align-items: center; justify-content: center; background-color: {{ $colors['bg'] }}; color: {{ $colors['text'] }}; border: 1px solid {{ $colors['border'] }}; padding: 4px 12px; border-radius: 6px; font-weight: 800; font-size: 9px; text-transform: uppercase; letter-spacing: 0.5px; min-width: 90px;">
+                                    {{ $doc->status_label }} {{-- Используем аксессор из модели --}}
+                                </span>
                             </td>
 
                             <td class="px-4 py-2 text-right">
                                 <div class="flex justify-end gap-3 text-black opacity-40 group-hover:opacity-100 transition-opacity">
-                                    <a href="{{ route('documents.show', $doc->id) }}"><i class="bi bi-eye text-[11px]"></i></a>
-                                    <a href="{{ route('documents.edit', $doc->id) }}"><i class="bi bi-pencil-square text-[11px]"></i></a>
-                                    <form action="{{ route('documents.destroy', $doc->id) }}" method="POST" class="inline" onsubmit="return confirm('Удалить?')">
-                                        @csrf @method('DELETE')
-                                        <button type="submit"><i class="bi bi-trash3 text-[11px] text-red-500"></i></button>
-                                    </form>
+                                    <a href="{{ route('documents.show', $doc->id) }}" title="View"><i class="bi bi-eye text-[11px]"></i></a>
+
+                                    {{-- Проверка прав через canManage() из модели --}}
+                                    @if($doc->canManage())
+                                        <a href="{{ route('documents.edit', $doc->id) }}" title="Edit"><i class="bi bi-pencil-square text-[11px]"></i></a>
+
+                                        <form action="{{ route('documents.destroy', $doc->id) }}" method="POST" class="inline" onsubmit="return confirm('Удалить?')">
+                                            @csrf @method('DELETE')
+                                            <button type="submit" title="Delete"><i class="bi bi-trash3 text-[11px] text-red-500"></i></button>
+                                        </form>
+                                    @endif
                                 </div>
                             </td>
                         </tr>
                     @empty
-                        {{-- Блок, который покажется, если документов нет --}}
                         <tr>
                             <td colspan="5" class="py-16 text-center">
                                 <div class="flex flex-col items-center justify-center">
-                                    <div class="w-12 h-12 rounded-full flex items-center justify-center mb-3"
-                                         style="background-color: #f1f5f9 !important; border: 1px solid #e2e8f0 !important;">
-                                        <i class="bi bi-search text-xl"
-                                           style="color: #000000 !important; opacity: 0.3 !important;"></i>
+                                    <div class="w-12 h-12 rounded-full flex items-center justify-center mb-3" style="background-color: #f1f5f9; border: 1px solid #e2e8f0;">
+                                        <i class="bi bi-search text-xl text-black opacity-30"></i>
                                     </div>
-                                    <p class="text-[11px] font-bold uppercase tracking-widest"
-                                       style="color: #000000 !important; opacity: 1 !important;">
-                                        Документ не найден
-                                    </p>
-
-                                    <p class="text-[9px] mt-1 mb-4 uppercase"
-                                       style="color: #000000 !important; opacity: 0.7 !important;">
-                                        Попробуйте изменить запрос
-                                    </p> <a href="{{ route('documents.index') }}"
-                                       class="px-3 py-1 bg-slate-100 hover:bg-blue-600 hover:text-white text-slate-600 text-[9px] font-bold uppercase rounded transition-all">
+                                    <p class="text-[11px] font-bold uppercase tracking-widest text-black">Документ не найден</p>
+                                    <p class="text-[9px] mt-1 mb-4 uppercase text-black opacity-70">Попробуйте изменить запрос</p>
+                                    <a href="{{ route('documents.index') }}" class="px-3 py-1 bg-slate-100 hover:bg-blue-600 hover:text-white text-slate-600 text-[9px] font-bold uppercase rounded transition-all">
                                         Сбросить поиск
                                     </a>
                                 </div>
@@ -1411,68 +1380,9 @@
                 </table>
             </div>
 
-            {{-- Пагинация --}}
             <div class="mt-4">
                 {{ $documents->links() }}
             </div>
         </div>
     </div>
 @endsection
-
-@push('styles')
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
-    <style>
-        /* ... твои остальные стили ... */
-
-        /* БАЗОВЫЙ СТИЛЬ ДЛЯ ВСЕХ СТАТУСОВ */
-        .st-pill {
-            display: inline-flex !important;
-            align-items: center !important;
-            justify-content: center !important;
-            padding: 4px 12px !important;
-            border-radius: 50px !important; /* Делаем овальными, так красивее */
-            font-size: 9px !important;
-            font-weight: 800 !important;
-            text-transform: uppercase !important;
-            letter-spacing: 0.5px !important;
-            min-width: 90px !important;
-            border: 1px solid !important;
-        }
-
-        /* ОТДЕЛЬНЫЕ ЦВЕТА ДЛЯ КАЖДОГО СТАТУСА */
-        .st-pill-pending {
-            background-color: #fff7ed !important;
-            color: #ea580c !important;
-            border-color: #fdba74 !important;
-        }
-
-        .st-pill-draft {
-            background-color: #f8fafc !important;
-            color: #475569 !important;
-            border-color: #cbd5e1 !important;
-        }
-
-        .st-pill-active {
-            background-color: #eff6ff !important;
-            color: #1d4ed8 !important;
-            border-color: #93c5fd !important;
-        }
-
-        .st-pill-rejected {
-            background-color: #fef2f2 !important;
-            color: #dc2626 !important;
-            border-color: #fecaca !important;
-        }
-    </style>
-    <script>
-        document.getElementById('search-input').addEventListener('input', function() {
-            // Если введено больше 1 символа, отправляем форму автоматически через полсекунды
-            clearTimeout(this.delay);
-            this.delay = setTimeout(() => {
-                if (this.value.length >= 1 || this.value.length == 0) {
-                    this.form.submit();
-                }
-            }, 500); // 500ms пауза, чтобы юзер успел допечатать
-        });
-    </script>
-@endpush

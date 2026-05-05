@@ -2,103 +2,107 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Document;
-use App\Models\DocumentLog;
-use App\Models\User;
-use Illuminate\Http\Request;
+use App\Models\{Document, DocumentLog, User};
+use App\Http\Requests\DocumentLog\{StoreRequest, UpdateRequest};
+use Illuminate\Http\RedirectResponse;
+use Illuminate\View\View;
 
 class DocumentLogController extends Controller
 {
+    /**
+     * Отображение списка логов с жадной загрузкой связей.
+     */
     public function index()
     {
-        $logs = DocumentLog::with(['document', 'user'])
-            ->latest()
-            ->paginate(15);
+        $query = DocumentLog::with(['document', 'user']);
 
+        // Если пользователь НЕ админ, показываем только его логи
+        if (!auth()->user()->is_admin) {
+            $query->where('user_id', auth()->id());
+        }
+
+        $logs = $query->latest()->paginate(15);
         return view('logs.index', compact('logs'));
     }
 
-
-    public function create()
+    /**
+     * Форма создания. Данные для списков берем компактно.
+     */
+    public function create(): View
     {
-        $documents = Document::all();
-        $users = User::all();
+        // Используем pluck, чтобы не тянуть лишние данные из БД
+        $documents = Document::pluck('title', 'id');
+        $users = User::pluck('name', 'id');
 
         return view('logs.create', compact('documents', 'users'));
     }
 
-    public function store(Request $request)
+    /**
+     * Сохранение новой записи.
+     */
+    public function store(StoreRequest $request): RedirectResponse
     {
-        $request->validate([
-            'document_id' => 'required|exists:documents,id',
-            'user_id' => 'nullable|exists:users,id',
-            'action' => 'required|string|max:255',
-            'description' => 'nullable|string',
-        ]);
+        DocumentLog::create($request->validated());
 
-        DocumentLog::create([
-            'document_id' => $request->document_id,
-            'user_id' => $request->user_id,
-            'action' => $request->action,
-            'description' => $request->description,
-        ]);
-
-        return redirect()->route('logs.index')
-            ->with('success', 'Лог создан');
+        return redirect()
+            ->route('logs.index')
+            ->with('success', 'Запись в журнале успешно создана');
     }
 
-
-    public function show(DocumentLog $log)
+    /**
+     * Просмотр конкретного лога.
+     */
+    public function show(DocumentLog $log): View
     {
         $log->load(['document', 'user']);
 
         return view('logs.show', compact('log'));
     }
 
-
-    public function edit(DocumentLog $log)
+    /**
+     * Форма редактирования.
+     */
+    public function edit(DocumentLog $log): View
     {
-        $documents = Document::all();
-        $users = User::all();
+        $documents = Document::pluck('title', 'id');
+        $users = User::pluck('name', 'id');
 
         return view('logs.edit', compact('log', 'documents', 'users'));
     }
 
-
-    public function update(Request $request, DocumentLog $log)
+    /**
+     * Обновление записи.
+     */
+    public function update(UpdateRequest $request, DocumentLog $log): RedirectResponse
     {
-        $request->validate([
-            'document_id' => 'required|exists:documents,id',
-            'user_id' => 'nullable|exists:users,id',
-            'action' => 'required|string|max:255',
-            'description' => 'nullable',
-        ]);
+        $log->update($request->validated());
 
-        $log->update([
-            'document_id' => $request->document_id,
-            'user_id' => $request->user_id,
-            'action' => $request->action,
-            'description' => $request->description,
-        ]);
-
-        return redirect()->route('logs.index')
-            ->with('success', 'Лог обновлен');
+        return redirect()
+            ->route('logs.index')
+            ->with('success', 'Запись журнала обновлена');
     }
 
-
-    public function destroy(DocumentLog $log)
+    /**
+     * Удаление записи.
+     */
+    public function destroy(DocumentLog $log): RedirectResponse
     {
         $log->delete();
 
-        return back()->with('success', 'Лог удален');
+        return back()->with('success', 'Запись удалена');
     }
 
-
-    public function documentLogs($documentId)
+    /**
+     * Логи конкретного документа через Route Model Binding.
+     */
+    public function documentLogs(Document $document): View
     {
-        $document = Document::with(['logs.user'])
-            ->findOrFail($documentId);
+        // Загружаем логи только для этого документа
+        $logs = $document->logs()
+            ->with('user:id,name')
+            ->latest()
+            ->paginate(15);
 
-        return view('logs.document', compact('document'));
+        return view('logs.document', compact('document', 'logs'));
     }
 }

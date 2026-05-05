@@ -13,30 +13,25 @@ return new class extends Migration
     {
         Schema::create('documents', function (Blueprint $table) {
             $table->id();
+            // Добавляем поле для номера документа сразу после ID
+            $table->string('number')->nullable()->comment('Официальный номер документа');
+
             $table->string('title');
             $table->text('content')->nullable();
             $table->string('file_path')->nullable();
             $table->string('type');
-            $table->string('status')->default('draft');
+            $table->string('status')->default('active')->index();
 
-            $table->foreignId('created_by')
-                ->constrained('users')
-                ->cascadeOnDelete();
-
-            // 💣 FIX HERE
-            $table->foreignId('receiver_id')
-                ->nullable()
-                ->constrained('users')
-                ->nullOnDelete();
+            $table->foreignId('created_by')->constrained('users')->cascadeOnDelete();
+            $table->foreignId('receiver_id')->nullable()->constrained('users')->nullOnDelete();
 
             $table->timestamp('deadline')->nullable();
+
+            $table->softDeletes();
             $table->timestamps();
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('documents');

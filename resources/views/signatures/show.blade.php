@@ -7,10 +7,8 @@
                 --primary-color: var(--primary, #6366f1);
             }
 
-            /* Заголовок страницы подстраивается под тему админки */
             .theme-text { color: var(--text-main, currentColor); }
 
-            /* Карточка-сертификат: всегда белая, как документ */
             .cert-card {
                 background: #ffffff !important;
                 border-radius: 3rem;
@@ -19,7 +17,6 @@
                 overflow: hidden;
             }
 
-            /* Тексты внутри сертификата — всегда темные */
             .cert-card h2, .cert-card p:not(.muted-text), .cert-card span:not(.badge) {
                 color: #1e293b !important;
             }
@@ -33,7 +30,6 @@
                 color: #64748b !important;
             }
 
-            /* Фон для области самой подписи */
             .sig-display-area {
                 background-color: #f8fafc !important;
                 border: 1px solid #f1f5f9;
@@ -42,6 +38,16 @@
             .btn-primary-system {
                 background-color: var(--primary-color) !important;
                 color: #ffffff !important;
+            }
+
+            /* Стиль для блока файла */
+            .file-attachment {
+                border: 2px dashed #e2e8f0;
+                transition: all 0.3s ease;
+            }
+            .file-attachment:hover {
+                border-color: var(--primary-color);
+                background-color: #f5f7ff !important;
             }
         </style>
 
@@ -70,7 +76,6 @@
                     </svg>
                 </div>
 
-                {{-- Контент --}}
                 <div class="p-12 md:p-16 relative">
 
                     {{-- Статус и Заголовок --}}
@@ -83,7 +88,7 @@
                     </div>
 
                     {{-- Сетка данных --}}
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-10 mb-12">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-10 mb-8">
                         <div class="space-y-1">
                             <label class="text-[10px] font-black uppercase tracking-widest">Документ</label>
                             <p class="text-lg font-bold leading-tight">
@@ -114,6 +119,31 @@
                                 ПОДЛИННО
                             </div>
                         </div>
+                    </div>
+
+                    {{-- НОВЫЙ БЛОК: Прикрепленный файл --}}
+                    <div class="mb-12">
+                        <label class="text-[10px] font-black uppercase tracking-widest mb-3 block">Оригинал файла</label>
+                        @if($signature->document && $signature->document->file_path)
+                            <div class="file-attachment p-4 rounded-2xl flex items-center justify-between bg-slate-50/50">
+                                <div class="flex items-center gap-4">
+                                    <div class="w-12 h-12 bg-white rounded-xl flex items-center justify-center text-indigo-500 shadow-sm border border-gray-100">
+                                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+                                    </div>
+                                    <div class="overflow-hidden">
+                                        <p class="text-sm font-bold truncate max-w-[200px] md:max-w-xs">{{ basename($signature->document->file_path) }}</p>
+                                        <p class="text-[10px] muted-text uppercase font-bold">Нажмите, чтобы просмотреть документ</p>
+                                    </div>
+                                </div>
+                                <a href="{{ asset('storage/' . $signature->document->file_path) }}" target="_blank" class="bg-indigo-600 text-white px-4 py-2 rounded-lg font-bold text-[10px] uppercase tracking-wider hover:bg-indigo-700 transition">
+                                    Открыть PDF
+                                </a>
+                            </div>
+                        @else
+                            <div class="p-4 rounded-2xl bg-gray-50 border border-gray-100 text-center">
+                                <p class="text-xs italic text-gray-400 font-medium">Файл документа не найден</p>
+                            </div>
+                        @endif
                     </div>
 
                     {{-- Визуальный блок подписи --}}

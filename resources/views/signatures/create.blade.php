@@ -54,7 +54,7 @@
         </style>
 
         <div class="create-sig-page">
-            {{-- Header --}}
+             Header
             <div class="mb-8">
                 <a href="{{ route('signatures.index') }}" class="font-bold text-xs uppercase tracking-widest hover:underline flex items-center gap-2 mb-2" style="color: var(--primary-color);">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3"><path d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
@@ -74,7 +74,7 @@
                     @csrf
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        {{-- Документ --}}
+                         Документ
                         <div>
                             <label class="block text-[11px] font-bold uppercase tracking-wider mb-2 ml-1">Выберите документ</label>
                             <select name="document_id" class="w-full rounded-xl px-5 py-3 font-semibold outline-none cursor-pointer" required>
@@ -84,7 +84,7 @@
                             </select>
                         </div>
 
-                        {{-- Пользователь --}}
+                         Пользователь
                         <div>
                             <label class="block text-[11px] font-bold uppercase tracking-wider mb-2 ml-1">Сотрудник</label>
                             <select name="user_id" class="w-full rounded-xl px-5 py-3 font-semibold outline-none cursor-pointer" required>
@@ -95,7 +95,7 @@
                         </div>
                     </div>
 
-                    {{-- Зона подписи --}}
+                     Зона подписи
                     <div>
                         <label class="block text-[11px] font-bold uppercase tracking-wider mb-2 ml-1">Ваша подпись</label>
                         <div class="relative pad-container rounded-3xl overflow-hidden group">

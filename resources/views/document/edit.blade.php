@@ -1,134 +1,172 @@
 @extends('layouts.admin')
 
 @section('content')
-    <div class="min-h-[calc(100vh-64px)] bg-[#f8fafc] py-8 px-4 md:px-8 font-inter">
+    <div class="min-h-[calc(100vh-64px)] bg-slate-50 py-10 px-4 md:px-8 font-inter text-slate-900">
 
-        <div class="max-w-3xl mx-auto">
+        <div class="max-w-2xl mx-auto">
 
-            {{-- HEADER --}}
-            <div class="flex items-center justify-between mb-6">
+            {{-- BACK --}}
+            <div class="flex items-center gap-3 mb-6">
                 <a href="{{ route('documents.index') }}"
-                   class="text-[10px] uppercase tracking-[0.2em] font-medium text-black hover:text-blue-600 transition">
-                    ← Back
+                   class="w-11 h-11 flex items-center justify-center rounded-xl bg-white border border-slate-200 shadow-sm hover:bg-black hover:text-white transition">
+                    <i class="bi bi-arrow-left text-base"></i>
                 </a>
 
-                <div class="text-right">
-                    <p class="text-[9px] uppercase tracking-widest text-gray-400">Editor Mode</p>
-                    <p class="text-[10px] font-medium text-black">ID #{{ $document->id }}</p>
+                <div class="text-sm font-medium tracking-widest text-slate-600 uppercase">
+                    Назад к документу
                 </div>
             </div>
 
             {{-- CARD --}}
-            <div class="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
+            <div class="bg-white rounded-3xl border border-slate-200 shadow-xl overflow-hidden">
 
-                {{-- TOP --}}
-                <div class="p-6 border-b border-slate-100">
-                    <h1 class="text-[14px] font-medium uppercase tracking-[0.15em] text-black">
-                        ✏️ Edit Document
-                    </h1>
-                    <p class="text-[10px] text-gray-400 uppercase tracking-widest mt-1">
-                        Update document data
-                    </p>
-                </div>
+                <div class="p-9 md:p-11">
 
-                {{-- FORM --}}
-                <form action="{{ route('documents.update', $document->id) }}"
-                      method="POST"
-                      enctype="multipart/form-data"
-                      class="p-6 space-y-5">
-
-                    @csrf
-                    @method('PUT')
-
-                    {{-- TYPE --}}
-                    <div>
-                        <label class="text-[9px] uppercase tracking-widest text-gray-400">Type</label>
-                        <select name="type"
-                                class="w-full mt-1 px-4 py-2 border border-slate-200 rounded-lg text-black text-[11px] focus:border-blue-500 outline-none">
-                            <option value="УПД" {{ $document->type=='УПД'?'selected':'' }}>УПД</option>
-                            <option value="Договор" {{ $document->type=='Договор'?'selected':'' }}>Договор</option>
-                            <option value="Счёт" {{ $document->type=='Счёт'?'selected':'' }}>Счёт</option>
-                        </select>
+                    {{-- HEADER --}}
+                    <div class="text-center mb-10">
+                        <div class="w-16 h-16 mx-auto bg-black text-white rounded-2xl flex items-center justify-center text-2xl mb-4">
+                            ✏️
+                        </div>
+                        <h1 class="text-3xl font-semibold text-black tracking-tight">
+                            Редактировать
+                        </h1>
+                        <p class="text-[10px] font-[1000] text-black tracking-[0.3em] uppercase mt-2 opacity-70">
+                            Обновление ID #{{ $document->id }}
+                        </p>
                     </div>
 
-                    {{-- TITLE --}}
-                    <div>
-                        <label class="text-[9px] uppercase tracking-widest text-gray-400">Title</label>
-                        <input type="text"
-                               name="title"
-                               value="{{ $document->title }}"
-                               class="w-full mt-1 px-4 py-2 border border-slate-200 rounded-lg text-[11px] text-black focus:border-blue-500 outline-none">
-                    </div>
+                    {{-- ERRORS --}}
+                    @if ($errors->any())
+                        <div class="mb-6 p-4 rounded-2xl border border-red-200 bg-red-50">
+                            @foreach($errors->all() as $error)
+                                <div class="text-sm text-red-600 font-bold uppercase text-[10px]">• {{ $error }}</div>
+                            @endforeach
+                        </div>
+                    @endif
 
-                    {{-- CONTENT --}}
-                    <div>
-                        <label class="text-[9px] uppercase tracking-widest text-gray-400">Content</label>
-                        <textarea name="content"
-                                  rows="4"
-                                  class="w-full mt-1 px-4 py-2 border border-slate-200 rounded-lg text-[11px] text-black focus:border-blue-500 outline-none">{{ $document->content }}</textarea>
-                    </div>
+                    <form action="{{ route('documents.update', $document->id) }}" method="POST" enctype="multipart/form-data" class="space-y-6">
+                        @csrf
+                        @method('PUT')
 
-                    {{-- FILE --}}
-                    <div>
-                        <label class="text-[9px] uppercase tracking-widest text-gray-400">File</label>
-
-                        @if($document->file_path)
-                            <div class="mt-2 p-3 bg-gray-50 border border-slate-100 rounded-lg text-[10px] text-black">
-                                📎 {{ basename($document->file_path) }}
+                        {{-- Number --}}
+                        <div>
+                            <label class="label">🔢 Номер документа</label>
+                            <div class="relative flex items-center">
+                                <span class="absolute left-4 font-bold text-slate-400">№</span>
+                                <input type="text"
+                                       name="number"
+                                       value="{{ $document->number }}"
+                                       class="input font-bold !pl-10"
+                                       placeholder="47-А">
                             </div>
-                        @endif
+                        </div>
 
-                        <input type="file"
-                               name="file_path"
-                               class="mt-2 w-full text-[10px]">
-                    </div>
+                        {{-- ROW: Type & Deadline --}}
+                        <div class="grid md:grid-cols-2 gap-5">
+                            <div>
+                                <label class="label">📌 Тип</label>
+                                <select name="type" class="input font-bold" required>
+                                    <option value="УПД" {{ $document->type == 'УПД' ? 'selected' : '' }}>УПД</option>
+                                    <option value="Договор" {{ $document->type == 'Договор' ? 'selected' : '' }}>Договор</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="label">📅 Дедлайн</label>
+                                <input type="date" name="deadline" value="{{ optional($document->deadline)->format('Y-m-d') }}" class="input font-bold">
+                            </div>
+                        </div>
 
-                    {{-- STATUS --}}
-                    <div>
-                        <label class="text-[9px] uppercase tracking-widest text-gray-400">Status</label>
-                        <select name="status"
-                                class="w-full mt-1 px-4 py-2 border border-slate-200 rounded-lg text-[11px] text-black">
-                            <option value="draft" {{ $document->status=='draft'?'selected':'' }}>Draft</option>
-                            <option value="active" {{ $document->status=='active'?'selected':'' }}>Active</option>
-                            <option value="approved" {{ $document->status=='approved'?'selected':'' }}>Approved</option>
-                            <option value="rejected" {{ $document->status=='rejected'?'selected':'' }}>Rejected</option>
-                        </select>
-                    </div>
-                    <input type="email" name="receiver_email" placeholder="Receiver Email" required class="w-full mb-1 p-2 border">
+                        {{-- Title --}}
+                        <div>
+                            <label class="label">✏️ Заголовок</label>
+                            <input type="text" name="title" value="{{ $document->title }}" class="input font-bold" required>
+                        </div>
 
-                    {{-- DEADLINE --}}
-                    <div>
-                        <label class="text-[9px] uppercase tracking-widest text-gray-400">Deadline</label>
-                        <input type="date" name="deadline" value="{{ optional($document->deadline)->format('Y-m-d') }}"
-                               class="w-full mt-1 px-4 py-2 border border-slate-200 rounded-lg text-[11px] text-black">
-                    </div>
+                        {{-- Description --}}
+                        <div>
+                            <label class="label">💬 Описание</label>
+                            <textarea name="content" rows="5" class="input py-4">{{ $document->content }}</textarea>
+                        </div>
 
-                    {{-- BUTTONS --}}
-                    <div class="flex items-center justify-between pt-4 border-t border-slate-100">
+                        {{-- ROW: Status & File --}}
+                        <div class="grid md:grid-cols-2 gap-5">
+                            <div>
+                                <label class="label">⚙️ Текущий статус</label>
+                                <select name="status" class="input font-[1000] text-black">
+                                    <option value="draft" {{ $document->status == 'draft' ? 'selected' : '' }}>ЧЕРНОВИК</option>
+                                    <option value="active" {{ $document->status == 'active' ? 'selected' : '' }}>АКТИВЕН</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="label">📎 Новый файл (Опционально)</label>
+                                <input type="file" name="file_path" id="file" class="hidden">
+                                <label for="file" class="flex items-center justify-between px-6 h-[54px] border border-slate-200 rounded-2xl bg-white cursor-pointer shadow-sm hover:border-black transition">
+                                    <span id="file-name" class="text-[10px] font-[1000] uppercase tracking-[0.2em] text-black truncate max-w-[120px]">
+                                        {{ $document->file_path ? basename($document->file_path) : 'Выбрать файл' }}
+                                    </span>
+                                    <span class="text-xl">📂</span>
+                                </label>
+                            </div>
+                        </div>
 
-                        <a href="{{ route('documents.index') }}"
-                           class="text-[10px] uppercase tracking-widest text-gray-400 hover:text-black">
-                            Cancel
-                        </a>
+                        {{-- SAVE BUTTON --}}
+                        <div class="flex justify-center w-full pt-8">
+                            <button type="submit"
+                                    class="w-80 h-14 rounded-full bg-black font-[1000] uppercase text-[14px] tracking-[0.25em] text-white hover:scale-[1.02] active:scale-95 transition-all shadow-lg flex items-center justify-center gap-3">
+                                <span>Сохранить</span>
+                                <span class="text-xl">💾</span>
+                            </button>
+                        </div>
 
-                        <button type="submit"
-                                class="bg-black text-white px-6 py-2 rounded-lg text-[10px] uppercase tracking-widest hover:bg-blue-600 transition">
-                            Save changes
-                        </button>
-                    </div>
-
-                </form>
+                    </form>
+                </div>
             </div>
         </div>
     </div>
-@endsection
 
-@push('styles')
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
     <style>
-        body {
-            font-family: 'Inter', sans-serif;
-            -webkit-font-smoothing: antialiased;
+        .label{
+            font-size: 11px;
+            font-weight: 1000;
+            letter-spacing: .25em;
+            text-transform: uppercase;
+            display:block;
+            margin-bottom:8px;
+            color:#000;
+        }
+
+        .input{
+            width:100%;
+            height:54px;
+            border-radius:16px;
+            border:1px solid #e2e8f0;
+            padding:0 16px;
+            font-weight:500;
+            font-size:14px;
+            outline:none;
+            transition:.2s;
+            color:#0f172a;
+            background:#fff;
+        }
+
+        .input:focus{
+            border-color:#000;
+            box-shadow:0 6px 0 #000;
+            transform:translateY(-2px);
+        }
+
+        textarea.input{
+            min-height:140px;
         }
     </style>
-@endpush
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const file = document.getElementById('file');
+            const name = document.getElementById('file-name');
+            file.addEventListener('change', () => {
+                name.textContent = file.files[0] ? file.files[0].name.toUpperCase() : "ВЫБРАТЬ ФАЙЛ";
+            });
+        });
+    </script>
+@endsection
