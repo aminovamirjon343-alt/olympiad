@@ -41,9 +41,9 @@
                             <span class="text-[9px] font-medium bg-blue-600 px-2.5 py-1 rounded text-white uppercase tracking-wider">
                                 {{ $document->type ?? 'General' }}
                             </span>
-                            <span class="text-[9px] font-medium bg-slate-100 px-2.5 py-1 rounded uppercase doc-id-highlight">
-                                #{{ $document->id }}
-                            </span>
+                            <span class="text-[9px] font-[1000] bg-black text-white px-2.5 py-1 rounded uppercase tracking-[0.2em] !bg-black !text-white inline-block">
+    #{{ $document->id }}
+</span>
                             {{-- ДОБАВЛЕННЫЙ НОМЕР ДОКУМЕНТА --}}
                             <span class="text-[9px] font-black bg-blue-50 text-blue-700 px-2.5 py-1 rounded border border-blue-100 uppercase tracking-widest">
                                 № {{ $document->number ?? 'Б/Н' }}
@@ -120,12 +120,13 @@
                                      style="background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%) !important;">
 
                                     <div class="flex justify-between items-center mb-2 pb-2 border-b border-white/20">
-                    <span class="text-[10px] font-black uppercase tracking-widest text-white">
-                        {{ $comment->user->name }}
-                    </span>
+                                        {{-- ИСПРАВЛЕНО: Добавлен ?-> для защиты от null user --}}
+                                        <span class="text-[10px] font-black uppercase tracking-widest text-white">
+                                            {{ $comment->user?->name ?? 'System' }}
+                                        </span>
                                         <span class="text-[9px] text-white/90 font-bold bg-black/10 px-2 py-0.5 rounded-full">
-                        {{ $comment->created_at->diffForHumans() }}
-                    </span>
+                                            {{ $comment->created_at->diffForHumans() }}
+                                        </span>
                                     </div>
 
                                     <p class="text-[12px] text-white font-medium leading-relaxed drop-shadow-sm">
@@ -139,7 +140,8 @@
                                 </div>
                             @endforelse
                         </div>
-                    </div>                </div>
+                    </div>
+                </div>
 
                 {{-- Правая панель (Метаданные) --}}
                 <div class="space-y-6">
@@ -150,7 +152,8 @@
                             <div class="flex items-center justify-between">
                                 <span class="text-gray-500 uppercase text-sm font-medium">Signature</span>
                                 @php
-                                    $signatureEntry = $document->signatures->first();
+                                    // ИСПРАВЛЕНО: Безопасное получение первой подписи
+                                    $signatureEntry = $document->signatures?->first();
                                     $isSigned = $signatureEntry && !empty($signatureEntry->signature);
                                 @endphp
 
@@ -170,13 +173,14 @@
                             <div class="flex justify-between items-center">
                                 <span class="text-[10px] text-black opacity-60 uppercase tracking-wider">Status</span>
                                 <span class="text-[9px] font-medium px-2 py-0.5 rounded bg-blue-50 text-blue-600 border border-blue-100 uppercase">
-                                    {{ $document->status }}
+                                    {{ $document->status ?? 'Draft' }}
                                 </span>
                             </div>
 
                             <div class="flex justify-between items-center">
                                 <span class="text-[10px] text-black opacity-60 uppercase tracking-wider">Owner</span>
-                                <span class="text-[10px] font-medium text-black">{{ $document->user->name ?? 'Unassigned' }}</span>
+                                {{-- ИСПРАВЛЕНО: Добавлен ?-> для защиты от null user --}}
+                                <span class="text-[10px] font-medium text-black">{{ $document->user?->name ?? 'Unassigned' }}</span>
                             </div>
 
                             <div class="flex justify-between items-center">
@@ -189,11 +193,11 @@
                             <div class="pt-4 mt-4 border-t border-slate-50 space-y-3">
                                 <div class="flex justify-between">
                                     <span class="text-[9px] text-black opacity-40 uppercase">Created At</span>
-                                    <span class="text-[9px] text-black">{{ $document->created_at->format('d M Y') }}</span>
+                                    <span class="text-[9px] text-black">{{ $document->created_at?->format('d M Y') ?? '—' }}</span>
                                 </div>
                                 <div class="flex justify-between">
                                     <span class="text-[9px] text-black opacity-40 uppercase">Last Update</span>
-                                    <span class="text-[9px] text-black">{{ $document->updated_at->diffForHumans() }}</span>
+                                    <span class="text-[9px] text-black">{{ $document->updated_at?->diffForHumans() ?? '—' }}</span>
                                 </div>
                             </div>
                         </div>

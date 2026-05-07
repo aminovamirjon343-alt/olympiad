@@ -343,12 +343,12 @@
             {{-- Потоки --}}
             <a href="{{ route('documents.index', ['type' => 'incoming']) }}" class="nav-link flex items-center gap-2 py-1">
                 <span class="text-[9px]">📥</span>
-                <span class="tracking-widest uppercase text-[9px] font-bold leading-none">Incoming</span>
+                <span class="tracking-widest uppercase text-[9px] font-medium leading-none">Incoming</span>
             </a>
 
             <a href="{{ route('documents.index', ['type' => 'outgoing']) }}" class="nav-link flex items-center gap-2 py-1">
                 <span class="text-[9px]">📤</span>
-                <span class="tracking-widest uppercase text-[9px] font-bold leading-none">Outgoing</span>
+                <span class="tracking-widest uppercase text-[9px] font-medium leading-none">Outgoing</span>
             </a>
 
             <div class="my-1 border-t border-slate-100 mx-2"></div>
@@ -357,28 +357,26 @@
             <a href="{{ route('documents.index', ['status' => 'waiting']) }}" class="nav-link flex items-center justify-between gap-2 pr-4 py-1 text-orange-600">
                 <div class="flex items-center gap-2">
                     <span class="text-[9px]">⏳</span>
-                    <span class="tracking-widest uppercase text-[9px] font-bold leading-none">Waiting</span>
+                    <span class="tracking-widest uppercase text-[9px] font-medium leading-none">Waiting</span>
                 </div>
             </a>
 
             <a href="{{ route('documents.index', ['status' => 'signed']) }}" class="nav-link flex items-center justify-between gap-2 pr-4 py-1 text-green-600">
                 <div class="flex items-center gap-2">
                     <span class="text-[9px]">✅</span>
-                    <span class="tracking-widest uppercase text-[9px] font-bold leading-none">Signed</span>
+                    <span class="tracking-widest uppercase text-[9px] font-medium leading-none">Signed</span>
                 </div>
             </a>
 
             <a href="{{ route('documents.index', ['status' => 'draft']) }}" class="nav-link flex items-center justify-between gap-2 pr-4 py-1 text-slate-400">
                 <div class="flex items-center gap-2">
                     <span class="text-[9px]">📝</span>
-                    <span class="tracking-widest uppercase text-[9px] font-bold leading-none">Drafts</span>
+                    <span class="tracking-widest uppercase text-[9px] font-medium leading-none">Drafts</span>
                 </div>
             </a>
         </div>
     </li>
-    <a href="/search" class="nav-link" data-page="search" onclick="showPage('search', this)">
-        <i class="bi bi-search"></i> <span data-i18n="search">Search</span>
-    </a>
+
 
     <div class="nav-section" data-i18n="management">Management</div>
 
@@ -645,33 +643,72 @@
 
                     @forelse($notifications as $notification)
                         <a href="{{ $notification->data['url'] ?? route('notifications.index') }}"
-                           style="text-decoration:none; color:inherit;">
+                           class="text-decoration-none d-block mb-2" style="color: inherit;">
 
-                            <div class="notification-item {{ $notification->read_at ? '' : 'unread' }}"
-                                 style="padding:12px; border-bottom:1px solid rgba(255,255,255,0.05); display:flex; gap:10px; align-items:center;">
+                            <div class="notification-card"
+                                 style="background: #f8faff; border-radius: 18px; padding: 12px 16px; display: flex; align-items: center; gap: 12px; transition: 0.3s; border: 1px solid rgba(226, 232, 240, 0.6);">
 
-                                <div class="step-dot"
-                                     style="width:32px;height:32px;font-size:14px; display:flex; align-items:center; justify-content:center;">
-                                    <i class="bi bi-bell"></i>
+                                @php
+                                    // Собираем текст динамически, если в data есть поля sender_name и document_name
+                                    $sender = $notification->data['sender_name'] ?? 'Система';
+                                    $docName = $notification->data['document_name'] ?? ($notification->data['title'] ?? 'Документ');
+                                    $message = $notification->data['message'] ?? '';
+
+                                    // Определяем действие (назначил или прокомментировал)
+                                    $isComment = str_contains(strtolower($message), 'коммент') || str_contains(strtolower($message), 'оставил');
+                                    $action = $isComment ? 'оставил комментарий к' : 'назначил вам документ';
+
+                                    $iconBg = $isComment ? '#f0fff4' : '#fff5eb';
+                                    $iconClass = $isComment ? 'bi-chat-left-text' : 'bi-pin-angle-fill';
+                                    $iconColor = $isComment ? '#22c55e' : '#f97316';
+                                @endphp
+
+                                {{-- Левая часть: Иконка --}}
+                                <div style="width: 42px; height: 42px; background: {{ $iconBg }}; border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                                    <i class="bi {{ $iconClass }}" style="color: {{ $iconColor }}; font-size: 1.1rem;"></i>
                                 </div>
 
-                                <div>
-                                    <div style="font-size:13px;font-weight:500;">
-                                        {{ $notification->data['message'] ?? 'New notification' }}
+                                {{-- Центральная часть: Текст --}}
+                                <div style="flex-grow: 1;">
+                                    <div style="font-size: 13px; color: #1e293b; line-height: 1.4;">
+                                        {{-- Amir Aminov (жирным) --}}
+                                        <strong style="font-weight: 700;">{{ $sender }}</strong>
+                                        {{-- действие --}}
+                                        {{ $action }}
+                                        {{-- «Название» (синим) --}}
+                                        <span style="color: #4f46e5; font-weight: 700;">«{{ $docName }}»</span>
                                     </div>
 
-                                    <div style="font-size:11px;color:#94a3b8;">
-                                        {{ $notification->created_at->diffForHumans() }}
+                                    {{-- Время --}}
+                                    <div style="margin-top: 4px;">
+                    <span style="font-size: 10px; color: #4f46e5; background: #edf2ff; padding: 2px 10px; border-radius: 6px; font-weight: 600; display: inline-flex; align-items: center; gap: 4px;">
+                        <i class="bi bi-clock" style="font-size: 10px;"></i>
+                        {{ $notification->created_at->diffForHumans() }}
+                    </span>
                                     </div>
                                 </div>
 
+                                {{-- Правая часть: Точка --}}
+                                @if(!$notification->read_at)
+                                    <div style="width: 8px; height: 8px; background: #4f46e5; border-radius: 50%; flex-shrink: 0;"></div>
+                                @endif
                             </div>
                         </a>
                     @empty
-                        <div style="padding:15px; text-align:center; color:#94a3b8;">
-                            No notifications
+                        <div style="padding:30px; text-align:center; color:#94a3b8; font-size: 13px;">
+                            <i class="bi bi-bell-slash d-block mb-2" style="font-size: 20px; opacity: 0.5;"></i>
+                            Нет новых уведомлений
                         </div>
                     @endforelse
+
+                    <style>
+                        .notification-card:hover {
+                            background: #ffffff !important;
+                            transform: translateY(-1px);
+                            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+                            border-color: #4f46e5 !important;
+                        }
+                    </style>
 
                 </div>
 
@@ -684,6 +721,10 @@
 
             </div>
         </div>
+
+
+
+
         <div class="dropdown">
             <button class="btn d-flex align-items-center gap-2 dropdown-toggle profile-container-link shadow-sm"
                     data-bs-toggle="dropdown"
@@ -762,154 +803,24 @@
     </section>
 
     <!-- Workflow Page -->
-    <section class="page-section" id="page-workflow">
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <div>
-                <h4 class="fw-bold mb-1" data-i18n="workflow">Workflow</h4>
-                <p class="text-muted mb-0" data-i18n="workflowSubtitle">Document approval workflow</p>
-            </div>
-            <a href="/workflow/document/create" class="btn-primary-custom"><i class="bi bi-plus-lg me-1"></i> <span data-i18n="newWorkflow">New Workflow</span></a>
-        </div>
-        <div class="row g-3">
-            <div class="col-md-6">
-                <div class="stat-card">
-                    <h6 class="fw-bold mb-3">Contract-2026-001</h6>
-                    <div class="workflow-step"><div class="step-dot done">1</div><span data-i18n="wfCreated">Created</span><span class="ms-auto text-success"><i class="bi bi-check-lg"></i></span></div>
-                    <div class="workflow-step"><div class="step-dot done">2</div><span data-i18n="wfReviewed">Reviewed by Manager</span><span class="ms-auto text-success"><i class="bi bi-check-lg"></i></span></div>
-                    <div class="workflow-step"><div class="step-dot current">3</div><span data-i18n="wfApproval">Approval</span><span class="ms-auto text-primary"><i class="bi bi-hourglass-split"></i></span></div>
-                    <div class="workflow-step"><div class="step-dot pending">4</div><span data-i18n="wfSigned">Signed</span><span class="ms-auto text-muted"><i class="bi bi-circle"></i></span></div>
-                    <div class="d-flex gap-2 mt-3">
-                        <a href="/workflow/approve/1" class="btn btn-sm btn-success flex-fill" data-i18n="approve">Approve</a>
-                        <a href="/workflow/reject/1" class="btn btn-sm btn-danger flex-fill" data-i18n="reject">Reject</a>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-6">
-                <div class="stat-card">
-                    <h6 class="fw-bold mb-3">Report-Q1-2026</h6>
-                    <div class="workflow-step"><div class="step-dot done">1</div><span data-i18n="wfCreated">Created</span><span class="ms-auto text-success"><i class="bi bi-check-lg"></i></span></div>
-                    <div class="workflow-step"><div class="step-dot done">2</div><span data-i18n="wfReviewed">Reviewed by Manager</span><span class="ms-auto text-success"><i class="bi bi-check-lg"></i></span></div>
-                    <div class="workflow-step"><div class="step-dot done">3</div><span data-i18n="wfApproval">Approval</span><span class="ms-auto text-success"><i class="bi bi-check-lg"></i></span></div>
-                    <div class="workflow-step"><div class="step-dot current">4</div><span data-i18n="wfSigned">Signed</span><span class="ms-auto text-primary"><i class="bi bi-hourglass-split"></i></span></div>
-                    <div class="d-flex gap-2 mt-3">
-                        <a href="/workflow/approve/2" class="btn btn-sm btn-success flex-fill" data-i18n="approve">Approve</a>
-                        <a href="/workflow/reject/2" class="btn btn-sm btn-danger flex-fill" data-i18n="reject">Reject</a>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
+
 
     <!-- Signatures Page -->
 
     <!-- Versions Page -->
-    <section class="page-section" id="page-versions">
-        <h4 class="fw-bold mb-4" data-i18n="versions">Document Versions</h4>
-        <div class="table-custom">
-            <table class="table mb-0">
-                <thead><tr><th>Version</th><th data-i18n="document">Document</th><th data-i18n="author">Author</th><th data-i18n="date">Date</th><th data-i18n="actions">Actions</th></tr></thead>
-                <tbody>
-                <tr><td><span class="badge bg-primary">v2.0</span></td><td>Contract-2026-001</td><td>А. Рахимов</td><td>2026-04-22</td><td><a href="/versions/1" class="btn btn-sm btn-light"><i class="bi bi-download"></i></a></td></tr>
-                <tr><td><span class="badge bg-secondary">v1.0</span></td><td>Contract-2026-001</td><td>А. Рахимов</td><td>2026-04-20</td><td><a href="/versions/2" class="btn btn-sm btn-light"><i class="bi bi-download"></i></a></td></tr>
-                <tr><td><span class="badge bg-primary">v1.0</span></td><td>Report-Q1-2026</td><td>М. Саидова</td><td>2026-04-21</td><td><a href="/versions/3" class="btn btn-sm btn-light"><i class="bi bi-download"></i></a></td></tr>
-                </tbody>
-            </table>
-        </div>
-    </section>
+
 
     <!-- Logs Page -->
-    <section class="page-section" id="page-logs">
-        <h4 class="fw-bold mb-4" data-i18n="logs">System Logs</h4>
-        <div class="table-custom">
-            <table class="table mb-0">
-                <thead><tr><th>Time</th><th data-i18n="user">User</th><th data-i18n="action">Action</th><th data-i18n="document">Document</th><th data-i18n="ip">IP</th></tr></thead>
-                <tbody>
-                <tr><td>2026-04-22 14:30</td><td>А. Рахимов</td><td><span class="status-badge status-approved">Updated</span></td><td>Contract-2026-001</td><td>192.168.1.10</td></tr>
-                <tr><td>2026-04-22 12:15</td><td>М. Саидова</td><td><span class="status-badge status-pending">Viewed</span></td><td>Report-Q1-2026</td><td>192.168.1.25</td></tr>
-                <tr><td>2026-04-22 10:00</td><td>К. Назаров</td><td><span class="status-badge status-draft">Created</span></td><td>Invoice-2026-089</td><td>192.168.1.30</td></tr>
-                </tbody>
-            </table>
-        </div>
-    </section>
+
 
     <!-- Users Page -->
 
 
     <!-- Notifications Page -->
-    <section class="page-section" id="page-notifications">
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <h4 class="fw-bold mb-0" data-i18n="notifications">Notifications</h4>
-            <a href="/notifications/create" class="btn-primary-custom"><i class="bi bi-bell-plus me-1"></i> <span data-i18n="newNotification">New Notification</span></a>
-        </div>
-        <div class="stat-card">
-            <div class="notification-item unread" style="border-radius:12px;border:1px solid #e2e8f0;margin-bottom:8px;">
-                <div class="d-flex align-items-center gap-3">
-                    <div class="step-dot current" style="width:36px;height:36px;font-size:16px;"><i class="bi bi-file-earmark-check"></i></div>
-                    <div class="flex-fill">
-                        <div style="font-weight:500;" data-i18n="notifDocApproved">Document #1042 approved</div>
-                        <div style="font-size:12px;color:#94a3b8;">2 minutes ago</div>
-                    </div>
-                    <a href="/notifications/1/read" class="btn btn-sm btn-outline-primary" onclick="event.preventDefault(); markRead(this)" data-i18n="markRead">Mark Read</a>
-                </div>
-            </div>
-            <div class="notification-item unread" style="border-radius:12px;border:1px solid #e2e8f0;margin-bottom:8px;">
-                <div class="d-flex align-items-center gap-3">
-                    <div class="step-dot done" style="width:36px;height:36px;font-size:16px;"><i class="bi bi-pen"></i></div>
-                    <div class="flex-fill">
-                        <div style="font-weight:500;" data-i18n="notifSignReq">Signature requested for Contract-2026-001</div>
-                        <div style="font-size:12px;color:#94a3b8;">1 hour ago</div>
-                    </div>
-                    <a href="/notifications/2/read" class="btn btn-sm btn-outline-primary" onclick="event.preventDefault(); markRead(this)" data-i18n="markRead">Mark Read</a>
-                </div>
-            </div>
-            <div class="notification-item" style="border-radius:12px;border:1px solid #e2e8f0;">
-                <div class="d-flex align-items-center gap-3">
-                    <div class="step-dot pending" style="width:36px;height:36px;font-size:16px;"><i class="bi bi-person-plus"></i></div>
-                    <div class="flex-fill">
-                        <div style="font-weight:500;" data-i18n="notifNewUser">New user К. Назаров registered</div>
-                        <div style="font-size:12px;color:#94a3b8;">3 hours ago</div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
+
 
     <!-- Profile Page -->
-    <section class="page-section" id="page-profile">
-        <h4 class="fw-bold mb-4" data-i18n="profile">Profile</h4>
-        <div class="row g-3">
-            <div class="col-lg-4">
-                <div class="stat-card text-center">
-                    <div class="profile-avatar mx-auto mb-3">АД</div>
-                    <h5 class="fw-bold mb-1">Admin User</h5>
-                    <p class="text-muted mb-2">admin@doc.sys</p>
-                    <span class="badge bg-primary mb-3" data-i18n="roleAdmin">Administrator</span>
-                    <div class="d-grid gap-2">
-                        <a href="/profile/edit" class="btn btn-outline-primary btn-sm rounded-3" onclick="showPage('profile-edit', null)"><i class="bi bi-pencil me-1"></i><span data-i18n="editProfile">Edit Profile</span></a>
-                    </div>
-                </div>
-            </div>
-            <div class="col-lg-8">
-                <div class="stat-card mb-3">
-                    <h6 class="fw-bold mb-3" data-i18n="personalInfo">Personal Information</h6>
-                    <div class="row g-3">
-                        <div class="col-md-6"><label class="form-label text-muted" style="font-size:12px;" data-i18n="fullName">Full Name</label><div class="fw-semibold">Admin User</div></div>
-                        <div class="col-md-6"><label class="form-label text-muted" style="font-size:12px;">Email</label><div class="fw-semibold">admin@doc.sys</div></div>
-                        <div class="col-md-6"><label class="form-label text-muted" style="font-size:12px;" data-i18n="phone">Phone</label><div class="fw-semibold">+992 90 123 4567</div></div>
-                        <div class="col-md-6"><label class="form-label text-muted" style="font-size:12px;" data-i18n="department">Department</label><div class="fw-semibold">IT Department</div></div>
-                    </div>
-                </div>
-                <div class="stat-card mb-3">
-                    <h6 class="fw-bold mb-3" data-i18n="activity">Activity</h6>
-                    <div class="row g-3 text-center">
-                        <div class="col-4"><div class="fs-4 fw-bold">156</div><div class="text-muted" style="font-size:12px;" data-i18n="docsCreated">Docs Created</div></div>
-                        <div class="col-4"><div class="fs-4 fw-bold">89</div><div class="text-muted" style="font-size:12px;" data-i18n="docsSigned">Docs Signed</div></div>
-                        <div class="col-4"><div class="fs-4 fw-bold">23</div><div class="text-muted" style="font-size:12px;" data-i18n="comments">Comments</div></div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
+
 
     <!-- Profile Edit Page -->
     <section class="page-section" id="page-profile-edit">

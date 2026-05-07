@@ -9,7 +9,6 @@
                 </h4>
                 <p class="text-muted mb-0" data-i18n="dashSubtitle">Here's what's happening with your documents today.</p>
             </div>
-            <a href="{{route('documents.create')}}" class="btn-primary-custom" onclick="showPage('documents', null)"><i class="bi bi-plus-lg me-1"></i> <span data-i18n="newDocument">New Document</span></a>
         </div>
 
         <div class="row g-3 mb-4">
@@ -31,19 +30,6 @@
                     <div class="text-muted" style="font-size:13px;">
                         Total Documents
                     </div>
-                </div>
-            </div>
-
-            <div class="col-6 col-lg-3">
-                <div class="stat-card" style="border: 1px solid #dee2e6; border-radius: 12px; padding: 15px;">
-                    <div class="d-flex justify-content-between align-items-start mb-3">
-                        <div class="stat-icon" style="background:#fef3c7;color:#d97706;"><i class="bi bi-clock-history"></i></div>
-                        <span class="badge bg-warning-subtle text-warning">Wait</span>
-                    </div>
-                    <div class="fw-bold fs-4">
-                        {{ $stats['pending'] }}
-                    </div>
-                    <div class="text-muted" style="font-size:13px;" data-i18n="pendingReview">Pending Review</div>
                 </div>
             </div>
 
@@ -84,8 +70,63 @@
                     <div class="text-muted" style="font-size:13px;">
                         Active Users
                     </div>
+
                 </div>
+
             </div>
+            <div class="col-6 col-lg-3">
+                <a href="#" class="text-decoration-none" style="display: block; height: 100%;">
+                    <div class="stat-card ai-promo-card"
+                         style="border: 1px solid rgba(99, 102, 241, 0.3); border-radius: 12px; padding: 15px; background: linear-gradient(145deg, #6366f1, #8b5cf6); position: relative; overflow: hidden; height: 100%; transition: 0.3s;">
+
+                        <div class="d-flex justify-content-between align-items-start mb-3">
+                            {{-- Иконка чуть компактнее --}}
+                            <div class="stat-icon" style="background: rgba(255,255,255,0.2); color: #ffffff; width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; border-radius: 9px;">
+                                <i class="bi bi-stars" style="font-size: 1rem;"></i>
+                            </div>
+                            {{-- Бейдж меньше --}}
+                            <span class="badge" style="background: #ffffff; color: #6366f1; font-size: 8px; font-weight: 800; border-radius: 5px; padding: 3px 6px;">AI SMART</span>
+                        </div>
+
+                        {{-- Основной текст стал меньше (был fs-4, стал 18px) --}}
+                        <div class="fw-bold" style="color: #ffffff; font-size: 18px; line-height: 1.2; margin-bottom: 2px;">
+                            AI Анализ
+                        </div>
+
+                        {{-- Подзаголовок стал 11px вместо 13px --}}
+                        <div style="color: rgba(255,255,255,0.7); font-size: 11px; font-weight: 400;">
+                            Мгновенный разбор
+                        </div>
+
+                        <div class="shimmer-effect"></div>
+                    </div>
+                </a>
+            </div>
+
+            <style>
+                .ai-promo-card:hover {
+                    transform: translateY(-3px);
+                    box-shadow: 0 8px 20px rgba(99, 102, 241, 0.2);
+                    filter: brightness(1.05);
+                }
+
+                .shimmer-effect {
+                    position: absolute;
+                    top: 0;
+                    left: -100%;
+                    width: 50%;
+                    height: 100%;
+                    background: linear-gradient(to right, transparent, rgba(255,255,255,0.15), transparent);
+                    transform: skewX(-25deg);
+                    animation: shimmer 5s infinite;
+                }
+
+                @keyframes shimmer {
+                    0% { left: -100%; }
+                    20% { left: 150%; }
+                    100% { left: 150%; }
+                }
+            </style>
         </div>
 
         <div class="row g-3">
@@ -201,8 +242,8 @@
                     <h6 class="fw-bold mb-3" data-i18n="quickActions">Quick Actions</h6>
                     <div class="d-grid gap-2">
                         <a href="{{route('documents.create')}}" class="btn btn-outline-primary btn-sm rounded-3" onclick="showPage('documents', null)"><i class="bi bi-plus-lg me-2"></i><span data-i18n="createDocument">Create Document</span></a>
-                        <a href="#" class="btn btn-outline-warning btn-sm rounded-3" onclick="showPage('workflow', null)"><i class="bi bi-arrow-repeat me-2"></i><span data-i18n="reviewWorkflow">Review Workflow</span></a>
-                        <a href="/signatures" class="btn btn-outline-success btn-sm rounded-3" onclick="showPage('signatures', null)"><i class="bi bi-pen me-2"></i><span data-i18n="manageSignatures">Manage Signatures</span></a>
+                        <a href="{{route('analysis.index')}}" class="btn btn-outline-warning btn-sm rounded-3" onclick="showPage('workflow', null)"><i class="bi bi-arrow-repeat me-2"></i><span data-i18n="reviewWorkflow">Analysis</span></a>
+                        <a href="{{route('signatures.create')}}" class="btn btn-outline-success btn-sm rounded-3" onclick="showPage('signatures', null)"><i class="bi bi-pen me-2"></i><span data-i18n="manageSignatures">Manage Signatures</span></a>
                         <a href="{{route('notifications.index')}}" class="btn btn-outline-info btn-sm rounded-3" onclick="showPage('notifications', null)"><i class="bi bi-bell me-2"></i><span data-i18n="checkNotifications">Check Notifications</span></a>
                     </div>
                 </div>

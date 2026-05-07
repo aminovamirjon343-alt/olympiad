@@ -239,9 +239,14 @@ class DocumentController extends Controller
         return view('document.show', compact('document', 'comments'));
     }
 
-    /**
-     * Обновление и перевод из черновика в активные
-     */
+    public function edit($id)
+    {
+        // Находим документ или возвращаем 404, если его нет
+        $document = Document::visibleToAuth()->findOrFail($id);
+
+        // Здесь можно также подгрузить данные для выпадающих списков, если они есть (например, типы документов)
+        return view('document.edit', compact('document'));
+    }
     public function update(Request $request, Document $document)
     {
         if ($document->created_by !== Auth::id()) abort(403);

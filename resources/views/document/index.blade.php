@@ -1275,10 +1275,7 @@
                         </button>
                     </div>
 
-                    <a href="{{ route('documents.create') }}" class="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-bold uppercase rounded-lg shadow-sm transition-all shadow-blue-100">
-                        <i class="bi bi-plus-lg"></i>
-                        <span>New Document</span>
-                    </a>
+                    <a href="{{route('documents.create')}}" class="btn-primary-custom" onclick="showPage('documents', null)"><i class="bi bi-plus-lg me-1"></i> <span data-i18n="newDocument">New Document</span></a>
                 </form>
             </div>
 
@@ -1306,7 +1303,7 @@
                                             {{ Str::limit($doc->title, 45) }}
                                         </span>
                                         <span class="text-[10px] font-bold text-blue-600 italic">
-                                            №{{ $doc->number ?? $doc->id }}
+                                            {{ $doc->number ?? $doc->id }}
                                         </span>
                                     </div>
 
@@ -1347,16 +1344,6 @@
                             <td class="px-4 py-2 text-right">
                                 <div class="flex justify-end gap-3 text-black opacity-40 group-hover:opacity-100 transition-opacity">
                                     <a href="{{ route('documents.show', $doc->id) }}" title="View"><i class="bi bi-eye text-[11px]"></i></a>
-
-                                    {{-- Проверка прав через canManage() из модели --}}
-                                    @if($doc->canManage())
-                                        <a href="{{ route('documents.edit', $doc->id) }}" title="Edit"><i class="bi bi-pencil-square text-[11px]"></i></a>
-
-                                        <form action="{{ route('documents.destroy', $doc->id) }}" method="POST" class="inline" onsubmit="return confirm('Удалить?')">
-                                            @csrf @method('DELETE')
-                                            <button type="submit" title="Delete"><i class="bi bi-trash3 text-[11px] text-red-500"></i></button>
-                                        </form>
-                                    @endif
                                 </div>
                             </td>
                         </tr>

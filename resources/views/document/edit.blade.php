@@ -52,7 +52,6 @@
                         <div>
                             <label class="label">🔢 Номер документа</label>
                             <div class="relative flex items-center">
-                                <span class="absolute left-4 font-bold text-slate-400">№</span>
                                 <input type="text"
                                        name="number"
                                        value="{{ $document->number }}"
@@ -65,10 +64,12 @@
                         <div class="grid md:grid-cols-2 gap-5">
                             <div>
                                 <label class="label">📌 Тип</label>
-                                <select name="type" class="input font-bold" required>
-                                    <option value="УПД" {{ $document->type == 'УПД' ? 'selected' : '' }}>УПД</option>
-                                    <option value="Договор" {{ $document->type == 'Договор' ? 'selected' : '' }}>Договор</option>
-                                </select>
+                                <input type="text"
+                                       name="type"
+                                       class="input font-bold"
+                                       value="{{ old('type', $document->type ?? '') }}"
+                                       placeholder="УПД, Договор и т.д."
+                                       required>
                             </div>
                             <div>
                                 <label class="label">📅 Дедлайн</label>
