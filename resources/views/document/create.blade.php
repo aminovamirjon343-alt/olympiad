@@ -125,21 +125,17 @@
 
                         {{-- Recipient --}}
                         <div>
-                            {{-- Добавил text-black и немного увеличил отступ для иконки --}}
-                            <label class="block text-[11px] font-[1000] uppercase mb-2 tracking-widest text-black flex items-center gap-1.5">
-                                <span class="text-base">📧</span> Email получателя
-                            </label>
-
-                            <input type="email"
-                                   id="receiver_email"
-                                   name="receiver_email"
-                                   {{-- Твой текущий стиль: жирные границы и жесткая тень --}}
-                                   class="w-full bg-white border-[3px] border-black p-3 font-[1000] uppercase text-[13px] rounded-xl shadow-[5px_5px_0px_black] outline-none focus:translate-x-1 focus:translate-y-1 focus:shadow-none transition-all placeholder:text-slate-400 text-black"
-                                   placeholder="user@email.com"
-                                   required>
-
-                            {{-- Контейнер для результата поиска --}}
-                            <div id="user-info" class="text-[10px] mt-3 font-[1000] uppercase tracking-tighter h-4 text-black"></div>
+                            <label class="label">📧 Email получателя</label>
+                            <div class="relative flex items-center">
+                                <input type="email"
+                                       name="receiver_email"
+                                       {{-- Используем твой стандартный класс .input --}}
+                                       class="input font-bold"
+                                       {{-- Подтягиваем старое значение или значение из базы --}}
+                                       value="{{ old('receiver_email', $document->receiver->email ?? '') }}"
+                                       placeholder="user@email.com"
+                                       required>
+                            </div>
                         </div>
 
                         {{-- ROW: Status & File --}}

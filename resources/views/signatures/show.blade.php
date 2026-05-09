@@ -174,149 +174,206 @@
 @extends('layouts.admin')
 
 @section('content')
-    <div class="container mx-auto px-4 py-8 min-h-screen">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&display=swap" rel="stylesheet">
+
+    <div class="container mx-auto px-4 py-6 min-h-screen">
         <style>
-            .view-sig-page { --primary-color: var(--primary, #6366f1); }
-            .cert-card {
-                background: #ffffff !important;
-                border-radius: 3rem;
-                border: 1px solid rgba(0, 0, 0, 0.05);
-                box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
-                overflow: hidden;
+            .view-sig-page {
+                --primary-color: #6366f1;
+                /* Устанавливаем Inter как основной шрифт */
+                font-family: 'Inter', sans-serif !important;
             }
-            .pdf-preview-box {
-                height: 650px;
+
+            /* Тот самый стиль как в навбаре, но на шрифте Inter */
+            .navbar-style-text,
+            .theme-heading,
+            label,
+            p,
+            span,
+            button,
+            a {
+                font-family: 'Inter', sans-serif !important;
+                font-weight: 700 !important;
+                letter-spacing: -0.02em !important;
+                text-transform: none;
+            }
+
+            .form-card {
+                background: rgba(255, 255, 255, 0.96) !important;
+                backdrop-filter: blur(14px);
                 border-radius: 2rem;
+                border: 2px solid rgba(0, 0, 0, 0.12);
+                box-shadow: 0 10px 30px rgba(0,0,0,0.06);
                 overflow: hidden;
-                border: 1px solid #e2e8f0;
-                background: #f8fafc;
             }
-            .btn-sign {
-                background: linear-gradient(135deg, #6366f1 0%, #4338ca 100%);
-                box-shadow: 0 10px 20px -5px rgba(99, 102, 241, 0.4);
+
+            .dark .form-card {
+                background: #1e293b !important;
+                border-color: rgba(255,255,255,0.12);
+            }
+
+            .pdf-preview-box {
+                height: 700px;
+                border-radius: 1.5rem;
+                overflow: hidden;
+                border: 2px solid rgba(99,102,241,0.1);
+            }
+
+            .btn-update {
+                background: #6366f1;
+                color: #ffffff !important;
+                font-weight: 900 !important;
+                text-transform: uppercase;
+                letter-spacing: .05em !important;
+                box-shadow: 0 10px 25px rgba(99,102,241,.25);
+                transition: .25s ease;
+            }
+
+            .btn-update:hover { transform: translateY(-2px); }
+
+            .sig-display-area {
+                background: rgba(255,255,255,0.05);
+                border: 2px solid rgba(99,102,241,0.15);
+                border-radius: 1.25rem;
+                padding: 1.5rem;
+            }
+
+            .badge-status {
+                background: #f43f5e;
+                color: white;
+                font-size: 9px;
+                font-weight: 900 !important;
+                padding: 4px 12px;
+                border-radius: 999px;
+                text-transform: uppercase;
+            }
+
+            .badge-success { background: #10b981; }
+
+            /* Стиль для красного блока безопасности */
+            .security-card-red {
+                background: #450a0a !important; /* Очень темный красный (rose-950) */
+                border: 2px solid rgba(255, 255, 255, 0.1);
+                border-radius: 2rem;
+                padding: 1.5rem;
+                position: relative;
+                overflow: hidden;
             }
         </style>
 
         <div class="view-sig-page">
             {{-- Навигация --}}
-            <div class="mb-8 flex items-center justify-between">
-                <a href="{{ route('signatures.index') }}" class="font-bold text-[11px] uppercase tracking-[0.2em] transition flex items-center gap-2" style="color: var(--primary-color);">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3"><path d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
-                    Назад к списку
-                </a>
+            <div class="mb-7 flex items-center justify-between">
+                <div>
+                    <a href="{{ route('signatures.index') }}"
+                       class="text-[11px] font-black uppercase tracking-[0.18em] text-indigo-500 flex items-center gap-2 mb-2 hover:gap-3 transition-all">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3">
+                            <path d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+                        </svg>
+                        Назад к реестру
+                    </a>
+                    <h1 class="text-3xl theme-heading text-slate-800 dark:text-white">
+                        Детали подписи
+                    </h1>
+                </div>
 
                 @if($signature->signed_at)
-                    <div class="flex gap-3">
-                        <a href="{{ route('signatures.edit', $signature->id) }}" class="bg-amber-50 text-amber-600 px-5 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider hover:bg-amber-500 hover:text-white transition shadow-sm border border-amber-100">
-                            Изменить подпись
-                        </a>
-                        <span class="bg-emerald-50 text-emerald-600 px-4 py-2 rounded-xl font-bold text-[10px] uppercase tracking-widest border border-emerald-100 flex items-center gap-2">
-                            <span class="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span>
-                            Документ подписан
-                        </span>
-                    </div>
+                    <a href="{{ route('signatures.edit', $signature->id) }}"
+                       class="bg-amber-500 text-white px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-amber-600 transition shadow-lg shadow-amber-500/20">
+                        Изменить оттиск
+                    </a>
                 @endif
             </div>
 
-            <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
 
-                {{-- ЛЕВАЯ КОЛОНКА: Статус и Детали --}}
-                <div class="lg:col-span-5">
-                    <div class="cert-card relative h-full">
-                        <div class="p-10">
-                            <div class="text-center mb-10">
-                                @if($signature->signed_at)
-                                    <div class="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-emerald-200 shadow-sm">
-                                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
-                                    </div>
-                                    <h2 class="text-xl font-black uppercase tracking-tight text-slate-800">Сертификат верифицирован</h2>
-                                @else
-                                    <div class="w-16 h-16 bg-amber-100 text-amber-600 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-amber-200 shadow-sm">
-                                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                                    </div>
-                                    <h2 class="text-xl font-black uppercase tracking-tight text-slate-800">Ожидает подписи</h2>
-                                @endif
-                            </div>
-
-                            <div class="space-y-8">
-                                <div>
-                                    <label class="text-[10px] font-black uppercase tracking-widest text-indigo-500 block mb-1">Документ</label>
-                                    <p class="font-bold text-lg text-slate-700 leading-tight">{{ $signature->document->title ?? 'Без названия' }}</p>
-                                </div>
-
-                                <div class="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <label class="text-[10px] font-black uppercase tracking-widest text-indigo-500 block mb-1">Отправитель</label>
-                                        <p class="font-bold text-slate-700 text-sm">{{ $signature->document->user->name ?? 'Администратор' }}</p>
-                                    </div>
-                                    <div>
-                                        <label class="text-[10px] font-black uppercase tracking-widest text-indigo-500 block mb-1">Дата назначения</label>
-                                        <p class="font-bold text-slate-700 text-sm">{{ $signature->created_at->format('d.m.Y') }}</p>
-                                    </div>
-                                </div>
-
-                                {{-- Блок самой подписи --}}
-                                @if($signature->signed_at)
-                                    <div class="pt-8 border-t border-dashed border-slate-200">
-                                        <label class="text-[10px] font-black uppercase tracking-widest text-indigo-500 block text-center mb-4">Ваш цифровой оттиск</label>
-                                        <div class="bg-slate-50 p-6 rounded-3xl border border-slate-100 flex justify-center shadow-inner">
-                                            {{-- Отображаем сохраненную base64 подпись --}}
-                                            <img src="{{ $signature->signature }}" class="max-h-28 object-contain contrast-125" alt="Signature">
-                                        </div>
-                                        <p class="text-[9px] text-slate-400 font-bold uppercase text-center mt-4 tracking-widest">
-                                            Подписано: {{ \Carbon\Carbon::parse($signature->signed_at)->format('d.m.Y H:i') }}
-                                        </p>
-                                    </div>
-                                @else
-                                    <div class="pt-6">
-                                        {{-- Ссылка на создание подписи для этого документа --}}
-                                        <a href="{{ route('signatures.create', ['document_id' => $signature->document_id]) }}" class="btn-sign w-full text-white py-5 rounded-2xl font-black uppercase tracking-[0.15em] flex items-center justify-center gap-3 transition hover:scale-[1.02] active:scale-[0.98]">
-                                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
-                                            Подписать документ
-                                        </a>
-                                    </div>
-                                @endif
-                            </div>
+                <div class="lg:col-span-4 space-y-6">
+                    <div class="form-card p-7">
+                        <div class="text-center mb-8">
+                            @if($signature->signed_at)
+                                <div class="inline-flex badge-status badge-success mb-4">Верифицировано</div>
+                                <h2 class="text-xl text-slate-800 dark:text-white">Документ подписан</h2>
+                            @else
+                                <div class="inline-flex badge-status mb-4">Ожидание</div>
+                                <h2 class="text-xl text-slate-800 dark:text-white">Требуется подпись</h2>
+                            @endif
                         </div>
 
-                        <div class="absolute bottom-0 left-0 w-full bg-indigo-600 py-4 px-10 text-[9px] font-bold text-white uppercase tracking-widest flex justify-between">
-                            <span>Digital ID: #{{ str_pad($signature->id, 5, '0', STR_PAD_LEFT) }}</span>
-                            <span>System Security Verified</span>
+                        <div class="space-y-6">
+                            <div>
+                                <label class="text-[11px] font-black uppercase tracking-widest text-slate-400 block mb-1">Документ</label>
+                                <div class="text-md text-slate-800 dark:text-white border-b-2 border-indigo-500/10 pb-2">
+                                    {{ $signature->document->title ?? 'Без названия' }}
+                                </div>
+                            </div>
+
+                            @if($signature->signed_at)
+                                <div class="pt-6 border-t border-slate-100 dark:border-slate-700">
+                                    <label class="text-[11px] font-black uppercase tracking-widest text-indigo-500 block mb-4 text-center">Цифровой оттиск</label>
+                                    <div class="sig-display-area flex items-center justify-center">
+                                        <img src="{{ $signature->signature }}" class="max-h-24 object-contain dark:invert dark:brightness-200" alt="Signature">
+                                    </div>
+                                    <p class="text-[10px] text-slate-400 text-center mt-4 italic">
+                                        ID транзакции: #{{ str_pad($signature->id, 6, '0', STR_PAD_LEFT) }}
+                                    </p>
+                                </div>
+                            @else
+                                <div class="pt-4">
+                                    <a href="{{ route('signatures.create', ['document_id' => $signature->document_id]) }}"
+                                       class="w-full btn-update py-4 rounded-2xl text-[12px] flex items-center justify-center gap-2">
+                                        Подписать сейчас
+                                    </a>
+                                </div>
+                            @endif
                         </div>
+                    </div>
+
+                    <div class="security-card-red text-white shadow-xl shadow-rose-950/20">
+                        <div class="relative z-10">
+                            <div class="flex items-center gap-3 mb-2">
+                                {{-- Индикатор --}}
+                                <div class="w-2 h-2 bg-rose-400 rounded-full animate-ping"></div>
+
+                                {{-- Заголовок оставляем компактным, но убираем font-black на font-bold --}}
+                                <h4 class="text-[10px] font-bold uppercase tracking-[0.15em] text-rose-200" style="font-family: 'Inter', sans-serif;">
+                                    Безопасность
+                                </h4>
+                            </div>
+
+                            {{-- Основной текст: убрал font-bold, теперь он обычный (font-normal) --}}
+                            <p class="text-[11px] font-normal leading-relaxed opacity-90" style="font-family: 'Inter', sans-serif;">
+                                Документ защищен алгоритмом шифрования SHA-256. Любое изменение данных аннулирует подпись.
+                            </p>
+                        </div>
+
+                        {{-- Фоновое свечение --}}
+                        <div class="absolute -right-4 -bottom-4 w-24 h-24 bg-rose-500/10 blur-2xl rounded-full"></div>
                     </div>
                 </div>
 
-                {{-- ПРАВАЯ КОЛОНКА: Предпросмотр PDF --}}
-                <div class="lg:col-span-7">
-                    <div class="bg-white p-6 rounded-[3rem] border border-slate-100 shadow-xl h-full">
-                        <div class="flex items-center justify-between mb-6 px-4">
-                            <h3 class="text-xs font-black uppercase tracking-widest text-slate-500 flex items-center gap-3">
-                                <span class="w-8 h-8 bg-indigo-50 text-indigo-600 rounded-lg flex items-center justify-center">
-                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
-                                </span>
-                                Просмотр документа
-                            </h3>
+                <div class="lg:col-span-8">
+                    <div class="form-card p-6 h-full">
+                        <div class="flex items-center justify-between mb-6">
+                            <span class="text-[11px] font-black uppercase tracking-widest text-slate-400">Предпросмотр оригинала</span>
                             @if($signature->document && $signature->document->file_path)
-                                <a href="{{ asset('storage/' . $signature->document->file_path) }}" download class="bg-slate-900 text-white px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-indigo-600 transition">
+                                <a href="{{ asset('storage/' . $signature->document->file_path) }}" download
+                                   class="bg-slate-800 text-white px-5 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest hover:bg-indigo-600 transition">
                                     Скачать PDF
                                 </a>
                             @endif
                         </div>
 
-                        <div class="pdf-preview-box shadow-inner">
+                        <div class="pdf-preview-box shadow-inner bg-slate-50">
                             @if($signature->document && $signature->document->file_path)
-                                {{-- Вставляем PDF через iframe для предпросмотра --}}
                                 <iframe src="{{ asset('storage/' . $signature->document->file_path) }}#toolbar=0" class="w-full h-full" frameborder="0"></iframe>
                             @else
-                                <div class="flex flex-col items-center justify-center h-full bg-slate-50">
-                                    <svg class="w-12 h-12 text-slate-200 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9.172 9.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                                    <p class="text-slate-400 font-bold uppercase text-[10px]">Файл не найден</p>
+                                <div class="flex items-center justify-center h-full text-slate-400 uppercase text-[10px] font-bold">
+                                    Файл не найден
                                 </div>
                             @endif
                         </div>
                     </div>
                 </div>
-
             </div>
         </div>
     </div>

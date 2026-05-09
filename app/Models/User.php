@@ -7,12 +7,21 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use App\Notifications\DocumentAssigned; // Импорт твоего класса уведомлений
+use App\Notifications\DocumentAssigned;
+use Illuminate\Support\Facades\Cache;
+
+
+// Импорт твоего класса уведомлений
 
 class User extends Authenticatable
 {
     use HasFactory, Notifiable;
     use SoftDeletes;
+    // В начало файла внутри класса User
+    public function isOnline()
+    {
+        return Cache::has('user-is-online-' . $this->id);
+    }
     protected $fillable = [
         'name',
         'email',

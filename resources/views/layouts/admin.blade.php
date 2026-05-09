@@ -9,6 +9,7 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/fontsource-inter@5.1.1/index.css" rel="stylesheet">
     <style>
+
         .search-box {
             position: relative;
         }
@@ -263,6 +264,226 @@
 
 <body>
 {{-- resources/views/layouts/admin.blade.php --}}
+<div id="edo-loader">
+    <div class="loader-wrapper">
+        <div class="animation-zone">
+            <div class="document-item">
+                <div class="doc-body">
+                    <div class="doc-line"></div>
+                    <div class="doc-line short"></div>
+                    <div class="doc-stamp"></div>
+                </div>
+            </div>
+            <div class="plane-v4">
+                <svg viewBox="0 0 100 100">
+                    <path d="M15 50 L85 20 L55 55 L55 75 L70 65 L85 20 L35 65 L15 50 Z" fill="#3498db" stroke="#fff" stroke-width="1.5"/>
+                </svg>
+            </div>
+        </div>
+        <h2 class="status-text">Загрузка данных...</h2>
+       <div class="progress-bar"></div>
+    </div>
+</div>
+
+<style>
+    /* Прячем скролл, пока идет загрузка */
+    body.loading { overflow: hidden; }
+
+    #edo-loader {
+        position: fixed; inset: 0;
+        background: #ffffff;
+        display: flex; flex-direction: column; justify-content: center; align-items: center;
+        z-index: 999999; font-family: 'Inter', system-ui, -apple-system, sans-serif;
+        opacity: 1; visibility: visible;
+        transition: opacity 0.5s ease;
+    }
+
+    .animation-zone { position: relative; width: 300px; height: 180px; }
+
+    .document-item {
+        position: absolute; top: 50%; left: 50%;
+        width: 50px; height: 65px;
+        background: #fff; border: 2px solid #3498db; border-radius: 4px;
+        transform: translate(-50%, -50%);
+        box-shadow: 0 15px 35px rgba(52, 152, 219, 0.15);
+        animation: docState 2.8s infinite ease-in-out;
+    }
+
+    .doc-body { padding: 8px; }
+    .doc-line { height: 3px; background: #ebf5fb; margin-bottom: 6px; border-radius: 2px; }
+    .doc-line.short { width: 60%; }
+    .doc-stamp { position: absolute; bottom: 8px; right: 8px; width: 10px; height: 10px; border: 1px solid #3498db; border-radius: 50%; }
+
+    .plane-v4 {
+        position: absolute; width: 65px; height: 65px;
+        top: 50%; left: 50%;
+        filter: drop-shadow(0 5px 15px rgba(52, 152, 219, 0.3));
+        animation: strikeCatch 2.8s infinite cubic-bezier(0.5, 0, 0.5, 1);
+    }
+
+    @keyframes docState {
+        0% { transform: translate(-50%, 40px); opacity: 0; }
+        20%, 45% { transform: translate(-50%, -50%); opacity: 1; }
+        60%, 100% { transform: translate(400px, -500px) rotate(30deg); opacity: 0; }
+    }
+
+    @keyframes strikeCatch {
+        0% { transform: translate(-350px, 200px) rotate(-10deg); opacity: 0; }
+        20% { opacity: 1; }
+        45% { transform: translate(-15px, -15px) rotate(0deg) scale(1.1); }
+        65%, 100% { transform: translate(500px, -600px) rotate(-20deg); opacity: 1; }
+    }
+
+    .status-text { margin-top: 20px; color: #2c3e50; text-align: center; font-size: 1.4rem; font-weight: 600; letter-spacing: -0.02em; }
+
+    .progress-bar {
+        width: 130px; height: 4px; background: #ebf5fb;
+        margin: 15px auto; border-radius: 10px; position: relative; overflow: hidden;
+    }
+    .progress-bar::after {
+        content: ''; position: absolute; left: -100%; width: 100%; height: 100%;
+        background: #3498db; animation: lineLoad 2.8s infinite;
+    }
+    @keyframes lineLoad { 0% { left: -100%; } 50%, 100% { left: 100%; } }
+
+    .loader-hidden { opacity: 0 !important; visibility: hidden !important; }
+</style>
+
+<script>
+    document.body.classList.add('loading');
+
+    window.onbeforeunload = function() {
+        document.getElementById('edo-loader').classList.remove('loader-hidden');
+    };
+
+    window.addEventListener("load", function() {
+        const loader = document.getElementById('edo-loader');
+        setTimeout(() => {
+            loader.classList.add('loader-hidden');
+            document.body.classList.remove('loading');
+        }, 1200);
+    });
+</script>
+{{--<div id="edo-loader">--}}
+{{--    <div class="loader-wrapper">--}}
+{{--        <div class="animation-zone">--}}
+{{--            <div class="document-item">--}}
+{{--                <div class="doc-body">--}}
+{{--                    <div class="doc-line"></div>--}}
+{{--                    <div class="doc-line short"></div>--}}
+{{--                    <div class="doc-stamp"></div>--}}
+{{--                </div>--}}
+{{--            </div>--}}
+
+{{--            <div class="plane-v4">--}}
+{{--                <svg viewBox="0 0 100 100">--}}
+{{--                    <path d="M15 50 L85 20 L55 55 L55 75 L70 65 L85 20 L35 65 L15 50 Z" fill="#3498db" stroke="#fff" stroke-width="1.5"/>--}}
+{{--                </svg>--}}
+{{--                <div class="speed-spark"></div>--}}
+{{--            </div>--}}
+{{--        </div>--}}
+
+{{--        <h2 class="status-text">Захват крылом...</h2>--}}
+{{--        <p style="color: #3498db; margin-top: -10px; font-size: 0.9rem;">Мгновенная доставка в реестр</p>--}}
+{{--        <div class="progress-bar"></div>--}}
+{{--    </div>--}}
+{{--</div>--}}
+
+{{--<style>--}}
+{{--    /* Лоадер виден СРАЗУ, без задержек */--}}
+{{--    #edo-loader {--}}
+{{--        position: fixed;--}}
+{{--        inset: 0;--}}
+{{--        background: #ffffff;--}}
+{{--        display: flex;--}}
+{{--        flex-direction: column;--}}
+{{--        justify-content: center;--}}
+{{--        align-items: center;--}}
+{{--        z-index: 999999;--}}
+{{--        font-family: 'Inter', system-ui, sans-serif;--}}
+{{--        overflow: hidden;--}}
+{{--        opacity: 1;--}}
+{{--        visibility: visible;--}}
+{{--    }--}}
+
+{{--    .animation-zone { position: relative; width: 300px; height: 300px; }--}}
+
+{{--    .document-item {--}}
+{{--        position: absolute; top: 50%; left: 50%;--}}
+{{--        width: 50px; height: 65px;--}}
+{{--        background: #fff; border: 2px solid #3498db; border-radius: 4px;--}}
+{{--        transform: translate(-50%, -50%);--}}
+{{--        box-shadow: 0 15px 35px rgba(52, 152, 219, 0.15);--}}
+{{--        z-index: 5;--}}
+{{--        animation: docState 2.8s infinite ease-in-out;--}}
+{{--    }--}}
+
+{{--    .doc-body { padding: 8px; }--}}
+{{--    .doc-line { height: 3px; background: #ebf5fb; margin-bottom: 6px; border-radius: 2px; }--}}
+{{--    .doc-line.short { width: 60%; }--}}
+{{--    .doc-stamp { position: absolute; bottom: 8px; right: 8px; width: 12px; height: 12px; border: 1px solid #3498db; border-radius: 50%; }--}}
+
+{{--    .plane-v4 {--}}
+{{--        position: absolute; width: 65px; height: 65px;--}}
+{{--        top: 50%; left: 50%;--}}
+{{--        z-index: 10;--}}
+{{--        filter: drop-shadow(0 5px 15px rgba(52, 152, 219, 0.3));--}}
+{{--        animation: strikeCatch 2.8s infinite cubic-bezier(0.5, 0, 0.5, 1);--}}
+{{--    }--}}
+
+{{--    @keyframes docState {--}}
+{{--        0% { transform: translate(-50%, 50px) scale(0.8); opacity: 0; }--}}
+{{--        20% { transform: translate(-50%, -50%) scale(1); opacity: 1; }--}}
+{{--        45% { transform: translate(-50%, -50%); }--}}
+{{--        55% { transform: translate(450px, -550px) rotate(30deg); opacity: 0; }--}}
+{{--        100% { transform: translate(450px, -550px); opacity: 0; }--}}
+{{--    }--}}
+
+{{--    @keyframes strikeCatch {--}}
+{{--        0% { transform: translate(-350px, 250px) rotate(-10deg); opacity: 0; }--}}
+{{--        20% { opacity: 1; }--}}
+{{--        45% { transform: translate(-15px, -15px) rotate(0deg) scale(1.1); }--}}
+{{--        60% { transform: translate(500px, -600px) rotate(-15deg); opacity: 1; }--}}
+{{--        100% { transform: translate(600px, -700px); opacity: 0; }--}}
+{{--    }--}}
+
+{{--    .status-text { margin-top: 20px; color: #2c3e50; text-align: center; font-size: 1.4rem; font-weight: 600; }--}}
+
+{{--    .progress-bar {--}}
+{{--        width: 130px; height: 4px; background: #ebf5fb;--}}
+{{--        margin: 15px auto; border-radius: 10px; position: relative; overflow: hidden;--}}
+{{--    }--}}
+{{--    .progress-bar::after {--}}
+{{--        content: ''; position: absolute; left: -100%; width: 100%; height: 100%;--}}
+{{--        background: #3498db; animation: lineLoad 2.8s infinite;--}}
+{{--    }--}}
+{{--    @keyframes lineLoad { 0% { left: -100%; } 50%, 100% { left: 100%; } }--}}
+
+{{--    /* Класс скрытия для плавного выхода */--}}
+{{--    .loader-hidden {--}}
+{{--        opacity: 0 !important;--}}
+{{--        visibility: hidden !important;--}}
+{{--        transition: opacity 0.4s ease, visibility 0.4s;--}}
+{{--    }--}}
+{{--</style>--}}
+
+{{--<script>--}}
+{{--    // 1. Показываем лоадер ПЕРЕД тем как страница начнет обновляться (уходить на сервер)--}}
+{{--    window.addEventListener('beforeunload', function() {--}}
+{{--        document.getElementById('edo-loader').style.display = 'flex';--}}
+{{--    });--}}
+
+{{--    // 2. Скрываем лоадер только когда ПОЛНОСТЬЮ всё загрузилось (Google завершил обновление)--}}
+{{--    window.addEventListener("load", function() {--}}
+{{--        const loader = document.getElementById('edo-loader');--}}
+
+{{--        // Минимальное время показа 1.5 сек, чтобы не было мерцания на быстрых ПК--}}
+{{--        setTimeout(() => {--}}
+{{--            loader.classList.add('loader-hidden');--}}
+{{--        }, 1500);--}}
+{{--    });--}}
+{{--</script>--}}
+
 
 <nav class="flex items-center justify-between p-4 bg-black text-white">
     <div class="flex items-center gap-4">
@@ -330,49 +551,44 @@
         {{-- SUB MENU --}}
 
         <div class="collapse ps-4 mt-1 space-y-1" id="documentsMenu">
-            {{-- Глобальные категории --}}
-            <a href="{{ route('documents.index') }}" class="nav-link flex items-center justify-between gap-2 pr-4 py-1">
-                <div class="flex items-center gap-2">
-                    <span class="text-[9px]">📄</span>
-                    <span class="tracking-widest uppercase text-[9px] font-bold leading-none">All Docs</span>
-                </div>
+            <div class="my-1 border-t border-slate-100 mx-2"></div>
+
+            {{-- Потоки --}}
+            {{-- Все документы --}}
+            <a href="{{ route('documents.index') }}" class="nav-link" onclick="showPage('documents', this)">
+                <i class="bi bi-file-earmark-text"></i>
+                <span class="tracking-widest uppercase text-[10px] font-bold">All Docs</span>
             </a>
 
             <div class="my-1 border-t border-slate-100 mx-2"></div>
 
             {{-- Потоки --}}
-            <a href="{{ route('documents.index', ['type' => 'incoming']) }}" class="nav-link flex items-center gap-2 py-1">
-                <span class="text-[9px]">📥</span>
-                <span class="tracking-widest uppercase text-[9px] font-medium leading-none">Incoming</span>
+            <a href="{{ route('documents.index', ['type' => 'incoming']) }}" class="nav-link" onclick="showPage('incoming', this)">
+                <i class="bi bi-download"></i>
+                <span class="tracking-widest uppercase text-[10px]">Incoming</span>
             </a>
 
-            <a href="{{ route('documents.index', ['type' => 'outgoing']) }}" class="nav-link flex items-center gap-2 py-1">
-                <span class="text-[9px]">📤</span>
-                <span class="tracking-widest uppercase text-[9px] font-medium leading-none">Outgoing</span>
+            <a href="{{ route('documents.index', ['type' => 'outgoing']) }}" class="nav-link" onclick="showPage('outgoing', this)">
+                <i class="bi bi-upload"></i>
+                <span class="tracking-widest uppercase text-[10px]">Outgoing</span>
             </a>
 
             <div class="my-1 border-t border-slate-100 mx-2"></div>
 
-            {{-- СТАТУСЫ --}}
-            <a href="{{ route('documents.index', ['status' => 'waiting']) }}" class="nav-link flex items-center justify-between gap-2 pr-4 py-1 text-orange-600">
-                <div class="flex items-center gap-2">
-                    <span class="text-[9px]">⏳</span>
-                    <span class="tracking-widest uppercase text-[9px] font-medium leading-none">Waiting</span>
-                </div>
+            {{-- Статусы --}}
+            <a href="{{ route('documents.index', ['status' => 'waiting']) }}" class="nav-link text-orange-600" onclick="showPage('waiting', this)">
+                <i class="bi bi-clock-history"></i>
+                <span class="tracking-widest uppercase text-[10px]">Waiting</span>
             </a>
 
-            <a href="{{ route('documents.index', ['status' => 'signed']) }}" class="nav-link flex items-center justify-between gap-2 pr-4 py-1 text-green-600">
-                <div class="flex items-center gap-2">
-                    <span class="text-[9px]">✅</span>
-                    <span class="tracking-widest uppercase text-[9px] font-medium leading-none">Signed</span>
-                </div>
+            <a href="{{ route('documents.index', ['status' => 'signed']) }}" class="nav-link text-green-600" onclick="showPage('signed', this)">
+                <i class="bi bi-check-circle"></i>
+                <span class="tracking-widest uppercase text-[10px]">Signed</span>
             </a>
 
-            <a href="{{ route('documents.index', ['status' => 'draft']) }}" class="nav-link flex items-center justify-between gap-2 pr-4 py-1 text-slate-400">
-                <div class="flex items-center gap-2">
-                    <span class="text-[9px]">📝</span>
-                    <span class="tracking-widest uppercase text-[9px] font-medium leading-none">Drafts</span>
-                </div>
+            <a href="{{ route('documents.index', ['status' => 'draft']) }}" class="nav-link text-slate-400" onclick="showPage('drafts', this)">
+                <i class="bi bi-pencil-square"></i>
+                <span class="tracking-widest uppercase text-[10px]">Drafts</span>
             </a>
         </div>
     </li>

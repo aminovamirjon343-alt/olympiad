@@ -212,7 +212,7 @@ class DocumentController extends Controller
             DocumentSignature::create([
                 'document_id' => $document->id,
                 'user_id'     => $receiver->id,
-                'signature'   => '',
+                'signature'   => $signaturePath ?? '',
             ]);
 
             Notification::create([
@@ -227,7 +227,20 @@ class DocumentController extends Controller
 
         return redirect()->route('documents.index')->with('success', 'Документ создан!');
     }
+    public function pdf($id)
+    {
+        $document = Document::findOrFail($id);
 
+        // Проверяем, существует ли файл физически
+        if ($document->file_path && Storage::disk('public')->exists($document->file_path)) {
+            return Storage::disk('public')->download(
+                $document->file_path,
+                $document->title . '.pdf'
+            );
+        }
+
+        return back()->with('error', 'Файл не найден');
+    }
     public function show($id)
     {
         $document = Document::visibleToAuth()

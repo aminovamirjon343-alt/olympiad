@@ -82,7 +82,30 @@
                             <label class="label">✏️ Заголовок</label>
                             <input type="text" name="title" value="{{ $document->title }}" class="input font-bold" required>
                         </div>
+                        <div>
+                            {{-- Заголовок поля --}}
+                            <label class="block text-[11px] font-[1000] uppercase mb-2 tracking-widest text-black flex items-center gap-1.5">
+                                <span class="text-base">📧</span> Email получателя
+                            </label>
 
+                            <div class="relative flex items-center">
+                                {{-- Иконка внутри поля --}}
+                                <span class="absolute left-4 text-slate-400"></span>
+                                <input type="email"
+                                       name="receiver_email"
+                                       {{-- Используем old() для сохранения ввода при ошибках и текущий email из связи --}}
+                                       value="{{ old('receiver_email', $document->receiver->email ?? '') }}"
+                                       {{-- Класс !pl-10 нужен, чтобы текст не налезал на иконку --}}
+                                       class="input font-bold !pl-11"
+                                       placeholder="example@mail.com"
+                                       required>
+                            </div>
+
+                            {{-- Контейнер для результата поиска --}}
+                            <div id="user-info" class="text-[10px] mt-4 font-[1000] uppercase tracking-wider h-4 text-black opacity-80">
+                                {{-- Сюда скриптом можно выводить "Пользователь найден" --}}
+                            </div>
+                        </div>
                         {{-- Description --}}
                         <div>
                             <label class="label">💬 Описание</label>

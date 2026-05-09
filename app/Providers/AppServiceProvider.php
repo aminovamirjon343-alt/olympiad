@@ -23,6 +23,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot()
     {
+
         Document::observe(DocumentObserver::class);
         \Illuminate\Support\Facades\View::composer('*', function ($view) {
             if (\Illuminate\Support\Facades\Auth::check()) {

@@ -35,13 +35,17 @@ class DocumentSignatureController extends Controller
         // 1. Получаем ID из запроса
         $documentId = $request->query('document_id');
 
-        // 2. Если ID передан, ищем конкретный документ. Если нет — берем первый доступный.
-        // Это предотвратит 404, если вы зашли на страницу просто так.
-        $document = $documentId
-            ? Document::find($documentId)
-            : Document::first();
+        // 2. Ищем документ. Если ID нет, берем первый доступный для подписи
+        $document = Document::when($documentId, function($query) use ($documentId) {
+            return $query->where('id', $documentId);
+        })->first();
 
-        // 3. Получаем список всех документов для выпадающего списка в форме
+        // 3. Если вообще нет документов в базе — кидаем ошибку, чтобы страница не ломалась
+        if (!$document) {
+            return redirect()->route('documents.index')->with('error', 'Нет доступных документов для подписи.');
+        }
+
+        // 4. Получаем список документов для селекта
         $documents = Document::all();
         $users = User::all();
 
@@ -50,55 +54,104 @@ class DocumentSignatureController extends Controller
 
     public function store(Request $request)
     {
+        // 1. Валидация входных данных
         $request->validate([
             'document_id' => 'required|exists:documents,id',
-            'signature'   => 'required|string'
+            'signature'   => 'required|string' // Здесь приходит Base64 от Signature Pad
         ]);
 
         $document = Document::findOrFail($request->document_id);
         $signer = Auth::user();
 
-        // Проверка воркфлоу
+        // 2. Проверка очереди подписи (Workflow)
         $currentWorkflow = DocumentWorkflow::where('document_id', $document->id)
             ->where('status', 'pending')
-            ->orderBy('step_order')
+            ->orderBy('step_order', 'asc')
             ->first();
 
         if ($currentWorkflow && (int)$signer->id !== (int)$currentWorkflow->user_id) {
             return back()->with('error', 'Сейчас очередь другого пользователя для подписи!');
         }
 
-        // Проверка на дубликат
-        if (DocumentSignature::where('document_id', $document->id)->where('user_id', $signer->id)->exists()) {
+        // 3. Проверка: не подписал ли пользователь уже этот документ
+        $alreadySigned = DocumentSignature::where('document_id', $document->id)
+            ->where('user_id', $signer->id)
+            ->exists();
+
+        if ($alreadySigned) {
             return back()->with('error', 'Вы уже подписали этот документ.');
         }
 
+        // 4. Запуск транзакции для атомарности действий
         return DB::transaction(function () use ($request, $document, $signer, $currentWorkflow) {
             try {
-                // Вшивание подписи
-                $newFileName = $this->processPdfSigning($document, $request->signature);
+                // А. Сохраняем саму картинку подписи как файл (для истории)
+                $signatureData = $request->signature;
+                $signaturePath = null;
 
-                // Важно: сохраняем старый файл, если нужно, или удаляем его
-                $document->update(['file_path' => $newFileName]);
+                if (preg_match('/^data:image\/(\w+);base64,/', $signatureData, $type)) {
+                    $data = substr($signatureData, strpos($signatureData, ',') + 1);
+                    $data = base64_decode($data);
+                    $fileName = 'sig_' . $document->id . '_' . $signer->id . '_' . time() . '.png';
+                    $signaturePath = 'signatures/' . $fileName;
 
+                    \Storage::disk('public')->put($signaturePath, $data);
+                }
+
+                // Б. Вшивание подписи в PDF (вызывает твой внутренний метод)
+                // Метод должен вернуть путь к НОВОМУ файлу PDF
+                $newPdfPath = $this->processPdfSigning($document, $request->signature);
+
+                // В. Обновление документа (меняем путь к PDF на подписанный)
+                // Если хочешь хранить историю версий, лучше создать отдельную таблицу под файлы
+                $document->update([
+                    'file_path' => $newPdfPath,
+                    'status'    => ($currentWorkflow && $this->isLastStep($document)) ? 'completed' : $document->status
+                ]);
+
+                // Г. Создание записи о подписи
+                // В методе store используй $signaturePath (путь к файлу)
                 DocumentSignature::create([
                     'document_id' => $document->id,
                     'user_id'     => $signer->id,
-                    'signature'   => $request->signature,
+                    'signature'   => $signaturePath, // ПУТЬ К ФАЙЛУ
                     'signed_at'   => now(),
-                    'expires_at'  => $document->deadline ?? null, // исправлено: обычно поле deadline, а не due_date
+                    'expires_at'  => $document->deadline ?? null,
                 ]);
 
-                $this->logAction($document->id, 'signed', 'Документ подписан пользователем ' . $signer->name);
+                // Д. Логирование, Уведомление и Воркфлоу
+                $this->logAction($document->id, 'signed', "Документ подписан пользователем: {$signer->name}");
+
+                // Уведомляем создателя документа
                 $this->sendNotification($document->created_by, $signer, $document);
+
+                // Двигаем воркфлоу на следующий шаг
                 $this->processWorkflow($document, $currentWorkflow, $signer);
 
-                return redirect()->route('signatures.index')->with('success', 'Документ успешно подписан!');
+                return redirect()->route('signatures.index')->with('success', 'Документ успешно подписан и вшит в PDF!');
 
             } catch (\Exception $e) {
-                return back()->with('error', 'Ошибка PDF: ' . $e->getMessage());
+                // Если что-то пошло не так, удаляем созданный файл подписи, если он успел создаться
+                if (isset($signaturePath)) {
+                    \Storage::disk('public')->delete($signaturePath);
+                }
+
+                // Бросаем исключение дальше для отката транзакции или логируем
+                \Log::error("Ошибка при подписании документа ID {$document->id}: " . $e->getMessage());
+
+                return back()->with('error', 'Ошибка при обработке PDF: ' . $e->getMessage());
             }
         });
+    }
+
+    /**
+     * Вспомогательный метод для проверки, является ли этот шаг последним
+     */
+    private function isLastStep($document)
+    {
+        return !DocumentWorkflow::where('document_id', $document->id)
+            ->where('status', 'pending')
+            ->exists();
     }
     public function update(Request $request, DocumentSignature $signature)
     {

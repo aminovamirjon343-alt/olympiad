@@ -49,8 +49,13 @@ class Document extends Model
 
         // Если обычный пользователь — только свои или входящие
         return $query->where(function($q) use ($user) {
+            // 1. Автор видит свои документы в любом статусе (даже черновики)
             $q->where('created_by', $user->id)
-                ->orWhere('receiver_id', $user->id);
+                // 2. А получатель видит документ ТОЛЬКО если статус НЕ черновик
+                ->orWhere(function($subQ) use ($user) {
+                    $subQ->where('receiver_id', $user->id)
+                        ->where('status', '!=', self::STATUS_DRAFT);
+                });
         });
     }
 

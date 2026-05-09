@@ -115,8 +115,6 @@
                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="4"><path d="M15 19l-7-7 7-7"/></svg>
                         Назад
                     </a>
-                    <h1 class="dynamic-text-main">Профиль сотрудника</h1>
-                    <p class="dynamic-text-sub">Просмотр информации</p>
                 </div>
 
                 <a href="{{ route('users.edit', $user->id) }}" class="btn-primary-custom flex items-center gap-2 shadow-lg">
@@ -167,7 +165,7 @@
                                 </div>
                                 <div>
                                     <label class="info-label">Телефон</label>
-                                    <p class="info-value">TJ {{ $user->phone ?? '---' }}</p>
+                                    <p class="info-value">{{ $user->phone ?? '---' }}</p>
                                 </div>
                                 <div>
                                     <label class="info-label">Регистрация</label>

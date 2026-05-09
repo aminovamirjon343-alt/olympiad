@@ -12,35 +12,48 @@ class DashboardController extends Controller
 {
     public function index()
     {
-        // 1. Общее количество документов и рост
-        $totalDocs = Document::count();
-        $prevTotalDocs = Document::where('created_at', '<', now()->startOfMonth())->count();
+        $user = Auth::user();
+
+        // 1. Общее количество документов (только доступных пользователю)
+        $totalDocs = Document::visibleToAuth()->count();
+
+        $prevTotalDocs = Document::visibleToAuth()
+            ->where('created_at', '<', now()->startOfMonth())
+            ->count();
+
         $docsGrowth = $prevTotalDocs > 0
             ? round((($totalDocs - $prevTotalDocs) / $prevTotalDocs) * 100, 1)
             : ($totalDocs > 0 ? 100 : 0);
 
-        // 2. ПОДПИСИ (Считаем из правильной таблицы document_signatures)
-        // Здесь твои 4 подписи наконец-то найдутся
-        $signedCount = DocumentSignature::count();
+        // 2. ПОДПИСИ (Только те, что относятся к доступным документам)
+        // Используем whereHas, чтобы считать подписи только в документах, которые видит юзер
+        $signedCount = DocumentSignature::whereHas('document', function($q) {
+            $q->visibleToAuth();
+        })->count();
 
-        $prevSigned = DocumentSignature::where('created_at', '<', now()->startOfMonth())->count();
+        $prevSigned = DocumentSignature::whereHas('document', function($q) {
+            $q->visibleToAuth();
+        })->where('created_at', '<', now()->startOfMonth())->count();
+
         $signedGrowth = $prevSigned > 0
             ? round((($signedCount - $prevSigned) / $prevSigned) * 100, 1)
             : ($signedCount > 0 ? 100 : 0);
 
-        // 3. Сбор статистики
+        // 3. Сбор статистики (с учетом прав доступа)
         $stats = [
             'total'    => $totalDocs,
-            'active'   => Document::whereIn('status', ['active', 'Active'])->count(),
-            'signed'   => $signedCount, // Передаем реальное кол-во подписей
-            'rejected' => Document::whereIn('status', ['rejected', 'Rejected'])->count(),
-            'pending'  => Document::whereIn('status', ['pending', 'Pending'])->count(),
-            'users'    => User::count(),
+            'active'   => Document::visibleToAuth()->whereIn('status', ['active', 'Active'])->count(),
+            'signed'   => $signedCount,
+            'rejected' => Document::visibleToAuth()->whereIn('status', ['rejected', 'Rejected'])->count(),
+            'pending'  => Document::visibleToAuth()->whereIn('status', ['pending', 'Pending'])->count(),
+            'users'    => User::count(), // Пользователей обычно видят все, либо тоже фильтруй
         ];
 
-        // 4. Последние документы и логи
-        $documents = Document::where('created_by', Auth::id())->latest()->take(5)->get();
-        $activities = DocumentLog::where('user_id', Auth::id())->latest()->take(5)->get();
+        // 4. Последние документы (только свои/входящие)
+        $documents = Document::visibleToAuth()->latest()->take(6)->get();
+
+        // Логи действий (у тебя уже было правильно - по Auth::id())
+        $activities = DocumentLog::where('user_id', $user->id)->latest()->take(5)->get();
 
         return view('dashboard', compact(
             'stats',

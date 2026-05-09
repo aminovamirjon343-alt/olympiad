@@ -1,8 +1,7 @@
 @extends('layouts.admin')
 
 @section('content')
-    {{-- Если ты поменяешь bg-[#0f172a] на bg-white, текст ниже сам адаптируется --}}
-    <div class="min-h-screen bg-[#0f172a] py-12 users-page transition-colors duration-500">
+    <div class="min-h-screen bg-[#0f172a] py-8 users-page">
         <div class="container mx-auto px-4 flex flex-col items-center">
             <style>
                 .users-page {
@@ -10,130 +9,140 @@
                     -webkit-font-smoothing: antialiased;
                 }
 
-                /* УМНЫЙ ЗАГОЛОВОК: Он будет инвертировать цвет */
                 .main-title {
-                    /* Используем специальный класс или переменную для адаптивности */
-                    color: white;
-                    mix-blend-mode: exclusion; /* Магия: делает текст видимым на любом фоне */
+                    color: #ffffff !important;
                     font-size: 1.25rem !important;
                     font-weight: 800;
                     text-transform: uppercase;
                     letter-spacing: 0.05em;
                 }
 
-                /* Если фон светлый (например, через родительский класс), меняем цвет принудительно */
-                .bg-white .main-title, .bg-slate-50 .main-title { color: #000000 !important; mix-blend-mode: normal; }
-                .bg-[#0f172a] .main-title { color: #ffffff !important; }
-
-                /* Аналогично для ID пользователя */
-                .id-label {
-                    font-size: 9px;
-                    font-weight: 700;
-                    text-transform: uppercase;
-                    letter-spacing: 0.2em;
-                    margin-top: 4px;
-                    font-style: italic;
-                }
-                .bg-[#0f172a] .id-label { color: #94a3b8; } /* Серый на темном */
-                .bg-white .id-label { color: #64748b; }    /* Темно-серый на светлом */
-
-                /* КАРТОЧКА ВСЕГДА БЕЛАЯ — ТЕКСТ ВНУТРИ ВСЕГДА ЧЕРНЫЙ */
                 .form-card {
                     background: #ffffff !important;
                     border-radius: 1rem;
                     box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.5);
                     width: 100%;
                     max-width: 38rem;
-                    border: 1px solid rgba(0,0,0,0.05);
                 }
 
                 .field-label {
                     display: block;
                     text-transform: uppercase;
-                    letter-spacing: 0.05em;
-                    font-size: 0.75rem;
-                    font-weight: 900;
-                    color: #000000 !important; /* Внутри карточки всегда черный */
-                    margin-bottom: 0.5rem;
+                    letter-spacing: 0.08em;
+                    font-size: 0.65rem;
+                    font-weight: 800;
+                    color: #000000 !important;
+                    margin-bottom: 0.4rem;
                 }
 
+                /* ТЕКСТ ВНУТРИ: Увеличили размер (как в навбаре), убрали жир (font-normal) */
                 .input-custom {
-                    background-color: #ffffff !important;
-                    border: 2px solid #e2e8f0 !important;
+                    background-color: #f2f2f7 !important;
+                    border: 1px solid #d1d1d6 !important;
                     color: #000000 !important;
-                    font-size: 0.9rem !important;
-                    font-weight: 700 !important;
-                    padding: 0.8rem 1rem !important;
+                    font-size: 0.95rem !important; /* Увеличили до ~15px */
+                    font-weight: 400 !important; /* Без жира */
+                    padding: 0.85rem 1rem !important;
                     border-radius: 0.6rem !important;
+                    transition: all 0.2s ease;
                 }
 
                 .input-custom:focus {
                     border-color: #f59e0b !important;
+                    background-color: #ffffff !important;
                     outline: none;
                 }
 
                 .btn-save {
                     background-color: #f59e0b !important;
                     color: #ffffff !important;
-                    font-weight: 900;
+                    font-weight: 800;
                     text-transform: uppercase;
+                    letter-spacing: 0.05em;
                     font-size: 0.8rem;
                     padding: 1rem !important;
                     border-radius: 0.6rem;
                 }
             </style>
 
-            {{-- Блок заголовка --}}
-            <div class="w-full max-w-2xl mb-8">
-                <a href="{{ route('users.index') }}" class="inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-amber-500 mb-3 transition hover:text-amber-400">
-                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="4"><path d="M15 19l-7-7 7-7"/></svg>
-                    Назад
-                </a>
 
-                {{-- Эти тексты теперь адаптируются --}}
-                <h1 class="main-title">Редактировать сотрудника</h1>
-                <p class="id-label">ID пользователя: #{{ $user->id }}</p>
+            <div class="w-full max-w-2xl mb-6">
+                {{-- Компактная кнопка НАЗАД наверху --}}
+                <div class="mb-2">
+                    <a href="{{ route('users.index') }}" class="inline-flex items-center gap-1.5 text-[8px] font-black uppercase tracking-[0.2em] text-amber-500 hover:opacity-80 transition">
+                        <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="5"><path d="M15 19l-7-7 7-7"/></svg>
+                        Назад
+                    </a>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold doc-main-title tracking-tight flex items-center gap-2">
+                        <span class="w-2 h-6 bg-blue-500 rounded-full shadow-[0_0_10px_rgba(59,130,246,0.5)]"></span>
+                        User
+                    </h1>
+                </div>
+                <p class="text-[9px] font-bold text-slate-400 uppercase tracking-[0.2em] mt-1 ml-4 italic">
+                    ID пользователя: #{{ $user->id }}
+                </p>
             </div>
 
-            <div class="form-card p-10">
+            <div class="form-card p-8">
                 <form method="POST" action="{{ route('users.update', $user->id) }}" class="space-y-6">
                     @csrf
                     @method('PUT')
 
                     <div>
                         <label class="field-label">Полное имя</label>
-                        <input name="name" type="text" value="{{ $user->name }}" required
-                               class="w-full input-custom shadow-sm" placeholder="Имя...">
+                        <input name="name" type="text" value="{{ $user->name }}" required class="w-full input-custom shadow-sm" placeholder="Имя, Фамилия">
                     </div>
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
                             <label class="field-label">Email адрес</label>
-                            <input name="email" type="email" value="{{ $user->email }}" required
-                                   class="w-full input-custom shadow-sm">
+                            <input name="email" type="email" value="{{ $user->email }}" required class="w-full input-custom shadow-sm" placeholder="mail@example.com">
                         </div>
 
                         <div>
                             <label class="field-label">Телефон</label>
-                            <div class="relative flex items-center">
-                                <span class="absolute left-4 font-black text-amber-600 text-[10px]">TJ</span>
-                                <input name="phone" type="text" value="{{ $user->phone }}"
-                                       class="w-full input-custom pl-12 shadow-sm">
+                            <input name="phone" type="text" id="phone" value="{{ $user->phone }}" required class="w-full input-custom shadow-sm">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="field-label">Роль / Доступ</label>
+                            <div class="relative">
+                                <select name="role" class="w-full input-custom appearance-none cursor-pointer pr-10">
+                                    <option value="employee" {{ $user->role == 'employee' ? 'selected' : '' }}>Сотрудник</option>
+                                    <option value="director" {{ $user->role == 'director' ? 'selected' : '' }}>Директор</option>
+                                    <option value="admin" {{ $user->role == 'admin' ? 'selected' : '' }}>Администратор</option>
+                                </select>
+                                <div class="absolute inset-y-0 right-3 flex items-center pointer-events-none text-slate-400">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3"><path d="M19 9l-7 7-7-7"/></svg>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="field-label">{{ isset($user) ? 'Смена пароля' : 'Пароль' }}</label>
+                            <div class="relative">
+                                <input name="password" type="password" id="password" {{ isset($user) ? '' : 'required' }}
+                                class="w-full input-custom pr-10" placeholder="••••••••">
+
+                                {{-- Кнопка переключения --}}
+                                <button type="button" onclick="togglePassword()" class="absolute inset-y-0 right-3 flex items-center text-slate-400 hover:text-indigo-600 transition-colors">
+                                    {{-- Мы будем менять этот SVG через JS --}}
+                                    <span id="pass-icon-container">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                    <path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                </svg>
+            </span>
+                                </button>
                             </div>
                         </div>
                     </div>
 
-                    <div>
-                        <label class="field-label">Роль / Доступ</label>
-                        <select name="role" class="w-full input-custom cursor-pointer appearance-none">
-                            <option value="employee" {{ $user->role == 'employee' ? 'selected' : '' }}>Сотрудник</option>
-                            <option value="director" {{ $user->role == 'director' ? 'selected' : '' }}>Директор</option>
-                            <option value="admin" {{ $user->role == 'admin' ? 'selected' : '' }}>Администратор</option>
-                        </select>
-                    </div>
-
-                    <div class="pt-6 border-t-2 border-primary/10">
-                        <button type="submit" class="w-full btn-primary-custom shadow-lg shadow-primary/20 active:scale-[0.98]">
+                    <div class="pt-6 flex justify-center">
+                        <button type="submit" class="btn-primary-custom flex items-center justify-center gap-3 shadow-lg active:scale-95 transition-all px-10 py-2.5 text-[11px] font-black uppercase tracking-widest" style="border-radius: 10px;">
                             Сохранить изменения
                         </button>
                     </div>
@@ -141,4 +150,62 @@
             </div>
         </div>
     </div>
+    <script>
+        function togglePassword() {
+            const input = document.getElementById('password');
+            const container = document.getElementById('pass-icon-container');
+
+            // Иконка "Глаз открыт"
+            const eyeOpen = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>`;
+
+            // Иконка "Глаз закрыт" (зачеркнутый)
+            const eyeClosed = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88L4.22 4.22m15.56 15.56l-5.656-5.656m0 0a10.002 10.002 0 001.438-2.904c1.274-4.057-2.514-7-6.992-7a9.963 9.963 0 00-2.311.27l5.657 5.657z"/></svg>`;
+
+            if (input.type === 'password') {
+                input.type = 'text';
+                container.innerHTML = eyeClosed;
+            } else {
+                input.type = 'password';
+                container.innerHTML = eyeOpen;
+            }
+        }
+    </script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const phoneInput = document.getElementById('phone');
+            const form = phoneInput.closest('form'); // Находим форму
+            const prefix = '+992 ';
+
+            // 1. Форматирование ввода (твой код)
+            phoneInput.addEventListener('input', function (e) {
+                if (!e.target.value.startsWith(prefix)) e.target.value = prefix;
+                let digits = e.target.value.substring(prefix.length).replace(/\D/g, '').substring(0, 9);
+                let formatted = '';
+                if (digits.length > 0) formatted += digits.substring(0, 2);
+                if (digits.length >= 3) formatted += ' ' + digits.substring(2, 5);
+                if (digits.length >= 6) formatted += ' ' + digits.substring(5, 7);
+                if (digits.length >= 8) formatted += ' ' + digits.substring(7, 9);
+                e.target.value = prefix + formatted;
+
+                // Убираем красную рамку при вводе
+                phoneInput.style.borderColor = '';
+            });
+
+            // 2. Валидация перед сохранением
+            form.addEventListener('submit', function (e) {
+                // Считаем только цифры после +992
+                let digitsOnly = phoneInput.value.substring(prefix.length).replace(/\D/g, '');
+
+                if (digitsOnly.length < 9) {
+                    e.preventDefault(); // ОСТАНАВЛИВАЕМ сохранение
+
+                    // Визуальный сигнал пользователю
+                    phoneInput.style.border = '2px solid #ef4444'; // Красный цвет (Tailwind red-500)
+                    phoneInput.focus();
+
+                    alert('Пожалуйста, введите номер телефона полностью (9 цифр после +992)');
+                }
+            });
+        });
+    </script>
 @endsection

@@ -276,13 +276,16 @@
 {{--        });--}}
 {{--    </script>--}}
 {{--@endsection--}}
+
+
+
 @extends('layouts.admin')
 
 @section('content')
     <div class="container mx-auto px-4 py-8">
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
 
-            {{-- Левая колонка: Выбор и Рисование --}}
+            {{-- Левая колонка --}}
             <div class="lg:col-span-5">
                 <div class="bg-white p-8 rounded-[2.5rem] shadow-xl border border-slate-100">
                     <h2 class="text-xl font-black uppercase tracking-tighter mb-6 text-slate-800">Подписание документа</h2>
@@ -293,12 +296,12 @@
 
                         {{-- Выбор документа --}}
                         <div class="mb-6">
-                            <label class="text-[10px] font-black uppercase tracking-widest text-slate-400 block mb-2 ml-1">Выберите документ из списка</label>
-                            <select name="document_id" id="documentSelect" class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-3 font-bold text-slate-700 outline-none focus:border-indigo-500 transition cursor-pointer">
+                            <label class="text-[10px] font-black uppercase tracking-widest text-slate-400 block mb-2 ml-1">Выберите документ</label>
+                            <select name="document_id" id="documentSelect" class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-3 font-bold text-slate-700 outline-none focus:border-indigo-500 transition">
                                 @foreach($documents as $doc)
                                     <option value="{{ $doc->id }}"
                                             data-pdf="{{ asset('storage/' . $doc->file_path) }}"
-                                        {{ $doc->id == $document->id ? 'selected' : '' }}>
+                                        {{ (isset($document) && $doc->id == $document->id) ? 'selected' : '' }}>
                                         #{{ $doc->id }} — {{ $doc->title }}
                                     </option>
                                 @endforeach
@@ -307,78 +310,89 @@
 
                         {{-- Зона подписи --}}
                         <label class="text-[10px] font-black uppercase tracking-widest text-indigo-500 block mb-2 ml-1">Нарисуйте вашу подпись ниже</label>
-                        <div class="relative bg-slate-50 border-2 border-dashed border-slate-200 rounded-3xl overflow-hidden group">
-                            <canvas id="signature-pad" class="w-full h-64 touch-none cursor-crosshair"></canvas>
+                        <div class="relative bg-slate-50 border-2 border-dashed border-slate-200 rounded-3xl overflow-hidden" style="height: 260px;">
+                            <canvas id="signature-pad" class="absolute inset-0 w-full h-full touch-none" style="cursor: crosshair; z-index: 5;"></canvas>
 
-                            <button type="button" id="clearBtn" class="absolute top-4 right-4 bg-white/90 backdrop-blur-sm text-slate-500 p-2 rounded-xl hover:bg-red-50 hover:text-red-500 transition shadow-sm border border-slate-100">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                            <button type="button" id="clearBtn" class="absolute top-4 right-4 bg-white/90 backdrop-blur-sm text-slate-500 p-2 rounded-xl hover:bg-red-50 hover:text-red-500 transition shadow-sm border border-slate-100" style="z-index: 10;">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
                             </button>
                         </div>
 
                         <div class="mt-8">
-                            <button type="submit" class="w-full bg-indigo-600 text-white py-4 rounded-2xl font-black uppercase tracking-widest hover:bg-indigo-700 transition shadow-lg shadow-indigo-100 flex items-center justify-center gap-3">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3"><path d="M5 13l4 4L19 7"/></svg>
-                                Подтвердить и вшить в PDF
+                            <button type="submit" id="submitBtn" class="w-full bg-indigo-600 text-white py-4 rounded-2xl font-black uppercase tracking-widest hover:bg-indigo-700 transition shadow-lg flex items-center justify-center gap-3">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                                Подтвердить подпись
                             </button>
                         </div>
                     </form>
                 </div>
             </div>
 
-            {{-- Правая колонка: Интерактивный предпросмотр PDF --}}
+            {{-- Правая колонка: PDF --}}
             <div class="lg:col-span-7">
                 <div class="bg-slate-900 p-2 rounded-[2.8rem] shadow-2xl h-[750px] sticky top-8">
-                    <iframe id="pdfViewer" src="{{ asset('storage/' . $document->file_path) }}#toolbar=0" class="w-full h-full rounded-[2.2rem]" frameborder="0"></iframe>
+                    <iframe id="pdfViewer" src="" class="w-full h-full rounded-[2.2rem] bg-white" frameborder="0"></iframe>
                 </div>
             </div>
-
         </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.0.0/dist/signature_pad.umd.min.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
-            // 1. Логика смены PDF в реальном времени
+            const canvas = document.getElementById('signature-pad');
+            const signatureInput = document.getElementById('signatureInput');
+            const form = document.getElementById('signatureForm');
             const select = document.getElementById('documentSelect');
             const viewer = document.getElementById('pdfViewer');
 
-            select.addEventListener('change', function() {
-                const selectedOption = this.options[this.selectedIndex];
-                const pdfUrl = selectedOption.getAttribute('data-pdf');
-
-                // Обновляем iframe с эффектом затухания
-                viewer.style.opacity = '0.5';
-                viewer.src = pdfUrl + '#toolbar=0';
-
-                viewer.onload = () => { viewer.style.opacity = '1'; };
-            });
-
-            // 2. Настройка Signature Pad
-            const canvas = document.getElementById('signature-pad');
+            // 1. Инициализация Signature Pad
             const signaturePad = new SignaturePad(canvas, {
                 backgroundColor: 'rgba(255, 255, 255, 0)',
-                penColor: '#1e293b'
+                penColor: '#1e293b',
+                minWidth: 2,
+                maxWidth: 4
             });
 
+            // 2. Правильный ресайз
             function resizeCanvas() {
                 const ratio = Math.max(window.devicePixelRatio || 1, 1);
                 canvas.width = canvas.offsetWidth * ratio;
                 canvas.height = canvas.offsetHeight * ratio;
                 canvas.getContext("2d").scale(ratio, ratio);
-                signaturePad.clear();
+                signaturePad.clear(); // При ресайзе очищаем, чтобы не было артефактов
             }
 
-            window.onresize = resizeCanvas;
+            window.addEventListener("resize", resizeCanvas);
             resizeCanvas();
 
+            // 3. Функция обновления PDF (вызываем сразу и при смене)
+            function updatePdf() {
+                const selectedOption = select.options[select.selectedIndex];
+                if (selectedOption) {
+                    const pdfUrl = selectedOption.getAttribute('data-pdf');
+                    viewer.src = pdfUrl + '#toolbar=0';
+                }
+            }
+
+            updatePdf(); // Запуск при загрузке
+            select.addEventListener('change', updatePdf);
+
+            // 4. Очистка
             document.getElementById('clearBtn').addEventListener('click', () => signaturePad.clear());
 
-            document.getElementById('signatureForm').addEventListener('submit', function (e) {
+            // 5. Отправка формы
+            form.addEventListener('submit', function (e) {
                 if (signaturePad.isEmpty()) {
                     e.preventDefault();
-                    alert("Пожалуйста, оставьте подпись на холсте.");
+                    alert("Пожалуйста, нарисуйте подпись!");
                 } else {
-                    document.getElementById('signatureInput').value = signaturePad.toDataURL();
+                    // КРИТИЧЕСКИЙ МОМЕНТ: Берем данные ПРЯМО ПЕРЕД отправкой
+                    const dataURL = signaturePad.toDataURL('image/png');
+                    signatureInput.value = dataURL;
+
+                    // Если хочешь проверить, добавь:
+                    // console.log(signatureInput.value);
                 }
             });
         });

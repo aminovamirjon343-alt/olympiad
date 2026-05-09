@@ -46,7 +46,7 @@
 </span>
                             {{-- ДОБАВЛЕННЫЙ НОМЕР ДОКУМЕНТА --}}
                             <span class="text-[9px] font-black bg-blue-50 text-blue-700 px-2.5 py-1 rounded border border-blue-100 uppercase tracking-widest">
-                                № {{ $document->number ?? 'Б/Н' }}
+                                 {{ $document->number ?? 'Б/Н' }}
                             </span>
                         </div>
 
@@ -88,7 +88,8 @@
                         </div>
                     @endif
 
-                    <a href="{{ route('documents.pdf', $document->id) }}"
+                    <a href="{{ asset('storage/' . $document->file_path) }}"
+                       download="{{ $document->title }}.pdf"
                        class="h-10 px-4 bg-green-600 text-white rounded-xl font-semibold uppercase tracking-widest text-xs flex items-center justify-center hover:scale-[1.01] active:scale-95 transition shadow-lg">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
@@ -109,7 +110,7 @@
                                       class="w-full bg-white border border-slate-200 rounded-2xl p-4 pr-12 text-[12px] text-black focus:border-orange-400 focus:ring-4 focus:ring-orange-50 outline-none transition-all placeholder:text-slate-400 shadow-sm"
                                       placeholder="Leave a comment..."></textarea>
                             <button class="absolute bottom-4 right-4 text-orange-500 hover:text-orange-600 hover:scale-110 transition-all">
-                                <i class="bi bi-send-fill text-xl"></i>
+                                <i class="bi bi-send-fill text-xl text-primary"></i>
                             </button>
                         </form>
 
@@ -136,7 +137,8 @@
                             @empty
                                 <div class="text-center py-8 border-2 border-dashed border-slate-100 rounded-2xl bg-slate-50/50">
                                     <i class="bi bi-chat-dots text-slate-300 text-2xl mb-2 block"></i>
-                                    <p class="text-[10px] font-bold uppercase tracking-widest text-slate-400">No notes yet</p>
+                                    <!-- Заменил font-bold на font-medium для легкости -->
+                                    <p class="text-[10px] font-medium uppercase tracking-widest text-slate-400">No notes yet</p>
                                 </div>
                             @endforelse
                         </div>
