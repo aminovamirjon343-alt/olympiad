@@ -191,3 +191,18 @@ Route::middleware(['auth'])->group(function () {
     // Воркфлоу
     Route::resource('workflow', DocumentWorkflowController::class);
 });
+Route::middleware(['auth'])->group(function () {
+
+    // Страница настроек (теперь доступна по /setting)
+    Route::get('/setting', function () {
+        return view('settings.index');
+    })->name('settings');
+
+    // Обновление подписи (используем твой ProfileController)
+    Route::post('/settings/signature', [ProfileController::class, 'updateSignature'])
+        ->name('settings.signature.update');
+
+    // Добавь этот маршрут, чтобы форма уведомлений не выдавала ошибку 404
+    Route::post('/settings/general', [ProfileController::class, 'updateGeneral'])
+        ->name('settings.general.update');
+});

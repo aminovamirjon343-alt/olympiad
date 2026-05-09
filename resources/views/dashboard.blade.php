@@ -277,8 +277,18 @@
                                 <div class="flex-grow-1">
                                     <div style="font-size:13px; line-height: 1.4;">
                                         {{-- Имя пользователя (если есть связь в модели) --}}
-                                        <span class="fw-bold text-dark">{{ $log->user->name ?? 'Система' }}</span>
+                                        <span class="font-bold mix-blend-difference text-white">
+    {{ $log->user->name ?? 'Система' }}:
+</span>
+<style>.log-username {
+        color: #000000; /* Черный текст по умолчанию */
+    }
 
+    @media (prefers-color-scheme: dark) {
+        .log-username {
+            color: #ffffff; /* Белый текст, если у юзера темная тема в системе */
+        }
+    }</style>
                                         @if($log->status == 'approved')
                                             <span class="text-success">подписал(а) документ</span>
                                         @elseif($log->status == 'pending')

@@ -28,6 +28,7 @@ class User extends Authenticatable
         'password',
         'role',
         'phone'
+
     ];
 
     protected $attributes = [
@@ -59,8 +60,9 @@ class User extends Authenticatable
      * Связь с документами (созданными этим пользователем)
      * Используем 'created_by', так как в миграции поле называется именно так.
      */
-    public function documents(): HasMany
+    public function documents()
     {
+        // Указываем 'created_by' как внешний ключ вместо стандартного 'user_id'
         return $this->hasMany(Document::class, 'created_by');
     }
 
@@ -73,5 +75,6 @@ class User extends Authenticatable
         // Это автоматически запишет данные в таблицу notifications через morphs
         return $this->notify(new DocumentAssigned($document));
     }
+
 }
 

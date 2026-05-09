@@ -101,10 +101,34 @@
                             <input name="email" type="email" value="{{ $user->email }}" required class="w-full input-custom shadow-sm" placeholder="mail@example.com">
                         </div>
 
-                        <div>
-                            <label class="field-label">Телефон</label>
-                            <input name="phone" type="text" id="phone" value="{{ $user->phone }}" required class="w-full input-custom shadow-sm">
+                        <div class="mb-4">
+                            <label for="phone" class="block text-sm font-bold mb-2 text-black dark:text-white">
+                                Телефон
+                            </label>
+                            <input
+                                name="phone"
+                                type="text"
+                                id="phone"
+                                required
+                                class="w-full px-4 py-2 rounded-lg border focus:ring-2 focus:outline-none
+               bg-white text-black border-gray-300 focus:ring-blue-500
+               dark:bg-gray-800 dark:text-white dark:border-gray-600 dark:focus:ring-blue-400
+               shadow-sm transition-colors duration-200"
+                                value="{{ old('phone', $user->phone ?? '+992 ') }}"
+                                placeholder="+992 00 000 0000"
+                            >
                         </div>
+
+                        <script>
+                            // Маленький хелпер: если пользователь удаляет всё, возвращаем префикс
+                            const phoneInput = document.getElementById('phone');
+
+                            phoneInput.addEventListener('input', function (e) {
+                                if (!e.target.value.startsWith('+992 ')) {
+                                    e.target.value = '+992 ';
+                                }
+                            });
+                        </script>
                     </div>
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">

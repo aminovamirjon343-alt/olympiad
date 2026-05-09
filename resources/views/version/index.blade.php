@@ -8,7 +8,11 @@
             {{-- HEADER --}}
             <div class="flex items-center justify-between mb-6">
                 <div>
-                    <h1 class="text-2xl font-bold text-black">Версии документов</h1>
+                    <h1 class="text-xl font-bold doc-main-title tracking-tight flex items-center gap-2">
+                        <span class="w-2 h-6 bg-blue-500 rounded-full shadow-[0_0_10px_rgba(59,130,246,0.5)]"></span>
+                        Версия документ
+                    </h1>
+
                     <p class="text-xs text-gray-400 uppercase tracking-widest">
                         История изменений файлов
                     </p>
@@ -32,6 +36,7 @@
                         <th class="text-center">Файл</th>
                         <th class="text-center">Дата</th>
                         <th class="text-right p-4">Действия</th>
+
                     </tr>
                     </thead>
 

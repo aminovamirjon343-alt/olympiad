@@ -158,4 +158,8 @@ class Document extends Model
 
         return 'bg-yellow-50 text-yellow-600 border-yellow-600';
     }
+    public function creator()
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
 }

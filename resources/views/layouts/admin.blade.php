@@ -621,7 +621,7 @@
     <a href="/profile" class="nav-link" data-page="profile" onclick="showPage('profile', this)">
         <i class="bi bi-person-circle"></i> <span data-i18n="profile">Profile</span>
     </a>
-    <a href="/profile/edit" class="nav-link" data-page="profile-edit" onclick="showPage('profile-edit', this)">
+    <a href="/setting" class="nav-link" data-page="profile-edit" onclick="showPage('profile-edit', this)">
         <i class="bi bi-gear"></i> <span data-i18n="settings">Settings</span>
     </a>
     </a>

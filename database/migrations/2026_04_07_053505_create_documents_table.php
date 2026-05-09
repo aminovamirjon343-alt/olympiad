@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             // Добавляем поле для номера документа сразу после ID
             $table->string('number')->nullable()->comment('Официальный номер документа');
-
+            $table->foreignId('user_id')->constrained()->onDelete('cascade');
             $table->string('title');
             $table->text('content')->nullable();
             $table->string('file_path')->nullable();
