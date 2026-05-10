@@ -1,3 +1,7 @@
+
+@extends('layouts.admin')
+
+@section('content')
 <div class="notif-container">
     <div class="notif-list">
         @forelse($notifications as $n)
@@ -196,3 +200,4 @@
         font-size: 15px;
     }
 </style>
+@endsection

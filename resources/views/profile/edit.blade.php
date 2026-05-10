@@ -75,47 +75,127 @@
                 </div>
 
                 <!-- БЛОК 3: УДАЛЕНИЕ -->
-                <div class="relative group overflow-hidden">
-                    <!-- Фоновое свечение (Glow) при наведении -->
-                    <div class="absolute -inset-1 bg-gradient-to-r from-red-600 to-orange-600 rounded-[2rem] blur opacity-0 group-hover:opacity-10 transition duration-500"></div>
+                <!-- Основной блок Danger Zone -->
+                <!-- Красивый блок Danger Zone -->
+                <section class="space-y-6">
+                    <!-- 1. СКРЫТАЯ ТЕХНИЧЕСКАЯ ФОРМА (Мозг операции) -->
+                    <div style="display: none;">
+                        <form id="delete-user-form" method="post" action="{{ route('profile.destroy') }}">
+                            @csrf
+                            @method('delete')
+                            <!-- Сюда JS подставит пароль. name="password" обязателен для контроллера -->
+                            <input type="password" name="password">
+                        </form>
+                    </div>
 
-                    <div class="relative bg-white rounded-2xl border border-red-200/50 shadow-xl overflow-hidden">
-                        <div class="flex flex-col md:flex-row items-center justify-between gap-6 p-6">
+                    <!-- 2. УВЕДОМЛЕНИЕ ОБ ОШИБКЕ (Если пароль неверный) -->
+                    @if($errors->userDeletion->has('password'))
+                        <div class="max-w-4xl mx-auto mb-4 p-4 bg-red-50 border border-red-200 text-red-600 rounded-2xl text-center font-bold animate-pulse">
+                            ❌ Неверный пароль. Попробуйте еще раз.
+                        </div>
+                    @endif
 
-                            <div class="flex flex-col items-center md:items-start gap-2">
-                                <!-- Индикатор статуса -->
-                                <div class="flex items-center gap-2.5">
-                                    <div class="relative flex h-3 w-3">
-                                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                                        <span class="relative inline-flex rounded-full h-3 w-3 bg-red-600"></span>
+                    <!-- 3. КРАСИВЫЙ БЛОК DANGER ZONE -->
+                    <div class="relative group overflow-hidden max-w-4xl mx-auto my-10 font-sans" style="isolation: isolate;">
+                        <div class="absolute -inset-1 bg-gradient-to-r from-red-600 to-orange-600 rounded-[2rem] blur opacity-0 group-hover:opacity-10 transition duration-500"></div>
+
+                        <div class="relative bg-white rounded-2xl border border-red-200/50 shadow-xl overflow-hidden">
+                            <div class="flex flex-col md:flex-row items-center justify-between gap-6 p-6">
+                                <div class="flex flex-col items-center md:items-start gap-2">
+                                    <div class="flex items-center gap-2.5">
+                                        <div class="relative flex h-3 w-3">
+                                            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                                            <span class="relative inline-flex rounded-full h-3 w-3 bg-red-600"></span>
+                                        </div>
+                                        <h3 class="text-red-600 text-[11px] font-black uppercase tracking-[0.2em]">Danger Zone</h3>
                                     </div>
-                                    <h3 class="text-red-600 text-[11px] font-black uppercase tracking-[0.2em]">Danger Zone</h3>
+                                    <p class="text-black text-[13px] font-bold leading-tight m-0 opacity-80">
+                                        Удаление аккаунта сотрет все данные безвозвратно.
+                                    </p>
                                 </div>
 
-                                <!-- Описание (всегда черное) -->
-                                <p class="text-black text-[13px] font-bold leading-tight m-0 opacity-80">
-                                    Удаление аккаунта сотрет все данные безвозвратно.
-                                </p>
+                                <div class="flex-shrink-0">
+                                    <button
+                                        type="button"
+                                        onclick="openCustomDeleteModal()"
+                                        class="bg-red-50 text-red-600 border-2 border-red-600/20 font-black uppercase text-[9px] tracking-widest px-5 py-2 rounded-lg transition-all duration-300 hover:bg-red-600 hover:text-white hover:border-red-600 hover:shadow-[0_0_15px_rgba(220,38,38,0.3)] active:scale-95"
+                                    >
+                                        УДАЛИТЬ АККАУНТ
+                                    </button>
+                                </div>
                             </div>
-
-                            <!-- Стилизация кнопки удаления внутри partial -->
-                            <div class="w-full md:w-auto [&_button]:w-full [&_button]:md:w-auto
-                [&_button]:bg-red-50 [&_button]:text-red-600 [&_button]:border-2 [&_button]:border-red-600/20
-                [&_button]:font-black [&_button]:uppercase [&_button]:text-[10px] [&_button]:tracking-widest
-                [&_button]:px-8 [&_button]:py-3.5 [&_button]:rounded-xl
-                [&_button]:transition-all [&_button]:duration-300
-                [&_button]:hover:bg-red-600 [&_button]:hover:text-white [&_button]:hover:border-red-600
-                [&_button]:hover:shadow-[0_0_20px_rgba(220,38,38,0.4)] [&_button]:active:scale-95">
-                                @include('profile.partials.delete-user-form')
-                            </div>
-
+                            <div class="h-1 w-full bg-gradient-to-r from-transparent via-red-500/20 to-transparent"></div>
                         </div>
-
-                        <!-- Декоративная полоса снизу -->
-                        <div class="h-1 w-full bg-gradient-to-r from-transparent via-red-500/20 to-transparent"></div>
                     </div>
-                </div>
 
+                    <!-- 4. КАСТОМНАЯ МОДАЛКА -->
+                    <div id="customDeleteModal" class="fixed inset-0 z-[9999] hidden items-center justify-center p-4 bg-black/60 backdrop-blur-sm" style="display: none;">
+                        <div class="bg-white w-full max-w-md rounded-2xl shadow-2xl border border-red-100">
+                            <div class="p-6 text-center">
+                                <h2 class="text-xl font-black text-gray-900 uppercase mb-2">Подтвердите пароль</h2>
+                                <p class="text-gray-500 text-sm mb-6">Это действие необратимо. Введите пароль для удаления.</p>
+
+                                <form onsubmit="submitLaravelDeletion(event)">
+                                    <input
+                                        type="password"
+                                        id="customPasswordInput"
+                                        placeholder="Ваш пароль"
+                                        required
+                                        class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-red-500 outline-none mb-4 text-center text-black"
+                                    >
+                                    <div class="flex gap-3">
+                                        <button type="button" onclick="closeCustomDeleteModal()" class="flex-1 px-4 py-3 bg-gray-100 text-gray-600 font-bold rounded-xl uppercase text-[10px]">Отмена</button>
+                                        <button type="submit" class="flex-1 px-4 py-3 bg-red-600 text-white font-bold rounded-xl uppercase text-[10px]">Удалить</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <script>
+                    function openCustomDeleteModal() {
+                        const m = document.getElementById('customDeleteModal');
+                        m.style.display = 'flex';
+                        m.classList.remove('hidden');
+                        // Небольшая задержка, чтобы фокус сработал точно
+                        setTimeout(() => document.getElementById('customPasswordInput').focus(), 100);
+                    }
+
+                    function closeCustomDeleteModal() {
+                        const m = document.getElementById('customDeleteModal');
+                        m.style.display = 'none';
+                        m.classList.add('hidden');
+                        document.getElementById('customPasswordInput').value = '';
+                    }
+
+                    function submitLaravelDeletion(e) {
+                        e.preventDefault();
+
+                        const password = document.getElementById('customPasswordInput').value;
+                        const realForm = document.getElementById('delete-user-form');
+
+                        if (realForm) {
+                            const realPasswordInput = realForm.querySelector('input[name="password"]');
+                            if (realPasswordInput) {
+                                realPasswordInput.value = password;
+                                realForm.submit();
+                            } else {
+                                alert('Ошибка: Поле пароля не найдено в скрытой форме.');
+                            }
+                        } else {
+                            alert('Ошибка: Скрытая форма Laravel не найдена.');
+                        }
+                    }
+
+                    // Закрытие модалки при клике вне её области
+                    window.onclick = function(event) {
+                        const m = document.getElementById('customDeleteModal');
+                        if (event.target == m) {
+                            closeCustomDeleteModal();
+                        }
+                    }
+                </script>
             </div>
         </div>
     </div>

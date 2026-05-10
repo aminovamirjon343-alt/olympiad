@@ -115,10 +115,14 @@ use Illuminate\Support\Facades\Auth;
 
 // 1. ПЕРЕАДРЕСАЦИЯ ГЛАВНОЙ
 Route::get('/', function () {
-    return redirect()->route('dashboard');
-});
+    return view('layouts.site');
+})->name('site.home');
 
-// 2. ПЕРЕКЛЮЧАТЕЛЬ ПОЛЬЗОВАТЕЛЕЙ (ТОЛЬКО ДЛЯ ЛОКАЛКИ)
+Route::get('/site', function () {
+    return view('layouts.site');
+})->name('site.main');
+
+// 2. ЛОКАЛЬНЫЙ ВХОД
 if (app()->environment('local')) {
     Route::post('/login-as', function (Request $request) {
         Auth::loginUsingId($request->user_id);
@@ -126,7 +130,7 @@ if (app()->environment('local')) {
     })->name('login.as');
 }
 
-// 3. ПУБЛИЧНЫЕ / ТЕХНИЧЕСКИЕ РОУТЫ
+// 3. АВТОРИЗАЦИЯ
 require __DIR__ . '/auth.php';
 
 // 4. ГРУППА ЗАЩИЩЕННЫХ РОУТОВ (AUTH)
@@ -206,3 +210,5 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/settings/general', [ProfileController::class, 'updateGeneral'])
         ->name('settings.general.update');
 });
+
+

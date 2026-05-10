@@ -3,12 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Models\Document;
-use App\Http\Requests\ProfileUpdateRequest;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Redirect;
+use Illuminate\Validation\Rules\Password; // ИСПРАВЛЕНО: правильный класс для defaults()
 use Illuminate\View\View;
 use Carbon\Carbon;
 
@@ -26,14 +27,6 @@ class ProfileController extends Controller
         $startDate = Carbon::createFromDate($year, $month, 1)->startOfMonth();
         $endDate = $startDate->copy()->endOfMonth();
 
-        // 1. УПРОЩЕННЫЙ ЗАПРОС (без фильтра по дате для проверки)
-        // Мы берем вообще ВСЕ даты документов этого юзера
-        $allUserDocs = Document::where('user_id', $user->id)
-            ->select(DB::raw('DATE(created_at) as date_only'))
-            ->pluck('date_only')
-            ->toArray();
-
-        // 2. ОСНОВНОЙ ЗАПРОС (который должен работать)
         $dbData = Document::where('user_id', $user->id)
             ->whereDate('created_at', '>=', $startDate->toDateString())
             ->whereDate('created_at', '<=', $endDate->toDateString())
@@ -42,13 +35,6 @@ class ProfileController extends Controller
             ->pluck('count', 'date_only')
             ->toArray();
 
-        // ЕСЛИ ВСЁ ЕЩЕ ПУСТО, ДАВАЙ ПОСМОТРИМ ПОЧЕМУ
-        if (empty($dbData)) {
-            // Раскомментируй строку ниже, если хочешь увидеть, какие даты ВООБЩЕ есть в базе у этого юзера
-            // dd(['ищем_диапазон' => $startDate->toDateString() . ' - ' . $endDate->toDateString(), 'реальные_даты_в_базе' => $allUserDocs]);
-        }
-
-        // 3. ФОРМИРУЕМ СЕТКУ
         $activityData = [];
         for ($day = 1; $day <= $startDate->daysInMonth; $day++) {
             $dateKey = $startDate->copy()->day($day)->format('Y-m-d');
@@ -59,7 +45,7 @@ class ProfileController extends Controller
     }
 
     /**
-     * Форма редактирования (без изменений)
+     * Форма редактирования
      */
     public function edit(Request $request): View
     {
@@ -69,12 +55,18 @@ class ProfileController extends Controller
     }
 
     /**
-     * Обновление данных (без изменений)
+     * Обновление данных профиля (Имя, Email)
      */
-    public function update(ProfileUpdateRequest $request): RedirectResponse
+    public function update(Request $request): RedirectResponse
     {
         $user = $request->user();
-        $user->fill($request->validated());
+
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:users,email,' . $user->id],
+        ]);
+
+        $user->fill($validated);
 
         if ($user->isDirty('email')) {
             $user->email_verified_at = null;
@@ -86,7 +78,24 @@ class ProfileController extends Controller
     }
 
     /**
-     * Удаление аккаунта (без изменений)
+     * Обновление пароля (Отдельный метод)
+     */
+    public function updatePassword(Request $request): RedirectResponse
+    {
+        $validated = $request->validateWithBag('updatePassword', [
+            'current_password' => ['required', 'current_password'],
+            'password' => ['required', Password::defaults(), 'confirmed'],
+        ]);
+
+        $request->user()->update([
+            'password' => Hash::make($validated['password']),
+        ]);
+
+        return back()->with('status', 'password-updated');
+    }
+
+    /**
+     * Удаление аккаунта
      */
     public function destroy(Request $request): RedirectResponse
     {
@@ -97,12 +106,11 @@ class ProfileController extends Controller
         $user = $request->user();
 
         Auth::logout();
-
         $user->delete();
 
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
-        return Redirect::to('/');
+        return Redirect::to('/')->with('status', 'profile-deleted');
     }
 }
