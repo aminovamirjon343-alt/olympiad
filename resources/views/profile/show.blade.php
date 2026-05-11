@@ -162,4 +162,168 @@
 
         </div>
     </div>
-@endsection
+    @php
+        use Carbon\Carbon;
+
+        $year = now()->year;
+        $startDate = Carbon::create($year, 1, 1)->startOfWeek(Carbon::MONDAY);
+        $endDate = Carbon::create($year, 12, 31)->endOfWeek(Carbon::SUNDAY);
+
+        $totalDays = $startDate->diffInDays($endDate);
+        $weeks = intval($totalDays / 7) + 1;
+    @endphp
+
+    <div class="activity-card bg-white dark:bg-slate-900 p-8 rounded-[2rem] border border-slate-100 dark:border-slate-800 shadow-xl mt-8">
+
+        <style>
+            .gh-wrapper {
+                overflow-x: auto;
+                scrollbar-width: none;
+                padding-bottom: 4px;
+            }
+
+            .gh-wrapper::-webkit-scrollbar {
+                display: none;
+            }
+
+            .gh-grid {
+                display: inline-grid;
+                grid-template-areas:
+            ". months"
+            "days squares";
+                grid-template-columns: 32px 1fr;
+                gap: 6px 10px;
+                min-width: max-content;
+            }
+
+            /* MONTHS */
+            .gh-months {
+                grid-area: months;
+                display: grid;
+                grid-template-columns: repeat({{ $weeks }}, 11px);
+                gap: 3px;
+                font-size: 10px;
+                color: #94a3b8;
+                font-weight: 800;
+            }
+
+            /* DAYS */
+            .gh-days {
+                grid-area: days;
+                display: flex;
+                flex-direction: column;
+                justify-content: space-between;
+                height: calc((11px * 7) + (3px * 6));
+                font-size: 9px;
+                color: #cbd5e1;
+                font-weight: 800;
+            }
+
+            /* SQUARES */
+            .gh-squares {
+                grid-area: squares;
+                display: grid;
+                grid-template-rows: repeat(7, 11px);
+                grid-auto-flow: column;
+                grid-auto-columns: 11px;
+                gap: 3px;
+            }
+
+            .sq {
+                width: 11px;
+                height: 11px;
+                border-radius: 2px;
+                background-color: #ebedf0;
+                transition: all .15s ease;
+                cursor: pointer;
+            }
+
+            .dark .sq {
+                background-color: #1e293b;
+            }
+
+            .sq:hover {
+                transform: scale(1.2);
+            }
+
+            .l1 { background-color: #9be9a8 !important; }
+            .l2 { background-color: #40c463 !important; }
+            .l3 { background-color: #30a14e !important; }
+            .l4 { background-color: #216e39 !important; }
+
+        </style>
+
+        {{-- HEADER --}}
+        <div class="flex items-center justify-between mb-6">
+            <div>
+                <h2 class="text-xl font-black text-slate-800 dark:text-white">
+                    Активность {{ $year }}
+                </h2>
+                <p class="text-xs text-slate-400 font-bold mt-1">
+                    Январь → Декабрь
+                </p>
+            </div>
+        </div>
+
+        <div class="gh-wrapper">
+            <div class="gh-grid">
+
+                {{-- MONTHS --}}
+                <div class="gh-months">
+                    @for($week = 0; $week < $weeks; $week++)
+                        @php
+                            $date = $startDate->copy()->addWeeks($week);
+                        @endphp
+
+                        <div>
+                            @if($week == 0 || $date->day <= 7)
+                                {{ $date->format('M') }}
+                            @endif
+                        </div>
+                    @endfor
+                </div>
+
+                {{-- DAYS --}}
+                <div class="gh-days">
+                    <span>Пн</span>
+                    <span>Ср</span>
+                    <span>Пт</span>
+                </div>
+
+                {{-- SQUARES --}}
+                <div class="gh-squares">
+
+                    @for($week = 0; $week < $weeks; $week++)
+                        @for($dayOfWeek = 0; $dayOfWeek < 7; $dayOfWeek++)
+
+                            @php
+                                $day = $startDate->copy()
+                                    ->addDays($week * 7 + $dayOfWeek);
+
+                                if ($day->year != $year) {
+                                    continue;
+                                }
+
+                                $key = $day->format('Y-m-d');
+                                $count = $activityData[$key] ?? 0;
+
+                                $level =
+                                    $count > 10 ? 4 :
+                                    ($count > 5 ? 3 :
+                                    ($count > 2 ? 2 :
+                                    ($count > 0 ? 1 : 0)));
+                            @endphp
+
+                            <div
+                                class="sq {{ $level ? 'l'.$level : '' }}"
+                                title="{{ $day->format('d.m.Y') }} — {{ $count }} действий"
+                            ></div>
+
+                        @endfor
+                    @endfor
+
+                </div>
+            </div>
+        </div>
+
+    </div> @endsection

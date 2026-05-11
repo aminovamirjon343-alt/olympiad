@@ -80,7 +80,7 @@
                                     </div>
                                 </div>
                             </div>
-                            <a href="{{ asset('storage/' . $document->file_path) }}" target="_blank"
+                            <a href="{{ asset('storage/' . $document->file_path) }}" target="_blank" type="application/pdf"
                                class="flex items-center gap-2 px-3 py-2 rounded-md bg-slate-100 text-black hover:bg-blue-600 hover:text-white transition-all border border-slate-200 shadow-sm">
                                 <span class="text-[10px] font-black uppercase tracking-tighter">Смотреть</span>
                                 <i class="bi bi-eye-fill text-sm"></i>

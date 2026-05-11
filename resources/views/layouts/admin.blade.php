@@ -612,9 +612,14 @@
     <a href="/users" class="nav-link" data-page="users" onclick="showPage('users', this)">
         <i class="bi bi-people"></i> <span data-i18n="users">Users</span>
     </a>
-    <a href="/notifications" class="nav-link" data-page="notifications" onclick="showPage('notifications', this)">
-        <i class="bi bi-bell"></i> <span data-i18n="notifications">Notifications</span>
-        <span class="badge bg-primary">3</span>
+    <a href="{{ route('notifications.index') }}" class="nav-link {{ request()->routeIs('notifications.index') ? 'active' : '' }}" data-page="notifications">
+        <i class="bi bi-bell"></i>
+        <span data-i18n="notifications">Уведомления</span>
+
+        {{-- Проверяем, есть ли непрочитанные уведомления --}}
+        @if(isset($unreadCount) && $unreadCount > 0)
+            <span class="badge bg-danger">{{ $unreadCount }}</span>
+        @endif
     </a>
 
     <div class="nav-section" data-i18n="account">Account</div>
@@ -635,32 +640,100 @@
     <div class="topbar-left">
         <button class="mobile-toggle" onclick="toggleSidebar()"><i class="bi bi-list"></i></button>
         <div class="search-box d-none d-md-block">
-            {{-- Форма поиска --}}
             <style>
+                .search-container {
+                    position: relative;
+                    width: 280px; /* Фиксированная ширина как на фото */
+                    display: flex;
+                    align-items: center;
+                }
+
                 .search-input-custom {
-                    width: 280px;
-                    background: transparent;
-                    border: 1px solid #ced4da; /* Базовый серый */
-                    transition: all 0.3s ease; /* Плавность */
+                    width: 100%;
+                    background: #f8fafc; /* Светлый фон как в админке */
+                    border: 1px solid #ced4da;
+                    border-radius: 20px; /* Овальная форма */
+                    padding-left: 35px !important; /* Отступ под лупу */
+                    padding-right: 35px !important; /* Отступ под стрелку */
+                    font-size: 0.85rem;
+                    transition: all 0.3s ease;
                 }
 
                 .search-input-custom:focus {
-                    border-color: #86b7fe !important; /* Нежно-голубой при клике */
-                    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.15); /* Мягкое свечение */
+                    border-color: #86b7fe !important;
+                    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.1);
                     background-color: #fff;
+                }
+
+                /* Иконка лупы слева */
+                .search-icon-left {
+                    position: absolute;
+                    left: 12px;
+                    color: #94a3b8;
+                    pointer-events: none;
+                    z-index: 5;
+                }
+
+                /* Кнопка-стрелка справа внутри */
+                .search-submit-btn {
+                    position: absolute;
+                    right: 8px;
+                    background: none;
+                    border: none;
+                    padding: 0;
+                    color: #86b7fe;
+                    display: none; /* Скрыта если пусто */
+                    cursor: pointer;
+                    transition: all 0.2s;
+                    z-index: 5;
+                }
+
+                .search-submit-btn:hover {
+                    color: #0d6efd;
+                    transform: scale(1.1);
+                }
+
+                /* Магия CSS: показываем стрелку при вводе текста */
+                .search-input-custom:not(:placeholder-shown) + .search-submit-btn {
+                    display: block;
                 }
             </style>
 
-            <form action="{{ route('search') }}" method="GET" class="search-box d-none d-md-block">
-                <i class="bi bi-search blue-text-fixed"></i>
+            <form action="{{ route('search') }}" method="GET" class="search-container">
+                {{-- Иконка поиска слева --}}
+                <i class="bi bi-search search-icon-left"></i>
+
                 <input
                     type="text"
                     name="query"
+                    id="searchInput"
                     value="{{ request('query') }}"
-                    class="form-control form-control-sm blue-text-fixed search-input-custom"
+                    class="form-control form-control-sm search-input-custom"
                     placeholder="Поиск по сайту..."
+                    autocomplete="off"
                 >
-            </form></div>
+
+                {{-- Кнопка-стрелка справа --}}
+                <button type="submit" class="search-submit-btn" id="searchArrow">
+                    <i class="bi bi-arrow-right-short" style="font-size: 1.6rem; line-height: 1;"></i>
+                </button>
+            </form>
+        </div>
+
+        <script>
+            // JS для мгновенной реакции на ввод/удаление
+            document.addEventListener('DOMContentLoaded', function() {
+                const input = document.getElementById('searchInput');
+                const arrow = document.getElementById('searchArrow');
+
+                const toggleArrow = () => {
+                    arrow.style.display = input.value.trim().length > 0 ? 'block' : 'none';
+                };
+
+                input.addEventListener('input', toggleArrow);
+                toggleArrow(); // Проверка при загрузке страницы
+            });
+        </script>
     </div>
 
     <div class="topbar-right">
@@ -962,7 +1035,7 @@
 
             <ul class="dropdown-menu dropdown-menu-end p-2 shadow border-0" style="border-radius:12px; min-width: 200px; background: var(--card-bg, #fff);">
                 <li>
-                    <a class="dropdown-item rounded-2 py-2" href="{{ route('profile.edit') }}">
+                    <a class="dropdown-item rounded-2 py-2" href="{{ route('profile.show') }}">
                         <i class="bi bi-person me-2"></i><span>Профиль</span>
                     </a>
                 </li>

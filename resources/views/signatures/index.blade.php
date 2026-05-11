@@ -28,17 +28,21 @@
             }
 
             .card-sig {
-                background: rgba(255, 255, 255, 0.9) !important;
+                background: rgba(255, 255, 255, 1) !important; /* Сделали фон непрозрачным */
                 backdrop-filter: blur(8px);
-                border: 1px solid rgba(0, 0, 0, 0.05);
-                border-radius: 2rem; /* Округлил чуть больше для стиля */
+                /* СДЕЛАЛИ БОРДЕР ЗАМЕТНЕЕ (0.15 вместо 0.05) */
+                border: 1.5px solid rgba(0, 0, 0, 0.12);
+                border-radius: 2rem;
                 overflow: hidden;
                 transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                /* Добавили легкую внутреннюю тень для четкости краев */
+                box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.5), 0 4px 6px -1px rgba(0, 0, 0, 0.05);
             }
 
             .dark .card-sig {
-                background: rgba(30, 41, 59, 0.7) !important;
-                border-color: rgba(255, 255, 255, 0.1);
+                background: rgba(30, 41, 59, 1) !important;
+                /* Бордер для темной темы тоже стал ярче */
+                border-color: rgba(255, 255, 255, 0.2);
             }
 
             .dark .signature-img {
@@ -47,23 +51,27 @@
 
             .card-sig:hover {
                 transform: translateY(-6px);
+                /* При наведении бордер становится еще четче */
+                border-color: var(--primary-color);
                 box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
             }
 
             .card-overdue {
+                /* Красный бордер для просроченных теперь 2px и яркий */
                 border: 2px solid #f43f5e !important;
             }
 
             .sig-area {
                 min-height: 120px;
-                background: rgba(0, 0, 0, 0.02) !important;
+                background: rgba(0, 0, 0, 0.03) !important; /* Чуть темнее фон для области подписи */
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                border-top: 1px solid rgba(0, 0, 0, 0.03);
-                border-bottom: 1px solid rgba(0, 0, 0, 0.03);
+                border-top: 1px solid rgba(0, 0, 0, 0.08);
+                border-bottom: 1px solid rgba(0, 0, 0, 0.08);
             }
 
+            /* Остальные стили без изменений */
             .btn-primary-custom {
                 background-color: var(--primary-color);
                 color: #fff !important;
@@ -88,7 +96,6 @@
                 letter-spacing: 0.1em;
             }
 
-            /* Тот самый маленький текст */
             .label-micro {
                 font-size: 8px !important;
                 font-weight: 900 !important;

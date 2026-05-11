@@ -135,6 +135,17 @@ require __DIR__ . '/auth.php';
 
 // 4. ГРУППА ЗАЩИЩЕННЫХ РОУТОВ (AUTH)
 Route::middleware(['auth'])->group(function () {
+    // Главная страница уведомлений
+    Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
+
+    // Пометка прочитанным (используем patch)
+    Route::patch('/notifications/{id}/read', [NotificationController::class, 'markAsRead'])->name('notifications.read');
+
+    // Удаление
+    Route::delete('/notifications/{id}', [NotificationController::class, 'destroy'])->name('notifications.destroy');
+
+    // Сохранение комментария и рассылка уведомлений
+    Route::post('/comments/store', [NotificationController::class, 'store'])->name('comments.store');
 
     // Дашборд
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
@@ -146,9 +157,16 @@ Route::middleware(['auth'])->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
     // Основные ресурсы проекта olympiad
+// Основные ресурсы проекта olympiad
     Route::resource('documents', DocumentController::class);
+
+// Добавь этот роут ПЕРЕД ресурсным или строго под ним,
+// но убедись, что имя совпадает с тем, что в контроллере и во view
+    Route::post('/documents/ai-process', [DocumentController::class, 'aiProcess'])->name('documents.ai-process');
+
     Route::get('/documents/{id}/pdf', [DocumentController::class, 'downloadPdf'])->name('documents.pdf');
     Route::post('/documents/{id}/sign', [DocumentController::class, 'sign'])->name('documents.sign');
+
     Route::resource('users', UserController::class);
     Route::resource('signatures', DocumentSignatureController::class);
     Route::resource('versions', DocumentVersionController::class);

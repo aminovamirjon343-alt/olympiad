@@ -4,6 +4,8 @@ namespace App\Providers;
 
 use App\Models\Document;
 use App\Observers\DocumentObserver;
+use Carbon\Carbon;
+use Illuminate\Pagination\Paginator;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\Facades\Auth;
@@ -22,15 +24,13 @@ class AppServiceProvider extends ServiceProvider
      * Bootstrap any application services.
      */
     public function boot()
-    {
-
-        Document::observe(DocumentObserver::class);
+    { Carbon::setLocale('ru');
         \Illuminate\Support\Facades\View::composer('*', function ($view) {
             if (\Illuminate\Support\Facades\Auth::check()) {
                 $userId = \Illuminate\Support\Facades\Auth::id();
 
-                // Загружаем уведомления напрямую из твоей модели
-                $notifications = \App\Models\Notification::where('user_id', $userId)
+                // Переименовываем в headerNotifications, чтобы не мешать основной пагинации
+                $headerNotifications = \App\Models\Notification::where('user_id', $userId)
                     ->latest()
                     ->take(10)
                     ->get();
@@ -40,10 +40,9 @@ class AppServiceProvider extends ServiceProvider
                     ->count();
 
                 $view->with([
-                    'notifications' => $notifications,
+                    'headerNotifications' => $headerNotifications, // Новое имя
                     'unreadCount' => $unreadCount
                 ]);
-
             }
         });
 

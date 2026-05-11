@@ -20,7 +20,7 @@ class User extends Authenticatable
     // В начало файла внутри класса User
     public function isOnline()
     {
-        return Cache::has('user-is-online-' . $this->id);
+        return \Illuminate\Support\Facades\Cache::has('user-is-online-' . $this->id);
     }
     protected $fillable = [
         'name',

@@ -54,7 +54,16 @@
                 </div>
             @endif
         </div>
-
+        {{-- Номер телефона --}}
+        {{-- Поле Номер телефона с префиксом +992 --}}
+        <div class="mt-4">
+            <label class="block text-sm font-semibold text-slate-700 mb-1">Телефон</label>
+            <input name="phone" type="text" id="phone" required
+                   class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all outline-none shadow-sm text-black"
+                   value="{{ old('phone', $user->phone ?? '+992 ') }}"
+                   placeholder="+992 00 000 0000">
+            <x-input-error class="mt-2 text-xs text-red-500" :messages="$errors->get('phone')" />
+        </div>
         {{-- Кнопка и статус --}}
         <div class="flex items-center gap-4 pt-2">
             <button type="submit" class="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-lg shadow-indigo-200 transition-all active:scale-95">
@@ -77,4 +86,45 @@
             @endif
         </div>
     </form>
-</section>
+</section><script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const phoneInput = document.getElementById('phone');
+        // Находим форму именно для профиля
+        const form = phoneInput.closest('form');
+        const prefix = '+992 ';
+
+        // 1. Форматирование ввода
+        phoneInput.addEventListener('input', function (e) {
+            if (!e.target.value.startsWith(prefix)) {
+                e.target.value = prefix;
+            }
+
+            let digits = e.target.value.substring(prefix.length).replace(/\D/g, '').substring(0, 9);
+            let formatted = '';
+
+            if (digits.length > 0) formatted += digits.substring(0, 2);
+            if (digits.length >= 3) formatted += ' ' + digits.substring(2, 5);
+            if (digits.length >= 6) formatted += ' ' + digits.substring(5, 7);
+            if (digits.length >= 8) formatted += ' ' + digits.substring(7, 9);
+
+            e.target.value = prefix + formatted;
+            phoneInput.style.borderColor = ''; // Сброс ошибки при вводе
+        });
+
+        // 2. Валидация перед отправкой формы профиля
+        if (form) {
+            form.addEventListener('submit', function (e) {
+                let digitsOnly = phoneInput.value.substring(prefix.length).replace(/\D/g, '');
+
+                if (digitsOnly.length < 9) {
+                    e.preventDefault(); // Остановить отправку на сервер
+
+                    phoneInput.style.border = '2px solid #ef4444';
+                    phoneInput.focus();
+
+                    alert('Пожалуйста, введите номер телефона полностью (9 цифр после +992)');
+                }
+            });
+        }
+    });
+</script>

@@ -12,25 +12,15 @@ use Illuminate\Support\Facades\Auth;
 
 class NotificationController extends Controller
 {
-    /**
-     * Список всех уведомлений текущего пользователя
-     */
-    public function index()
-    {
-        $notifications = Notification::where('user_id', Auth::id())
-            ->latest()
-            ->paginate(15);
-
-        return view('notifications.index', compact('notifications'));
+    public function index() {
+        $notifications = Notification::where('user_id', auth()->id())->latest()->paginate(5);
+        $unreadCount = Notification::where('user_id', auth()->id())->where('is_read', false)->count();
+        return view('notifications.index', compact('notifications', 'unreadCount'));
     }
 
-    /**
-     * Пометка уведомления как прочитанного
-     */
     public function markAsRead($id)
     {
         $notification = Notification::where('user_id', Auth::id())->findOrFail($id);
-
         $notification->update([
             'is_read' => true,
             'read_at' => now()
@@ -39,9 +29,6 @@ class NotificationController extends Controller
         return back()->with('success', 'Прочитано');
     }
 
-    /**
-     * Удаление уведомления
-     */
     public function destroy($id)
     {
         $notification = Notification::where('user_id', Auth::id())->findOrFail($id);
@@ -51,7 +38,7 @@ class NotificationController extends Controller
     }
 
     /**
-     * Создание комментария и уведомления автору
+     * Создание комментария и уведомление ВСЕХ причастных
      */
     public function store(Request $request)
     {
@@ -60,34 +47,49 @@ class NotificationController extends Controller
             'comment'     => 'required|string|max:1000'
         ]);
 
-        // 1. Создаем сам комментарий в базе
+        $currentUser = Auth::user();
+
+        // 1. Создаем комментарий
         $comment = DocumentComment::create([
             'document_id' => $request->document_id,
-            'user_id'     => Auth::id(),
+            'user_id'     => $currentUser->id,
             'comment'     => $request->comment,
         ]);
 
         $document = Document::findOrFail($request->document_id);
 
-        // 2. Отправляем уведомление автору документа (если это не сам автор пишет коммент)
-        if ($document->created_by && $document->created_by !== Auth::id()) {
+        // --- ЛОГИКА УВЕДОМЛЕНИЙ ---
+
+        // 2. Получаем список ID всех, кто должен получить уведомление
+        // Это автор документа + все, кто уже комментировал этот документ
+        $participantIds = DocumentComment::where('document_id', $document->id)
+            ->pluck('user_id')
+            ->push($document->created_by) // Добавляем автора документа
+            ->unique()                    // Убираем дубликаты
+            ->filter(fn($id) => $id != $currentUser->id); // Исключаем того, кто пишет сейчас
+
+        // 3. Рассылаем уведомления всем участникам
+        foreach ($participantIds as $userId) {
             Notification::create([
-                'user_id'         => $document->created_by,
-                'type'            => 'comment', // Для иконки 💬
-                'message'         => 'Новый комментарий к вашему документу',
+                'user_id'         => $userId,
+                'type'            => 'comment',
+                // Если получатель — автор документа, пишем одно, если просто участник — другое
+                'message'         => ($userId == $document->created_by)
+                    ? 'Новый ответ в вашем документе'
+                    : 'Новый комментарий в обсуждении, где вы участвуете',
                 'is_read'         => false,
                 'notifiable_type' => User::class,
-                'notifiable_id'   => $document->created_by,
-                // Передаем массив напрямую (casts в модели сам превратит его в JSON)
+                'notifiable_id'   => $userId,
                 'data' => [
+                    'document_id'    => $document->id,
                     'type'           => 'comment',
-                    'user'           => Auth::user()->name,
+                    'user_name'      => $currentUser->name,
                     'document_title' => $document->title,
-                    'comment_text'   => Str::limit($request->comment, 50),
+                    'comment_preview' => Str::limit($request->comment, 50),
                 ],
             ]);
         }
 
-        return back()->with('success', 'Комментарий успешно добавлен!');
+        return back()->with('success', 'Комментарий добавлен, участники уведомлены!');
     }
 }

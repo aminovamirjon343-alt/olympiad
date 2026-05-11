@@ -25,6 +25,7 @@ class Document extends Model
         'file_path',
         'status',
         'created_by',
+        'user_id',
         'receiver_id',
         'deadline'
     ];

@@ -9,9 +9,11 @@ use App\Models\DocumentSignature;
 use App\Models\Notification;
 use App\Models\User;
 use Barryvdh\DomPDF\Facade\Pdf;
+use http\Header\Parser;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Auth;
+use League\Uri\Http;
 use setasign\Fpdi\Tcpdf\Fpdi;
 
 class DocumentController extends Controller
@@ -29,69 +31,102 @@ class DocumentController extends Controller
     /**
      * ПРОЦЕСС ПОДПИСАНИЯ: Вшивание Canvas-подписи в существующий PDF
      */
+    public function storeFromPdf(Request $request)
+    {
+        $request->validate(['pdf_file' => 'required|mimes:pdf|max:10240']);
+
+        // 1. Парсим PDF
+        $parser = new Parser();
+        $pdf = $parser->parseFile($request->file('pdf_file')->path());
+        $fullText = $pdf->getText();
+
+        // 2. Отправляем текст в AI
+        // Если используете локальный Ollama, адрес обычно http://localhost:11434/api/generate
+        $response = Http::post('https://api.openai.com/v1/chat/completions', [
+            'model' => 'gpt-4o-mini',
+            'messages' => [
+                [
+                    'role' => 'system',
+                    'content' => 'Ты помощник системы ЭДО. Твоя задача: прочитать текст документа и вернуть JSON с полями: title (название), content (основной текст в HTML), summary (краткое описание).'
+                ],
+                ['role' => 'user', 'content' => "Текст из PDF:\n" . $fullText],
+            ],
+            'response_format' => ['type' => 'json_object'],
+        ]);
+
+        $aiResult = $response->json()['choices'][0]['message']['content'];
+        $data = json_decode($aiResult, true);
+
+        // 3. Возвращаем данные на фронт, чтобы пользователь мог проверить перед сохранением
+        return response()->json([
+            'status' => 'success',
+            'data' => $data
+        ]);
+    }
+
     public function sign(Request $request, $id)
     {
         $document = Document::findOrFail($id);
-
-        // 1. Получаем base64 подписи
         $signatureData = $request->input('signature');
-        if (!$signatureData) return back()->with('error', 'Подпись пуста!');
 
-        // 2. Декодируем и сохраняем временную картинку PNG
+        if (!$signatureData) return back()->with('error', 'Подпись не найдена!');
+
+        // 1. Подготовка изображений
         $sigImage = str_replace('data:image/png;base64,', '', $signatureData);
         $sigImage = str_replace(' ', '+', $sigImage);
-
-        // Создаем папку temp, если её нет
-        if (!Storage::disk('public')->exists('temp')) {
-            Storage::disk('public')->makeDirectory('temp');
-        }
-
-        $sigPath = 'temp/sig_' . time() . '.png';
-        Storage::disk('public')->put($sigPath, base64_decode($sigImage));
-
-        // 3. Пути для FPDI
+        $sigFileName = 'temp/sig_' . time() . '.png';
+        Storage::disk('public')->put($sigFileName, base64_decode($sigImage));
+        $fullPathToSig = storage_path('app/public/' . $sigFileName);
         $fullPathToPdf = storage_path('app/public/' . $document->file_path);
-        $fullPathToSig = storage_path('app/public/' . $sigPath);
-
-        if (!file_exists($fullPathToPdf)) {
-            return back()->with('error', 'Оригинальный файл PDF не найден!');
-        }
 
         try {
-            // 4. Генерируем подписанный контент
-            $pdfContent = $this->generateSignedPdf($fullPathToPdf, $fullPathToSig);
+            $pdf = new Fpdi();
+            // ВАЖНО: Отключаем авто-перенос страницы, чтобы не создавался лишний лист
+            $pdf->SetAutoPageBreak(false);
 
-            // 5. Перезаписываем оригинальный файл
-            Storage::disk('public')->put($document->file_path, $pdfContent);
+            $pageCount = $pdf->setSourceFile($fullPathToPdf);
 
-            // 6. Обновляем статус в БД
-            DocumentSignature::where('document_id', $id)
-                ->where('user_id', Auth::id())
-                ->update([
-                    'signature' => $signatureData,
-                    'signed_at' => now()
-                ]);
+            for ($pageNo = 1; $pageNo <= $pageCount; $pageNo++) {
+                $templateId = $pdf->importPage($pageNo);
+                $size = $pdf->getTemplateSize($templateId);
 
-            // Логируем
-            DocumentLog::create([
-                'document_id' => $id,
-                'user_id' => Auth::id(),
-                'action' => 'signed',
-                'description' => 'Документ физически подписан (подпись вшита в PDF)',
-            ]);
+                $pdf->AddPage($size['orientation'], [$size['width'], $size['height']]);
+                $pdf->useTemplate($templateId);
+
+                // Вшиваем подпись ТОЛЬКО на последнюю страницу
+                if ($pageNo == $pageCount) {
+                    // Позиция: справа внизу
+                    $x = $size['width'] - 75;
+                    $y = $size['height'] - 45;
+
+                    // Рисуем подпись
+                    $pdf->Image($fullPathToSig, $x, $y, 45, 20, 'PNG');
+
+                    // Добавляем дату (как на картинке 3b3c37.png)
+                    $pdf->SetFont('helvetica', 'I', 7);
+                    $pdf->SetTextColor(80, 80, 80);
+                    $pdf->Text($x + 2, $y + 22, 'Signed: ' . now()->format('d.m.Y H:i'));
+                }
+            }
+
+            // Сохраняем обновленный файл
+            $content = $pdf->Output('', 'S');
+            Storage::disk('public')->put($document->file_path, $content);
+
+            // Обновляем запись в БД
+            DocumentSignature::updateOrCreate(
+                ['document_id' => $id, 'user_id' => Auth::id()],
+                ['signature' => $signatureData, 'signed_at' => now()]
+            );
 
         } catch (\Exception $e) {
-            return back()->with('error', 'Ошибка при обработке PDF: ' . $e->getMessage());
+            return back()->with('error', 'Ошибка: ' . $e->getMessage());
         } finally {
-            // Чистим временную картинку в любом случае
-            if (Storage::disk('public')->exists($sigPath)) {
-                Storage::disk('public')->delete($sigPath);
-            }
+            if (file_exists($fullPathToSig)) unlink($fullPathToSig);
         }
 
-        return redirect()->route('documents.show', $id)->with('success', 'Документ успешно подписан и обновлен!');
+        return redirect()->route('documents.show', $id)->with('success', 'Документ успешно подписан!');
     }
-
     /**
      * Статистика для Dashboard
      */
@@ -203,6 +238,7 @@ class DocumentController extends Controller
             'type'        => $request->type ?? 'document',
             'status'      => $request->status,
             'file_path'   => $filePath,
+            'user_id'     => Auth::id(),
             'created_by'  => Auth::id(),
             'receiver_id' => $receiver->id,
             'deadline'    => $request->deadline,

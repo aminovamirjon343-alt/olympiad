@@ -12,54 +12,94 @@ class AnalysisController extends Controller
 {
     public function index(Request $request)
     {
-        $month = $request->get('month', Carbon::now()->month);
-        $year = $request->get('year', Carbon::now()->year);
+        /*
+        |--------------------------------------------------------------------------
+        | Месяц и год
+        |--------------------------------------------------------------------------
+        */
+        $month = (int) $request->get('month', Carbon::now()->month);
+        $year  = (int) $request->get('year', Carbon::now()->year);
 
         $startDate = Carbon::createFromDate($year, $month, 1)->startOfMonth();
-        $endDate = Carbon::createFromDate($year, $month, 1)->endOfMonth();
+        $endDate   = Carbon::createFromDate($year, $month, 1)->endOfMonth();
 
-        // 1. Данные для графика (остаются без изменений)
+        /*
+        |--------------------------------------------------------------------------
+        | Активность документов по дням (График)
+        |--------------------------------------------------------------------------
+        */
         $rawDocs = Document::select(
             DB::raw('DATE(created_at) as date'),
-            DB::raw('count(*) as count')
+            DB::raw('COUNT(*) as count')
         )
             ->whereBetween('created_at', [$startDate, $endDate])
             ->groupBy('date')
             ->pluck('count', 'date');
 
-        // 2. Сбор данных по реальным статусам из вашей БД (active, draft)
-        $statuses = Document::whereBetween('created_at', [$startDate, $endDate])
-            ->select('status', DB::raw('count(*) as count'))
-            ->groupBy('status')
-            ->get()
-            ->pluck('count', 'status')
-            ->toArray();
-
-        // Приводим ключи к нижнему регистру на всякий случай
-        $statuses = array_change_key_case($statuses, CASE_LOWER);
-
-        // МАППИНГ: привязываем ваши статусы к ключам фронтенда
+        /*
+        |--------------------------------------------------------------------------
+        | Статистика документов (за выбранный период)
+        |--------------------------------------------------------------------------
+        */
         $statusData = [
-            'signed'   => $statuses['active'] ?? 0,   // Ваши 'active' стали 'signed'
-            'pending'  => $statuses['draft'] ?? 0,    // Ваши 'draft' стали 'pending'
-            'rejected' => $statuses['rejected'] ?? 0, // На будущее
+            'signed' => Document::whereBetween('created_at', [$startDate, $endDate])
+                ->where('status', 'active')
+                ->whereHas('signatures', function ($query) {
+                    $query->whereNotNull('signature')
+                        ->where('signature', '!=', '');
+                })
+                ->count(),
+
+            'pending' => Document::whereBetween('created_at', [$startDate, $endDate])
+                ->where('status', 'active')
+                ->whereDoesntHave('signatures', function ($query) {
+                    $query->whereNotNull('signature')
+                        ->where('signature', '!=', '');
+                })
+                ->count(),
+
+            'incoming' => Document::whereBetween('created_at', [$startDate, $endDate])
+                ->whereNotNull('receiver_id')
+                ->count(),
+
+            'outgoing' => Document::whereBetween('created_at', [$startDate, $endDate])
+                ->whereNotNull('created_by')
+                ->count(),
+
+            'rejected' => Document::whereBetween('created_at', [$startDate, $endDate])
+                ->where('status', 'rejected')
+                ->count(),
         ];
 
-        // 3. Блок пользователей
-        $registrations = User::select(DB::raw('DATE(created_at) as date'), DB::raw('count(*) as count'))
+        /*
+        |--------------------------------------------------------------------------
+        | Активность пользователей (График)
+        |--------------------------------------------------------------------------
+        */
+        $registrations = User::select(
+            DB::raw('DATE(created_at) as date'),
+            DB::raw('COUNT(*) as count')
+        )
             ->whereBetween('created_at', [$startDate, $endDate])
             ->groupBy('date')
             ->pluck('count', 'date');
 
         $deletions = User::onlyTrashed()
-            ->select(DB::raw('DATE(deleted_at) as date'), DB::raw('count(*) as count'))
+            ->select(
+                DB::raw('DATE(deleted_at) as date'),
+                DB::raw('COUNT(*) as count')
+            )
             ->whereBetween('deleted_at', [$startDate, $endDate])
             ->groupBy('date')
             ->pluck('count', 'date');
 
-        // 4. Генерация активности по дням
+        /*
+        |--------------------------------------------------------------------------
+        | Генерация данных для графиков по дням месяца
+        |--------------------------------------------------------------------------
+        */
         $dailyActivity = collect();
-        $userActivity = collect();
+        $userActivity  = collect();
         $daysInMonth = $startDate->daysInMonth;
 
         for ($i = 1; $i <= $daysInMonth; $i++) {
@@ -67,26 +107,58 @@ class AnalysisController extends Controller
             $displayDate = Carbon::parse($currentDate)->format('d.m');
 
             $dailyActivity->push([
-                'date' => $displayDate,
-                'count' => $rawDocs->get($currentDate, 0)
+                'date'  => $displayDate,
+                'count' => $rawDocs->get($currentDate, 0),
             ]);
 
             $userActivity->push([
                 'date' => $displayDate,
-                'reg' => $registrations->get($currentDate, 0),
-                'del' => $deletions->get($currentDate, 0),
+                'reg'  => $registrations->get($currentDate, 0),
+                'del'  => $deletions->get($currentDate, 0),
             ]);
         }
 
-        // Итоговые цифры для карточек пользователей
-        $totalUsers = User::count();
-        $newThisMonth = User::whereMonth('created_at', $month)->whereYear('created_at', $year)->count();
-        $deletedThisMonth = User::onlyTrashed()->whereMonth('deleted_at', $month)->whereYear('deleted_at', $year)->count();
-        $churnRate = $totalUsers > 0 ? round(($deletedThisMonth / $totalUsers) * 100, 1) : 0;
+        /*
+        |--------------------------------------------------------------------------
+        | Общая статистика (Глобальные цифры)
+        |--------------------------------------------------------------------------
+        */
+        // 1. Считаем ВООБЩЕ ВСЕ документы в базе (без фильтра по дате)
+        $totalDocuments = Document::count();
 
+        // 2. Считаем ВСЕХ пользователей
+        $totalUsers = User::count();
+
+        // Статистика за текущий выбранный месяц
+        $newThisMonth = User::whereMonth('created_at', $month)
+            ->whereYear('created_at', $year)
+            ->count();
+
+        $deletedThisMonth = User::onlyTrashed()
+            ->whereMonth('deleted_at', $month)
+            ->whereYear('deleted_at', $year)
+            ->count();
+
+        $churnRate = $totalUsers > 0
+            ? round(($deletedThisMonth / $totalUsers) * 100, 1)
+            : 0;
+
+        /*
+        |--------------------------------------------------------------------------
+        | Возврат View
+        |--------------------------------------------------------------------------
+        */
         return view('analysis.index', compact(
-            'dailyActivity', 'statusData', 'userActivity',
-            'totalUsers', 'newThisMonth', 'churnRate', 'month', 'year'
+            'dailyActivity',
+            'statusData',
+            'userActivity',
+            'totalUsers',
+            'totalDocuments', // <-- Передаем исправленную переменную
+            'newThisMonth',
+            'deletedThisMonth',
+            'churnRate',
+            'month',
+            'year'
         ));
     }
 }
