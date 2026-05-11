@@ -12,20 +12,20 @@
                        class="w-8 h-8 flex items-center justify-center rounded-lg bg-white border border-slate-200 text-black hover:bg-blue-600 hover:text-white shadow-sm transition-all">
                         <i class="bi bi-arrow-left text-sm"></i>
                     </a>
-                    <h2 class="text-[12px] font-bold uppercase tracking-[0.2em] doc-title-adaptive">
+                    <h2 class="text-[12px] font-bold uppercase tracking-[0.2em] doc-title-adaptive" data-i18n="back">
                         Back
                     </h2>
                 </div>
 
                 <div class="flex gap-2">
                     <a href="{{ route('documents.edit', $document->id) }}"
-                       class="px-3 py-1 rounded bg-black text-white text-[9px] font-bold uppercase tracking-widest hover:bg-blue-600 transition-all flex items-center justify-center">
+                       class="px-3 py-1 rounded bg-black text-white text-[9px] font-bold uppercase tracking-widest hover:bg-blue-600 transition-all flex items-center justify-center" data-i18n="edit">
                         Edit
                     </a>
 
                     <form action="{{ route('documents.destroy', $document->id) }}" method="POST" onsubmit="return confirm('Delete this document?')">
                         @csrf @method('DELETE')
-                        <button class="px-3 py-1 rounded bg-[#dc2626] text-white text-[9px] font-bold uppercase tracking-widest hover:bg-red-700 transition-all border-none flex items-center justify-center">
+                        <button class="px-3 py-1 rounded bg-[#dc2626] text-white text-[9px] font-bold uppercase tracking-widest hover:bg-red-700 transition-all border-none flex items-center justify-center" data-i18n="delete">
                             Delete
                         </button>
                     </form>
@@ -42,9 +42,8 @@
                                 {{ $document->type ?? 'General' }}
                             </span>
                             <span class="text-[9px] font-[1000] bg-black text-white px-2.5 py-1 rounded uppercase tracking-[0.2em] !bg-black !text-white inline-block">
-    #{{ $document->id }}
-</span>
-                            {{-- ДОБАВЛЕННЫЙ НОМЕР ДОКУМЕНТА --}}
+                                #{{ $document->id }}
+                            </span>
                             <span class="text-[9px] font-black bg-blue-50 text-blue-700 px-2.5 py-1 rounded border border-blue-100 uppercase tracking-widest">
                                  {{ $document->number ?? 'Б/Н' }}
                             </span>
@@ -54,7 +53,6 @@
                             {{ $document->title }}
                         </h1>
 
-                        {{-- Исправленный блок описания --}}
                         <div class="text-[13px] text-black font-normal leading-relaxed border-t border-slate-100 pt-6">
                             <p class="whitespace-pre-line content-highlight break-words overflow-hidden w-full">
                                 {{ $document->content ?? 'No detailed description available.' }}
@@ -76,13 +74,13 @@
                                     <div class="flex items-center gap-2">
                                         <span class="text-[9px] font-bold text-blue-600 uppercase">PDF Asset</span>
                                         <span class="w-1 h-1 rounded-full bg-slate-300"></span>
-                                        <span class="text-[9px] text-black opacity-60 uppercase font-medium">Ready to View</span>
+                                        <span class="text-[9px] text-black opacity-60 uppercase font-medium" data-i18n="readyView">Ready to View</span>
                                     </div>
                                 </div>
                             </div>
-                            <a href="{{ asset('storage/' . $document->file_path) }}" target="_blank" type="application/pdf"
+                            <a href="{{ asset('storage/' . $document->file_path) }}" target="_blank"
                                class="flex items-center gap-2 px-3 py-2 rounded-md bg-slate-100 text-black hover:bg-blue-600 hover:text-white transition-all border border-slate-200 shadow-sm">
-                                <span class="text-[10px] font-black uppercase tracking-tighter">Смотреть</span>
+                                <span class="text-[10px] font-black uppercase tracking-tighter" data-i18n="viewBtn">Смотреть</span>
                                 <i class="bi bi-eye-fill text-sm"></i>
                             </a>
                         </div>
@@ -94,13 +92,13 @@
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                         </svg>
-                        СКАЧАТЬ PDF
+                        <span data-i18n="downloadPdf">СКАЧАТЬ PDF</span>
                     </a>
 
                     {{-- Комментарии --}}
                     <div class="space-y-4">
                         <h3 class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500 flex items-center gap-2">
-                            <i class="bi bi-chat-left-text-fill text-orange-500"></i> SYSTEM NOTES
+                            <i class="bi bi-chat-left-text-fill text-orange-500"></i> <span data-i18n="systemNotes">SYSTEM NOTES</span>
                         </h3>
 
                         <form action="{{ route('comments.store') }}" method="POST" class="relative group">
@@ -108,6 +106,7 @@
                             <input type="hidden" name="document_id" value="{{ $document->id }}">
                             <textarea name="comment" rows="2"
                                       class="w-full bg-white border border-slate-200 rounded-2xl p-4 pr-12 text-[12px] text-black focus:border-orange-400 focus:ring-4 focus:ring-orange-50 outline-none transition-all placeholder:text-slate-400 shadow-sm"
+                                      data-i18n-placeholder="commentPlaceholder"
                                       placeholder="Leave a comment..."></textarea>
                             <button class="absolute bottom-4 right-4 text-orange-500 hover:text-orange-600 hover:scale-110 transition-all">
                                 <i class="bi bi-send-fill text-xl text-primary"></i>
@@ -116,12 +115,9 @@
 
                         <div class="space-y-3 mt-4">
                             @forelse($comments ?? [] as $comment)
-                                {{-- Улучшенный стиль Dashboard: градиент + тень --}}
                                 <div class="p-4 rounded-2xl shadow-md border border-orange-400/20"
                                      style="background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%) !important;">
-
                                     <div class="flex justify-between items-center mb-2 pb-2 border-b border-white/20">
-                                        {{-- ИСПРАВЛЕНО: Добавлен ?-> для защиты от null user --}}
                                         <span class="text-[10px] font-black uppercase tracking-widest text-white">
                                             {{ $comment->user?->name ?? 'System' }}
                                         </span>
@@ -129,7 +125,6 @@
                                             {{ $comment->created_at->diffForHumans() }}
                                         </span>
                                     </div>
-
                                     <p class="text-[12px] text-white font-medium leading-relaxed drop-shadow-sm">
                                         {{ $comment->comment }}
                                     </p>
@@ -137,8 +132,7 @@
                             @empty
                                 <div class="text-center py-8 border-2 border-dashed border-slate-100 rounded-2xl bg-slate-50/50">
                                     <i class="bi bi-chat-dots text-slate-300 text-2xl mb-2 block"></i>
-                                    <!-- Заменил font-bold на font-medium для легкости -->
-                                    <p class="text-[10px] font-medium uppercase tracking-widest text-slate-400">No notes yet</p>
+                                    <p class="text-[10px] font-medium uppercase tracking-widest text-slate-400" data-i18n="noNotes">No notes yet</p>
                                 </div>
                             @endforelse
                         </div>
@@ -148,13 +142,12 @@
                 {{-- Правая панель (Метаданные) --}}
                 <div class="space-y-6">
                     <div class="bg-white rounded-lg border border-slate-200 p-6 shadow-sm">
-                        <p class="text-[10px] font-medium text-black uppercase mb-6 tracking-[0.2em] border-b border-slate-50 pb-2">Details</p>
+                        <p class="text-[10px] font-medium text-black uppercase mb-6 tracking-[0.2em] border-b border-slate-50 pb-2" data-i18n="details">Details</p>
 
                         <div class="space-y-4">
                             <div class="flex items-center justify-between">
-                                <span class="text-gray-500 uppercase text-sm font-medium">Signature</span>
+                                <span class="text-gray-500 uppercase text-sm font-medium" data-i18n="signature">Signature</span>
                                 @php
-                                    // ИСПРАВЛЕНО: Безопасное получение первой подписи
                                     $signatureEntry = $document->signatures?->first();
                                     $isSigned = $signatureEntry && !empty($signatureEntry->signature);
                                 @endphp
@@ -162,31 +155,30 @@
                                 @if($isSigned)
                                     <div class="px-2 py-1 rounded border border-green-600 text-green-600 flex items-center gap-1 bg-green-50">
                                         <i class="bi bi-check-circle-fill"></i>
-                                        <span class="font-bold uppercase text-[10px]">Signed</span>
+                                        <span class="font-bold uppercase text-[10px]" data-i18n="signed">Signed</span>
                                     </div>
                                 @else
                                     <div class="px-2 py-1 rounded border border-red-600 text-red-600 flex items-center gap-1 bg-red-50">
                                         <i class="bi bi-clock"></i>
-                                        <span class="font-bold uppercase text-[10px]">Not Signed</span>
+                                        <span class="font-bold uppercase text-[10px]" data-i18n="notSigned">Not Signed</span>
                                     </div>
                                 @endif
                             </div>
 
                             <div class="flex justify-between items-center">
-                                <span class="text-[10px] text-black opacity-60 uppercase tracking-wider">Status</span>
-                                <span class="text-[9px] font-medium px-2 py-0.5 rounded bg-blue-50 text-blue-600 border border-blue-100 uppercase">
+                                <span class="text-[10px] text-black opacity-60 uppercase tracking-wider" data-i18n="status">Status</span>
+                                <span class="status-badge text-[9px] font-medium px-2 py-0.5 rounded bg-blue-50 text-blue-600 border border-blue-100 uppercase" data-status="{{ strtolower($document->status) }}">
                                     {{ $document->status ?? 'Draft' }}
                                 </span>
                             </div>
 
                             <div class="flex justify-between items-center">
-                                <span class="text-[10px] text-black opacity-60 uppercase tracking-wider">Owner</span>
-                                {{-- ИСПРАВЛЕНО: Добавлен ?-> для защиты от null user --}}
+                                <span class="text-[10px] text-black opacity-60 uppercase tracking-wider" data-i18n="owner">Owner</span>
                                 <span class="text-[10px] font-medium text-black">{{ $document->user?->name ?? 'Unassigned' }}</span>
                             </div>
 
                             <div class="flex justify-between items-center">
-                                <span class="text-[10px] text-black opacity-60 uppercase tracking-wider">Deadline</span>
+                                <span class="text-[10px] text-black opacity-60 uppercase tracking-wider" data-i18n="deadline">Deadline</span>
                                 <span class="text-[10px] font-medium text-red-600 italic">
                                     {{ $document->deadline ? \Carbon\Carbon::parse($document->deadline)->format('d.m.Y') : '—' }}
                                 </span>
@@ -194,11 +186,11 @@
 
                             <div class="pt-4 mt-4 border-t border-slate-50 space-y-3">
                                 <div class="flex justify-between">
-                                    <span class="text-[9px] text-black opacity-40 uppercase">Created At</span>
+                                    <span class="text-[9px] text-black opacity-40 uppercase" data-i18n="createdAt">Created At</span>
                                     <span class="text-[9px] text-black">{{ $document->created_at?->format('d M Y') ?? '—' }}</span>
                                 </div>
                                 <div class="flex justify-between">
-                                    <span class="text-[9px] text-black opacity-40 uppercase">Last Update</span>
+                                    <span class="text-[9px] text-black opacity-40 uppercase" data-i18n="lastUpdate">Last Update</span>
                                     <span class="text-[9px] text-black">{{ $document->updated_at?->diffForHumans() ?? '—' }}</span>
                                 </div>
                             </div>
@@ -207,12 +199,74 @@
 
                     <div class="p-4 bg-black rounded-lg flex items-center gap-3">
                         <div class="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse"></div>
-                        <span class="text-[9px] font-medium text-white uppercase tracking-[0.2em]">Live Document</span>
+                        <span class="text-[9px] font-medium text-white uppercase tracking-[0.2em]" data-i18n="liveDoc">Live Document</span>
                     </div>
                 </div>
             </div>
         </div>
     </div>
+
+    {{-- SCRIPTS --}}
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const translations = {
+                en: {
+                    back: "Back", edit: "Edit", delete: "Delete",
+                    readyView: "Ready to View", viewBtn: "View", downloadPdf: "DOWNLOAD PDF",
+                    systemNotes: "SYSTEM NOTES", commentPlaceholder: "Leave a comment...",
+                    noNotes: "No notes yet", details: "Details", signature: "Signature",
+                    signed: "Signed", notSigned: "Not Signed", status: "Status",
+                    owner: "Owner", deadline: "Deadline", createdAt: "Created At",
+                    lastUpdate: "Last Update", liveDoc: "Live Document",
+                    draft: "Draft", active: "Active", approved: "Approved"
+                },
+                ru: {
+                    back: "Назад", edit: "Редактировать", delete: "Удалить",
+                    readyView: "Готов к просмотру", viewBtn: "Смотреть", downloadPdf: "СКАЧАТЬ PDF",
+                    systemNotes: "СИСТЕМНЫЕ ЗАМЕТКИ", commentPlaceholder: "Оставьте комментарий...",
+                    noNotes: "Заметок пока нет", details: "Детали", signature: "Подпись",
+                    signed: "Подписан", notSigned: "Не подписан", status: "Статус",
+                    owner: "Владелец", deadline: "Срок", createdAt: "Создан",
+                    lastUpdate: "Обновлено", liveDoc: "Живой документ",
+                    draft: "Черновик", active: "Активен", approved: "Утвержден"
+                },
+                tj: {
+                    back: "Қафо", edit: "Вироиш", delete: "Ҳазф кардан",
+                    readyView: "Барои тамошо омода", viewBtn: "Дидан", downloadPdf: "БОРГИРИИ PDF",
+                    systemNotes: "ҚАЙДҲОИ СИСТЕМА", commentPlaceholder: "Фикр гузоред...",
+                    noNotes: "Қайдҳо нестанд", details: "Тафсилот", signature: "Имзо",
+                    signed: "Имзошуда", notSigned: "Имзо нашудааст", status: "Ҳолат",
+                    owner: "Соҳиб", deadline: "Мӯҳлат", createdAt: "Санаи эҷод",
+                    lastUpdate: "Навсозӣ", liveDoc: "Ҳуҷҷати фаъол",
+                    draft: "Пешнавис", active: "Фаъол", approved: "Тасдиқшуда"
+                }
+            };
+
+            function applyShowTranslations() {
+                const lang = localStorage.getItem('app-lang') || 'ru';
+                const t = translations[lang];
+                if (!t) return;
+
+                document.querySelectorAll('[data-i18n]').forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (t[key]) el.textContent = t[key];
+                });
+
+                document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+                    const key = el.getAttribute('data-i18n-placeholder');
+                    if (t[key]) el.setAttribute('placeholder', t[key]);
+                });
+
+                document.querySelectorAll('.status-badge').forEach(el => {
+                    const statusKey = el.getAttribute('data-status');
+                    if (t[statusKey]) el.textContent = t[statusKey];
+                });
+            }
+
+            applyShowTranslations();
+            setInterval(applyShowTranslations, 1000);
+        });
+    </script>
 @endsection
 
 @push('styles')
@@ -222,14 +276,8 @@
         .doc-page-v2 a.bg-slate-100:hover { color: #ffffff !important; background-color: #2563eb !important; }
         .doc-page-v2 { background-color: #f8fafc !important; }
         .doc-page-v2 .bg-white { background-color: #ffffff !important; border: 1px solid #e2e8f0 !important; }
-        .doc-id-highlight { background-color: #f1f5f9 !important; color: #000 !important; font-weight: 800 !important; }
-        .comment-highlight { background-color: #fef08a !important; color: #000 !important; padding: 12px; border-radius: 10px; }
-        .no-notes-highlight { background-color: #fef08a !important; color: #000 !important; padding: 16px; border-radius: 10px; }
         .content-highlight { background-color: #fef08a !important; color: #000 !important; padding: 6px 10px; border-radius: 6px; display: inline-block; }
         .doc-page-v2 h1, .doc-page-v2 h2, .doc-page-v2 h3, .doc-page-v2 p, .doc-page-v2 span, .doc-page-v2 div, .doc-page-v2 label { color: #000 !important; }
-        .text-red-600 { color: #dc2626 !important; }
-        .text-green-600 { color: #16a34a !important; }
-        .doc-page-v2 a.text-blue-600 { color: #2563eb !important; }
         .font-inter { font-family: 'Inter', sans-serif; }
     </style>
 @endpush

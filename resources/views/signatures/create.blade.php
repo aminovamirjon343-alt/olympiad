@@ -1,51 +1,28 @@
-
-
-
 @extends('layouts.admin')
 
 @section('content')
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
     <style>
-        .sig-container {
-            font-family: 'Inter', sans-serif !important;
-        }
-
-        /* Принудительный черный текст и солидный стиль селекта */
+        .sig-container { font-family: 'Inter', sans-serif !important; }
         #documentSelect {
             color: #000000 !important;
             background-color: #ffffff !important;
-            font-size: 13px !important; /* Уменьшили текст */
+            font-size: 13px !important;
             font-weight: 600 !important;
             border: 1.5px solid rgba(0, 0, 0, 0.1) !important;
             border-radius: 0.75rem !important;
             padding: 0.6rem 1rem !important;
         }
-
-        #documentSelect option {
-            color: #000000 !important;
-            background-color: #ffffff !important;
-        }
-
-        /* Карточка с четкой, но тонкой границей */
+        #documentSelect option { color: #000000 !important; background-color: #ffffff !important; }
         .signature-card-container {
             background: #ffffff !important;
             border: 1px solid rgba(0, 0, 0, 0.08) !important;
             border-radius: 1.5rem !important;
             box-shadow: 0 4px 15px -3px rgba(0, 0, 0, 0.05);
         }
-
-        .dark .signature-card-container {
-            background: #1e293b !important;
-            border-color: rgba(255, 255, 255, 0.1) !important;
-        }
-
-        /* Уменьшенный заголовок и метки */
-        .title-compact {
-            font-size: 16px !important;
-            letter-spacing: -0.02em;
-        }
-
+        .dark .signature-card-container { background: #1e293b !important; border-color: rgba(255, 255, 255, 0.1) !important; }
+        .title-compact { font-size: 16px !important; letter-spacing: -0.02em; }
         .label-micro {
             font-size: 9px !important;
             font-weight: 700 !important;
@@ -61,16 +38,16 @@
             {{-- ЛЕВАЯ КОЛОНКА --}}
             <div class="w-full lg:w-4/12 sticky top-4">
                 <div class="signature-card-container p-5">
-                    <h2 class="title-compact font-extrabold uppercase mb-5 text-black dark:text-white">Подписание</h2>
+                    <h2 class="title-compact font-extrabold uppercase mb-5 text-black dark:text-white" data-i18n="signingTitle">Подписание</h2>
 
                     <form action="" method="POST" id="signatureForm">
                         @csrf
                         <input type="hidden" name="signature" id="signatureInput">
 
                         <div class="mb-5">
-                            <label class="label-micro block mb-1.5 ml-1">Выбор документа</label>
+                            <label class="label-micro block mb-1.5 ml-1" data-i18n="selectDocLabel">Выбор документа</label>
                             <select name="document_id" id="documentSelect" class="w-full outline-none focus:border-indigo-500 transition">
-                                <option value="" disabled {{ !isset($document) ? 'selected' : '' }}>-- Список документов --</option>
+                                <option value="" disabled {{ !isset($document) ? 'selected' : '' }} data-i18n="docPlaceholder">-- Список документов --</option>
                                 @foreach($documents as $doc)
                                     <option value="{{ $doc->id }}"
                                             data-pdf="{{ asset('storage/' . $doc->file_path) }}"
@@ -81,7 +58,7 @@
                             </select>
                         </div>
 
-                        <label class="label-micro block mb-1.5 ml-1 text-indigo-500">Ваша подпись</label>
+                        <label class="label-micro block mb-1.5 ml-1 text-indigo-500" data-i18n="yourSigLabel">Ваша подпись</label>
                         <div class="relative bg-slate-50 border border-slate-200 rounded-xl overflow-hidden" style="height: 160px;">
                             <canvas id="signature-pad" class="w-full h-full touch-none" style="cursor: crosshair;"></canvas>
                             <button type="button" id="clearBtn" class="absolute top-2 right-2 bg-white text-slate-400 p-1.5 rounded-lg hover:text-red-500 transition shadow-sm border border-slate-100 z-10">
@@ -92,7 +69,7 @@
                         <div class="mt-6">
                             <button type="submit" class="w-full bg-indigo-600 text-white py-3 rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-indigo-700 transition shadow-lg shadow-indigo-500/20 flex items-center justify-center gap-2">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-                                Вшить подпись
+                                <span data-i18n="btnSign">Вшить подпись</span>
                             </button>
                         </div>
                     </form>
@@ -102,10 +79,10 @@
             {{-- ПРАВАЯ КОЛОНКА --}}
             <div class="w-full lg:w-8/12">
                 <div class="flex items-center justify-between mb-3 px-4">
-                    <span class="label-micro">Предпросмотр</span>
+                    <span class="label-micro" data-i18n="previewLabel">Предпросмотр</span>
                     <a id="fullScreenBtn" href="#" target="_blank" class="hidden flex items-center gap-2 bg-white border border-slate-200 px-3 py-1.5 rounded-lg text-[10px] font-bold text-black hover:bg-slate-50 hover:text-indigo-600 transition shadow-sm">
                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
-                        На весь экран
+                        <span data-i18n="btnFullScreen">На весь экран</span>
                     </a>
                 </div>
                 <div class="bg-slate-900 p-1 rounded-[1.8rem] shadow-xl sticky top-4" style="height: calc(100vh - 140px);">
@@ -117,8 +94,52 @@
 
     <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.0.0/dist/signature_pad.umd.min.js"></script>
     <script>
-
         document.addEventListener('DOMContentLoaded', function () {
+            const translations = {
+                ru: {
+                    signingTitle: "Подписание",
+                    selectDocLabel: "Выбор документа",
+                    docPlaceholder: "-- Список документов --",
+                    yourSigLabel: "Ваша подпись",
+                    btnSign: "Вшить подпись",
+                    previewLabel: "Предпросмотр",
+                    btnFullScreen: "На весь экран",
+                    alertNoDoc: "Выберите документ!",
+                    alertNoSig: "Нарисуйте подпись!"
+                },
+                tj: {
+                    signingTitle: "Имзогузорӣ",
+                    selectDocLabel: "Интихоби ҳуҷҷат",
+                    docPlaceholder: "-- Рӯйхати ҳуҷҷатҳо --",
+                    yourSigLabel: "Имзои шумо",
+                    btnSign: "Гузоштани имзо",
+                    previewLabel: "Пешнамоиш",
+                    btnFullScreen: "Дар тамоми экран",
+                    alertNoDoc: "Ҳуҷҷатро интихоб кунед!",
+                    alertNoSig: "Имзоро кашед!"
+                },
+                en: {
+                    signingTitle: "Signing",
+                    selectDocLabel: "Select Document",
+                    docPlaceholder: "-- Document List --",
+                    yourSigLabel: "Your Signature",
+                    btnSign: "Apply Signature",
+                    previewLabel: "Preview",
+                    btnFullScreen: "Full Screen",
+                    alertNoDoc: "Please select a document!",
+                    alertNoSig: "Please provide a signature!"
+                }
+            };
+
+            const lang = localStorage.getItem('app-lang') || 'ru';
+            const t = translations[lang];
+
+            // Применяем переводы текстов
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if (t[key]) el.textContent = t[key];
+            });
+
             const canvas = document.getElementById('signature-pad');
             const signatureInput = document.getElementById('signatureInput');
             const form = document.getElementById('signatureForm');
@@ -126,7 +147,6 @@
             const viewer = document.getElementById('pdfViewer');
             const fullScreenBtn = document.getElementById('fullScreenBtn');
 
-            // Инициализация подписи
             const signaturePad = new SignaturePad(canvas, {
                 backgroundColor: 'rgb(255, 255, 255)',
                 penColor: 'rgb(0, 0, 0)',
@@ -134,23 +154,17 @@
                 maxWidth: 3.0
             });
 
-            // Функция обновления превью и экшена формы
             function updateSelection() {
                 const selectedOption = select.options[select.selectedIndex];
                 if (selectedOption && selectedOption.value && selectedOption.value !== "") {
                     const pdfUrl = selectedOption.getAttribute('data-pdf');
-
-                    // Обновляем iframe и ссылку
                     viewer.src = pdfUrl + '#toolbar=0&view=FitH&pagemode=none';
                     fullScreenBtn.href = pdfUrl;
                     fullScreenBtn.classList.remove('hidden');
-
-                    // Устанавливаем URL для отправки формы
                     form.action = `/documents/${selectedOption.value}/sign`;
                 }
             }
 
-            // Подгонка размера холста
             function resizeCanvas() {
                 const ratio = Math.max(window.devicePixelRatio || 1, 1);
                 canvas.width = canvas.offsetWidth * ratio;
@@ -159,32 +173,24 @@
                 signaturePad.clear();
             }
 
-            // Слушатели событий
             window.addEventListener("resize", resizeCanvas);
             select.addEventListener('change', updateSelection);
             document.getElementById('clearBtn').addEventListener('click', () => signaturePad.clear());
 
-            // Инициализация при загрузке
             setTimeout(resizeCanvas, 300);
+            if (select.value) updateSelection();
 
-            // Если документ уже выбран (через Blade), загружаем превью сразу
-            if (select.value) {
-                updateSelection();
-            }
-
-            // Обработка отправки
             form.addEventListener('submit', function (e) {
                 if (!select.value) {
                     e.preventDefault();
-                    alert("Выберите документ!");
+                    alert(t.alertNoDoc);
                     return;
                 }
                 if (signaturePad.isEmpty()) {
                     e.preventDefault();
-                    alert("Нарисуйте подпись!");
+                    alert(t.alertNoSig);
                     return;
                 }
-                // Записываем Base64 картинки в скрытый инпут
                 signatureInput.value = signaturePad.toDataURL('image/png');
             });
         });

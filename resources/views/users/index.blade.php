@@ -8,7 +8,6 @@
 @extends('layouts.admin')
 
 @section('content')
-    {{-- Фон всей страницы --}}
     <div class="min-h-screen bg-[#f1f5f9] py-8">
         <div class="container mx-auto px-4">
             <style>
@@ -22,7 +21,6 @@
                     font-family: 'Inter Tight', sans-serif !important;
                 }
 
-                /* ТВОЯ СЕРАЯ КАРТОЧКА */
                 .table-card {
                     background: #f8fafc !important;
                     border-radius: 1.25rem;
@@ -31,7 +29,6 @@
                     overflow: hidden;
                 }
 
-                /* ГРАДИЕНТНАЯ ШАПКА НА PRIMARY COLOR */
                 .table-header-primary {
                     background: linear-gradient(90deg, var(--primary, #2563eb) 0%, #3b82f6 100%);
                 }
@@ -44,7 +41,6 @@
                     border-bottom: 1px solid #f1f5f9;
                 }
 
-                /* Эффект при наведении */
                 .tr-hover:hover {
                     background-color: #ffffff !important;
                     transition: background 0.2s ease;
@@ -60,14 +56,14 @@
                 {{-- Header --}}
                 <div class="flex items-end justify-between mb-8">
                     <div>
-                        <h1 class="text-3xl font-black tracking-tighter text-slate-900 uppercase">Пользователи</h1>
-                        <p class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mt-1 italic">Управление командой и доступом</p>
+                        <h1 class="text-3xl font-black tracking-tighter text-slate-900 uppercase" data-i18n="pageTitle">Пользователи</h1>
+                        <p class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mt-1 italic" data-i18n="pageSubtitle">Управление командой и доступом</p>
                     </div>
                     <a href="{{ route('users.create') }}" class="btn-primary-system text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 shadow-lg transition-all hover:scale-105 active:scale-95">
                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="4">
                             <path d="M12 4v16m8-8H4"/>
                         </svg>
-                        Добавить
+                        <span data-i18n="addBtn">Добавить</span>
                     </a>
                 </div>
 
@@ -79,11 +75,11 @@
                                 <thead class="table-header-primary">
                                 <tr>
                                     <th class="w-12 text-center py-2.5 px-3 text-[9px] font-black text-white/90 uppercase tracking-widest rounded-tl-xl">ID</th>
-                                    <th class="py-2.5 px-3 text-[9px] font-black text-white uppercase tracking-widest">Сотрудник</th>
-                                    <th class="py-2.5 px-3 text-[9px] font-black text-white uppercase tracking-widest">Email / Контакты</th>
-                                    <th class="py-2.5 px-3 text-[9px] font-black text-white uppercase tracking-widest">Телефон</th>
-                                    <th class="text-center py-2.5 px-3 text-[9px] font-black text-white uppercase tracking-widest">Роль</th>
-                                    <th class="text-right py-2.5 px-3 text-[9px] font-black text-white uppercase tracking-widest rounded-tr-xl">Управление</th>
+                                    <th class="py-2.5 px-3 text-[9px] font-black text-white uppercase tracking-widest" data-i18n="thEmployee">Сотрудник</th>
+                                    <th class="py-2.5 px-3 text-[9px] font-black text-white uppercase tracking-widest" data-i18n="thEmail">Email / Контакты</th>
+                                    <th class="py-2.5 px-3 text-[9px] font-black text-white uppercase tracking-widest" data-i18n="thPhone">Телефон</th>
+                                    <th class="text-center py-2.5 px-3 text-[9px] font-black text-white uppercase tracking-widest" data-i18n="thRole">Роль</th>
+                                    <th class="text-right py-2.5 px-3 text-[9px] font-black text-white uppercase tracking-widest rounded-tr-xl" data-i18n="thActions">Управление</th>
                                 </tr>
                                 </thead>
                                 <tbody>
@@ -96,20 +92,14 @@
                                         <td class="py-2 px-3">
                                             <div class="flex items-center gap-2">
                                                 <div class="relative">
-                                                    {{-- Аватар --}}
                                                     @php
-                                                        // Массив приятных цветов для фона и текста
                                                         $colors = [
-                                                            ['bg' => '#e0f2fe', 'text' => '#0369a1'], // Голубой
-                                                            ['bg' => '#dcfce7', 'text' => '#15803d'], // Зеленый
-                                                            ['bg' => '#fef3c7', 'text' => '#b45309'], // Желтый
-                                                            ['bg' => '#f3e8ff', 'text' => '#7e22ce'], // Фиолетовый
-                                                            ['bg' => '#fee2e2', 'text' => '#b91c1c'], // Красный
-                                                            ['bg' => '#ffedd5', 'text' => '#c2410c'], // Оранжевый
-                                                            ['bg' => '#e0e7ff', 'text' => '#4338ca'], // Индиго
+                                                            ['bg' => '#e0f2fe', 'text' => '#0369a1'],
+                                                            ['bg' => '#dcfce7', 'text' => '#15803d'],
+                                                            ['bg' => '#fef3c7', 'text' => '#b45309'],
+                                                            ['bg' => '#f3e8ff', 'text' => '#7e22ce'],
+                                                            ['bg' => '#fee2e2', 'text' => '#b91c1c'],
                                                         ];
-
-                                                        // Выбираем цвет на основе ID (чтобы он был постоянным для юзера)
                                                         $colorIndex = $user->id % count($colors);
                                                         $currentColor = $colors[$colorIndex];
                                                     @endphp
@@ -118,7 +108,7 @@
                                                          style="background-color: {{ $currentColor['bg'] }}; color: {{ $currentColor['text'] }};">
                                                         {{ Str::upper(Str::substr($user->name, 0, 1)) }}
                                                     </div>
-                                                    {{-- ТОЧКА ОНЛАЙН --}}
+
                                                     @if($user->isOnline())
                                                         <span class="absolute -bottom-0.5 -right-0.5 flex h-2.5 w-2.5">
                                                             <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
@@ -131,7 +121,8 @@
 
                                                 <div class="flex flex-col">
                                                     <div class="font-bold text-slate-800 tracking-tight text-[11px] leading-none group-hover:text-blue-600 transition-colors">{{ $user->name }}</div>
-                                                    <span class="text-[7px] font-black {{ $user->isOnline() ? 'text-green-600' : 'text-slate-400' }} uppercase tracking-widest mt-0.5">
+                                                    <span class="text-[7px] font-black uppercase tracking-widest mt-0.5 {{ $user->isOnline() ? 'text-green-600' : 'text-slate-400' }}"
+                                                          data-i18n="{{ $user->isOnline() ? 'statusOnline' : 'statusOffline' }}">
                                                         {{ $user->isOnline() ? 'Онлайн' : 'Офлайн' }}
                                                     </span>
                                                 </div>
@@ -153,7 +144,7 @@
 
                                         <td class="text-center py-2 px-3">
                                             @php
-                                                $isAdmin = in_array(strtolower($user->role), ['admin', 'админ']);
+                                                $isAdmin = in_array(strtolower($user->role), ['admin', 'админ', 'администратор']);
                                             @endphp
                                             <span class="inline-block px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-tighter border shadow-sm {{ $isAdmin ? 'text-white' : 'bg-white text-slate-500 border-slate-200' }}"
                                                   style="{{ $isAdmin ? 'background-color: var(--primary); border-color: var(--primary);' : '' }}">
@@ -166,9 +157,9 @@
                                                 <a href="{{ route('users.show', $user->id) }}" class="p-1.5 bg-white border border-slate-100 text-slate-400 hover:text-blue-600 rounded-md shadow-sm transition-all hover:border-blue-200">
                                                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
                                                 </a>
-                                                <form action="{{ route('users.destroy', $user->id) }}" method="POST" onsubmit="return confirm('Удалить?')">
+                                                <form action="{{ route('users.destroy', $user->id) }}" method="POST" class="delete-form">
                                                     @csrf @method('DELETE')
-                                                    <button class="p-1.5 bg-white border border-slate-100 text-slate-400 hover:text-red-600 rounded-md shadow-sm transition-all hover:border-red-200">
+                                                    <button type="submit" class="p-1.5 bg-white border border-slate-100 text-slate-400 hover:text-red-600 rounded-md shadow-sm transition-all hover:border-red-200">
                                                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
                                                     </button>
                                                 </form>
@@ -184,4 +175,66 @@
             </div>
         </div>
     </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const translations = {
+                ru: {
+                    pageTitle: "Пользователи",
+                    pageSubtitle: "Управление командой и доступом",
+                    addBtn: "Добавить",
+                    thEmployee: "Сотрудник",
+                    thEmail: "Email / Контакты",
+                    thPhone: "Телефон",
+                    thRole: "Роль",
+                    thActions: "Управление",
+                    statusOnline: "Онлайн",
+                    statusOffline: "Офлайн",
+                    confirmDelete: "Удалить пользователя?"
+                },
+                tj: {
+                    pageTitle: "Корбарон",
+                    pageSubtitle: "Идоракунии даста ва дастрасӣ",
+                    addBtn: "Илова кардан",
+                    thEmployee: "Корманд",
+                    thEmail: "Email / Тамос",
+                    thPhone: "Телефон",
+                    thRole: "Нақш",
+                    thActions: "Идоракунӣ",
+                    statusOnline: "Онлайн",
+                    statusOffline: "Офлайн",
+                    confirmDelete: "Корбарро нест мекунед?"
+                },
+                en: {
+                    pageTitle: "Users",
+                    pageSubtitle: "Team and Access Management",
+                    addBtn: "Add New",
+                    thEmployee: "Employee",
+                    thEmail: "Email / Contacts",
+                    thPhone: "Phone",
+                    thRole: "Role",
+                    thActions: "Management",
+                    statusOnline: "Online",
+                    statusOffline: "Offline",
+                    confirmDelete: "Delete user?"
+                }
+            };
+
+            const lang = localStorage.getItem('app-lang') || 'ru';
+            const t = translations[lang];
+
+            // Применяем переводы
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if (t[key]) el.textContent = t[key];
+            });
+
+            // Обработка подтверждения удаления
+            document.querySelectorAll('.delete-form').forEach(form => {
+                form.addEventListener('submit', (e) => {
+                    if(!confirm(t.confirmDelete)) e.preventDefault();
+                });
+            });
+        });
+    </script>
 @endsection

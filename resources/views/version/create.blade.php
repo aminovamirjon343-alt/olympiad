@@ -69,30 +69,28 @@
 
         <div class="versions-container">
 
-            <!-- Заголовок стал шире вместе с формой -->
             <div class="mb-8 flex items-end justify-between px-2">
                 <div>
                     <h1 class="text-xl font-bold doc-main-title tracking-tight flex items-center gap-2">
                         <span class="w-2 h-6 bg-blue-500 rounded-full shadow-[0_0_10px_rgba(59,130,246,0.5)]"></span>
-                        РЕВИЗИЯ
+                        <span data-i18n="titleRevision">РЕВИЗИЯ</span>
                     </h1>
-                    <p class="text-[9px] font-bold uppercase tracking-[0.2em] text-slate-500 mt-1">Version Control & Deployment</p>
+                    <p class="text-[9px] font-bold uppercase tracking-[0.2em] text-slate-500 mt-1" data-i18n="subtitleRevision">Version Control & Deployment</p>
                 </div>
 
                 <a href="{{ route('versions.index') }}" class="text-[10px] font-black uppercase text-slate-400 hover:text-amber-500 transition-colors flex items-center gap-1.5 pb-1">
                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3.5"><path d="M15 19l-7-7 7-7"/></svg>
-                    Вернуться
+                    <span data-i18n="backBtn">Вернуться</span>
                 </a>
             </div>
 
             <div class="glass-form-card">
-                <!-- Увеличили p-8 до p-10 -->
                 <form action="{{ route('versions.store') }}" method="POST" enctype="multipart/form-data" class="p-10 space-y-7">
                     @csrf
 
                     <div class="space-y-6">
                         <div>
-                            <label for="document_id" class="field-label">Основной документ</label>
+                            <label for="document_id" class="field-label" data-i18n="labelDoc">Основной документ</label>
                             <select name="document_id" id="document_id" class="w-full rounded-xl custom-input outline-none cursor-pointer appearance-none">
                                 @foreach($documents as $doc)
                                     <option value="{{ $doc->id }}">{{ $doc->title }}</option>
@@ -101,13 +99,12 @@
                         </div>
 
                         <div>
-                            <label for="file_path" class="field-label">Новая редакция файла</label>
+                            <label for="file_path" class="field-label" data-i18n="labelFile">Новая редакция файла</label>
                             <input type="file" name="file_path" id="file_path" required
                                    class="w-full rounded-xl custom-input file:mr-4 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-[9px] file:font-black file:uppercase file:bg-slate-900 file:text-white cursor-pointer hover:file:bg-blue-600 file:transition-colors">
                         </div>
                     </div>
 
-                    <!-- Нижняя панель -->
                     <div class="pt-6 border-t border-slate-50 flex items-center justify-between">
                         <div class="flex items-center gap-2.5">
                             <span class="relative flex h-2.5 w-2.5">
@@ -120,7 +117,7 @@
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3.5">
                                 <path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
                             </svg>
-                            Зафиксировать
+                            <span data-i18n="submitBtn">Зафиксировать</span>
                         </button>
                     </div>
                 </form>
@@ -131,4 +128,43 @@
             </p>
         </div>
     </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const translations = {
+                ru: {
+                    titleRevision: "РЕВИЗИЯ",
+                    subtitleRevision: "Version Control & Deployment",
+                    backBtn: "Вернуться",
+                    labelDoc: "Основной документ",
+                    labelFile: "Новая редакция файла",
+                    submitBtn: "Зафиксировать"
+                },
+                tj: {
+                    titleRevision: "РЕВИЗИЯ",
+                    subtitleRevision: "Назорати нусхаҳо ва ҷойгиркунӣ",
+                    backBtn: "Бозгашт",
+                    labelDoc: "Ҳуҷҷати асосӣ",
+                    labelFile: "Таҳрири нави файл",
+                    submitBtn: "Сабт кардан"
+                },
+                en: {
+                    titleRevision: "REVISION",
+                    subtitleRevision: "Version Control & Deployment",
+                    backBtn: "Go Back",
+                    labelDoc: "Main Document",
+                    labelFile: "New File Revision",
+                    submitBtn: "Commit Version"
+                }
+            };
+
+            const lang = localStorage.getItem('app-lang') || 'ru';
+            const t = translations[lang];
+
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if (t[key]) el.textContent = t[key];
+            });
+        });
+    </script>
 @endsection

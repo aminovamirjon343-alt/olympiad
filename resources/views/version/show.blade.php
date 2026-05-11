@@ -10,20 +10,20 @@
             <div>
                 <a href="{{ route('versions.index') }}"
                    class="text-xs font-medium text-gray-500 hover:text-black transition">
-                    ← Back
+                    ← <span data-i18n="backBtn">Back</span>
                 </a>
 
                 <h1 class="text-2xl font-semibold text-gray-900 mt-1">
-                    Version v{{ $version->version }}
+                    <span data-i18n="versionTitle">Version</span> v{{ $version->version }}
                 </h1>
 
-                <p class="text-sm text-gray-500">
+                <p class="text-sm text-gray-500" data-i18n="detailsSubtitle">
                     Document revision details
                 </p>
             </div>
 
             <a href="{{ route('versions.edit', $version->id) }}"
-               class="px-4 py-2 rounded-xl bg-black text-white text-sm font-medium hover:bg-gray-800 transition">
+               class="px-4 py-2 rounded-xl bg-black text-white text-sm font-medium hover:bg-gray-800 transition" data-i18n="editBtn">
                 Edit
             </a>
         </div>
@@ -50,7 +50,7 @@
 
                     <a href="{{ asset('storage/' . $version->file_path) }}"
                        target="_blank"
-                       class="mt-6 inline-flex items-center gap-2 px-5 py-2 rounded-xl bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 transition">
+                       class="mt-6 inline-flex items-center gap-2 px-5 py-2 rounded-xl bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 transition" data-i18n="viewFileBtn">
                         View File
                     </a>
 
@@ -62,7 +62,7 @@
 
                 {{-- DOCUMENT --}}
                 <div class="bg-white rounded-2xl border border-gray-100 p-5">
-                    <p class="text-xs text-gray-400 uppercase font-medium mb-3">
+                    <p class="text-xs text-gray-400 uppercase font-medium mb-3" data-i18n="labelDoc">
                         Document
                     </p>
 
@@ -72,7 +72,7 @@
 
                     <a href="{{ route('documents.show', $version->document_id) }}"
                        class="text-xs text-blue-600 hover:underline mt-2 inline-block">
-                        Open original →
+                        <span data-i18n="openOriginal">Open original</span> →
                     </a>
                 </div>
 
@@ -80,24 +80,24 @@
                 <div class="bg-white rounded-2xl border border-gray-100 p-5 space-y-4">
 
                     <div>
-                        <p class="text-xs text-gray-400 uppercase">Uploaded</p>
+                        <p class="text-xs text-gray-400 uppercase" data-i18n="labelUploaded">Uploaded</p>
                         <p class="text-sm font-medium text-gray-900">
                             {{ $version->created_at->format('d M Y, H:i') }}
                         </p>
                     </div>
 
                     <div>
-                        <p class="text-xs text-gray-400 uppercase">Version ID</p>
+                        <p class="text-xs text-gray-400 uppercase" data-i18n="labelVersionId">Version ID</p>
                         <p class="text-sm font-medium text-gray-900">
                             #{{ $version->id }}
                         </p>
                     </div>
 
                     <div>
-                        <p class="text-xs text-gray-400 uppercase">Status</p>
-                        <span class="inline-block px-2 py-1 text-xs font-medium rounded-lg bg-green-50 text-green-700">
-                        Active
-                    </span>
+                        <p class="text-xs text-gray-400 uppercase" data-i18n="labelStatus">Status</p>
+                        <span class="inline-block px-2 py-1 text-xs font-medium rounded-lg bg-green-50 text-green-700" data-i18n="statusActive">
+                            Active
+                        </span>
                     </div>
 
                 </div>
@@ -105,4 +105,58 @@
             </div>
         </div>
     </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const translations = {
+                ru: {
+                    backBtn: "Назад",
+                    versionTitle: "Версия",
+                    detailsSubtitle: "Детали ревизии документа",
+                    editBtn: "Редактировать",
+                    viewFileBtn: "Открыть файл",
+                    labelDoc: "Документ",
+                    openOriginal: "Открыть оригинал",
+                    labelUploaded: "Загружено",
+                    labelVersionId: "ID версии",
+                    labelStatus: "Статус",
+                    statusActive: "Активный"
+                },
+                tj: {
+                    backBtn: "Бозгашт",
+                    versionTitle: "Нусха",
+                    detailsSubtitle: "Тафсилоти таҳрири ҳуҷҷат",
+                    editBtn: "Таҳрир",
+                    viewFileBtn: "Дидани файл",
+                    labelDoc: "Ҳуҷҷат",
+                    openOriginal: "Ҳуҷҷати аслӣ",
+                    labelUploaded: "Боргузорӣ шуд",
+                    labelVersionId: "ID-и нусха",
+                    labelStatus: "Статус",
+                    statusActive: "Фаъол"
+                },
+                en: {
+                    backBtn: "Back",
+                    versionTitle: "Version",
+                    detailsSubtitle: "Document revision details",
+                    editBtn: "Edit",
+                    viewFileBtn: "View File",
+                    labelDoc: "Document",
+                    openOriginal: "Open original",
+                    labelUploaded: "Uploaded",
+                    labelVersionId: "Version ID",
+                    labelStatus: "Status",
+                    statusActive: "Active"
+                }
+            };
+
+            const lang = localStorage.getItem('app-lang') || 'ru';
+            const t = translations[lang];
+
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if (t[key]) el.textContent = t[key];
+            });
+        });
+    </script>
 @endsection

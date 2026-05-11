@@ -1275,27 +1275,83 @@
 
 
 
+
+
     };
 
-    let currentLang = 'en';
+    // 1. Инициализация языка: берем из памяти или ставим 'ru' по умолчанию
+    let currentLang = localStorage.getItem('app-lang') || 'ru';
 
     function setLang(lang, btn) {
         currentLang = lang;
+        // Сохраняем выбор пользователя
+        localStorage.setItem('app-lang', lang);
+
         document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
         if (btn) btn.classList.add('active');
 
         const t = translations[lang];
+        if (!t) return;
+
+        // Перевод текста
         document.querySelectorAll('[data-i18n]').forEach(el => {
             const key = el.getAttribute('data-i18n');
             if (t[key]) el.textContent = t[key];
         });
+
+        // Перевод плейсхолдеров
         document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
             const key = el.getAttribute('data-i18n-placeholder');
             if (t[key]) el.placeholder = t[key];
         });
+
         document.documentElement.lang = lang;
+
+        // Обновляем флаг в селекторе (если он есть на странице)
+        const currentFlagImg = document.getElementById('current-flag');
+        if (currentFlagImg) {
+            const flagMap = {
+                'en': 'https://flagcdn.com/w20/us.png',
+                'ru': 'https://flagcdn.com/w20/ru.png',
+                'tj': 'https://flagcdn.com/w20/tj.png'
+            };
+            currentFlagImg.src = flagMap[lang];
+        }
     }
 
+    // 2. Функция для селектора (которую ты вызываешь из HTML)
+    function changeLangUI(lang, flagUrl, element) {
+        setLang(lang, element);
+        document.getElementById('lang-options').classList.add('hidden');
+    }
+
+    // 3. Запуск при загрузке страницы
+    document.addEventListener('DOMContentLoaded', () => {
+        // Устанавливаем язык, который был сохранен
+        setLang(currentLang);
+
+        // Инициализация темы и цветов (твой существующий код...)
+        initThemeAndColors();
+    });
+
+    // --- Остальные твои функции без изменений (showPage, toggleTheme и т.д.) ---
+
+    function initThemeAndColors() {
+        // Тема
+        const savedTheme = localStorage.getItem('color-theme');
+        if (savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark');
+            if(document.getElementById('themeIcon')) document.getElementById('themeIcon').className = 'bi bi-sun';
+        }
+
+        // Цвета
+        const savedPrimary = localStorage.getItem('theme-primary');
+        if (savedPrimary) {
+            document.documentElement.style.setProperty('--primary', savedPrimary);
+            document.documentElement.style.setProperty('--primary-dark', localStorage.getItem('theme-primary-dark'));
+            document.documentElement.style.setProperty('--accent', localStorage.getItem('theme-accent'));
+        }
+    }
     function showPage(pageId, clickedLink) {
         document.querySelectorAll('.page-section').forEach(s => s.classList.remove('active'));
         const target = document.getElementById('page-' + pageId);
@@ -1458,6 +1514,7 @@
     }
 
 </script>
+
 </body>
 </html>
 

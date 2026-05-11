@@ -634,13 +634,13 @@
 
     <div class="container-fluid p-4 dash">
         {{-- Документы --}}
-        <div class="section-title mb-4"><div class="accent"></div>Аналитика документооборота</div>
+        <div class="section-title mb-4"><div class="accent"></div><span data-i18n="docAnalytics">Аналитика документооборота</span></div>
 
         <div class="row g-3">
             <div class="col-12">
                 <div class="acard">
                     <div class="d-flex justify-content-between align-items-center mb-2">
-                        <div><div class="slabel">Статистика системы</div><h6 class="mb-0 fw-bold" style="color:var(--text)">Поток входящих документов</h6></div>
+                        <div><div class="slabel" data-i18n="systemStats">Статистика системы</div><h6 class="mb-0 fw-bold" style="color:var(--text)" data-i18n="incomingFlow">Поток входящих документов</h6></div>
                         <div class="badge-live"><i class="fas fa-sync-alt fa-spin"></i> Live</div>
                     </div>
                     <div id="mainChart"></div>
@@ -649,15 +649,15 @@
 
             <div class="col-md-4">
                 <div class="acard">
-                    <div class="slabel">Всего документов</div>
+                    <div class="slabel" data-i18n="totalDocs">Всего документов</div>
                     <div class="bignum mt-2">{{ $totalDocuments ?? 0 }}</div>
-                    <small style="color:var(--muted)">обработано файлов</small>
+                    <small style="color:var(--muted)" data-i18n="processedFiles">обработано файлов</small>
                 </div>
             </div>
 
             <div class="col-md-4">
                 <div class="acard">
-                    <div class="slabel">Доля подписанных</div>
+                    <div class="slabel" data-i18n="signedRate">Доля подписанных</div>
                     @php
                         $totalMonth = array_sum($statusData);
                         $rate = $totalMonth > 0 ? round(($statusData['signed'] / $totalMonth) * 100) : 0;
@@ -669,26 +669,26 @@
 
             <div class="col-md-4">
                 <div class="acard" style="border-top:3px solid #ef4444">
-                    <div class="slabel" style="color:#ef4444">Отказы (Rejected)</div>
+                    <div class="slabel" style="color:#ef4444" data-i18n="rejectedTitle">Отказы (Rejected)</div>
                     <div class="bignum mt-2">{{ $statusData['rejected'] ?? 0 }}</div>
-                    <small style="color:var(--muted)">требуют внимания</small>
+                    <small style="color:var(--muted)" data-i18n="requireAttention">требуют внимания</small>
                 </div>
             </div>
         </div>
 
         {{-- Пользователи --}}
         <div class="section-title mt-5 mb-4">
-            <div class="accent" style="background:#8b5cf6;box-shadow:0 0 12px #8b5cf680"></div>Аналитика пользователей
+            <div class="accent" style="background:#8b5cf6;box-shadow:0 0 12px #8b5cf680"></div><span data-i18n="userAnalytics">Аналитика пользователей</span>
         </div>
 
         <div class="row g-3">
             <div class="col-12">
                 <div class="acard">
                     <div class="d-flex justify-content-between align-items-center mb-2">
-                        <div><div class="slabel">Активность базы</div><h6 class="mb-0 fw-bold" style="color:var(--text)">Динамика прироста аудитории</h6></div>
+                        <div><div class="slabel" data-i18n="baseActivity">Активность базы</div><h6 class="mb-0 fw-bold" style="color:var(--text)" data-i18n="audienceDynamics">Динамика прироста аудитории</h6></div>
                         <div class="d-flex gap-3">
-                            <small class="d-flex align-items-center gap-1" style="color:#3b82f6"><span class="legend-dot" style="background:#3b82f6"></span>Регистрации</small>
-                            <small class="d-flex align-items-center gap-1" style="color:#ef4444"><span class="legend-dot" style="background:#ef4444"></span>Удаления</small>
+                            <small class="d-flex align-items-center gap-1" style="color:#3b82f6"><span class="legend-dot" style="background:#3b82f6"></span><span data-i18n="registrations">Регистрации</span></small>
+                            <small class="d-flex align-items-center gap-1" style="color:#ef4444"><span class="legend-dot" style="background:#ef4444"></span><span data-i18n="deletions">Удаления</span></small>
                         </div>
                     </div>
                     <div id="userChart"></div>
@@ -697,15 +697,15 @@
 
             <div class="col-md-4">
                 <div class="acard">
-                    <div class="slabel">Пользователи</div>
+                    <div class="slabel" data-i18n="usersCount">Пользователи</div>
                     <div class="bignum mt-2">{{ $totalUsers ?? 0 }}</div>
-                    <small style="color:var(--muted)">активных профилей</small>
+                    <small style="color:var(--muted)" data-i18n="activeProfiles">активных профилей</small>
                 </div>
             </div>
 
             <div class="col-md-4">
                 <div class="acard">
-                    <div class="slabel">Новые (30 дней)</div>
+                    <div class="slabel" data-i18n="new30Days">Новые (30 дней)</div>
                     <div class="bignum mt-2" style="color:#10b981">{{ $newThisMonth ?? 0 }}</div>
                     <div class="progbg">
                         @php $userRate = $totalUsers > 0 ? min(($newThisMonth / $totalUsers) * 100, 100) : 0; @endphp
@@ -716,9 +716,9 @@
 
             <div class="col-md-4">
                 <div class="acard" style="border-top:3px solid #ef4444">
-                    <div class="slabel" style="color:#ef4444">Churn Rate</div>
+                    <div class="slabel" style="color:#ef4444" data-i18n="churnRate">Churn Rate</div>
                     <div class="bignum mt-2">{{ $churnRate ?? 0 }}%</div>
-                    <small style="color:var(--muted)">коэффициент оттока</small>
+                    <small style="color:var(--muted)" data-i18n="churnDesc">коэффициент оттока</small>
                 </div>
             </div>
         </div>
@@ -729,11 +729,11 @@
                 <div class="acard">
                     <div class="d-flex justify-content-between align-items-center mb-2">
                         <div>
-                            <div class="slabel">Статусы документов</div>
-                            <h6 class="mb-0 fw-bold" style="color:var(--text)">Распределение по категориям</h6>
+                            <div class="slabel" data-i18n="docStatuses">Статусы документов</div>
+                            <h6 class="mb-0 fw-bold" style="color:var(--text)" data-i18n="distByCat">Распределение по категориям</h6>
                         </div>
                         <div style="background:var(--grid);padding:6px 16px;border-radius:12px">
-                            <span class="slabel me-1">За месяц:</span>
+                            <span class="slabel me-1" data-i18n="forMonth">За месяц:</span>
                             <span class="fw-bold" style="color:var(--text);font-size:16px">{{ array_sum($statusData) }}</span>
                         </div>
                     </div>
@@ -751,14 +751,14 @@
             <div class="acard" style="padding: 24px; border-top: 4px solid #3b82f6;">
                 <div class="d-flex justify-content-between align-items-start">
                     <div>
-                        <div class="slabel" style="font-size: 11px; margin-bottom: 8px;">Входящие</div>
+                        <div class="slabel" style="font-size: 11px; margin-bottom: 8px;" data-i18n="incoming">Входящие</div>
                         <div class="bignum" style="font-size: 32px;">{{ $statusData['incoming'] ?? 0 }}</div>
                     </div>
                     <div style="width: 40px; height: 40px; background: #3b82f615; color: #3b82f6; border-radius: 10px; display: flex; align-items: center; justify-content: center;">
                         <i class="fas fa-arrow-down"></i>
                     </div>
                 </div>
-                <div class="mt-2" style="font-size: 11px; color: var(--muted);">принято системой</div>
+                <div class="mt-2" style="font-size: 11px; color: var(--muted);" data-i18n="acceptedBySys">принято системой</div>
             </div>
         </div>
 
@@ -767,14 +767,14 @@
             <div class="acard" style="padding: 24px; border-top: 4px solid #8b5cf6;">
                 <div class="d-flex justify-content-between align-items-start">
                     <div>
-                        <div class="slabel" style="font-size: 11px; margin-bottom: 8px;">Исходящие</div>
+                        <div class="slabel" style="font-size: 11px; margin-bottom: 8px;" data-i18n="outgoing">Исходящие</div>
                         <div class="bignum" style="font-size: 32px;">{{ $statusData['outgoing'] ?? 0 }}</div>
                     </div>
                     <div style="width: 40px; height: 40px; background: #8b5cf615; color: #8b5cf6; border-radius: 10px; display: flex; align-items: center; justify-content: center;">
                         <i class="fas fa-arrow-up"></i>
                     </div>
                 </div>
-                <div class="mt-2" style="font-size: 11px; color: var(--muted);">отправлено вами</div>
+                <div class="mt-2" style="font-size: 11px; color: var(--muted);" data-i18n="sentByYou">отправлено вами</div>
             </div>
         </div>
 
@@ -783,14 +783,14 @@
             <div class="acard" style="padding: 24px; border-top: 4px solid #10b981;">
                 <div class="d-flex justify-content-between align-items-start">
                     <div>
-                        <div class="slabel" style="font-size: 11px; margin-bottom: 8px;">Подписанные</div>
+                        <div class="slabel" style="font-size: 11px; margin-bottom: 8px;" data-i18n="signed">Подписанные</div>
                         <div class="bignum" style="font-size: 32px; color: #10b981;">{{ $statusData['signed'] ?? 0 }}</div>
                     </div>
                     <div style="width: 40px; height: 40px; background: #10b98115; color: #10b981; border-radius: 10px; display: flex; align-items: center; justify-content: center;">
                         <i class="fas fa-check-circle"></i>
                     </div>
                 </div>
-                <div class="mt-2" style="font-size: 11px; color: var(--muted);">завершено успешно</div>
+                <div class="mt-2" style="font-size: 11px; color: var(--muted);" data-i18n="successDone">завершено успешно</div>
             </div>
         </div>
 
@@ -799,14 +799,14 @@
             <div class="acard" style="padding: 24px; border-top: 4px solid #f59e0b;">
                 <div class="d-flex justify-content-between align-items-start">
                     <div>
-                        <div class="slabel" style="font-size: 11px; margin-bottom: 8px;">В очереди</div>
+                        <div class="slabel" style="font-size: 11px; margin-bottom: 8px;" data-i18n="pending">В очереди</div>
                         <div class="bignum" style="font-size: 32px;">{{ $statusData['pending'] ?? 0 }}</div>
                     </div>
                     <div style="width: 40px; height: 40px; background: #f59e0b15; color: #f59e0b; border-radius: 10px; display: flex; align-items: center; justify-content: center;">
                         <i class="fas fa-clock"></i>
                     </div>
                 </div>
-                <div class="mt-2" style="font-size: 11px; color: var(--muted);">ожидают действия</div>
+                <div class="mt-2" style="font-size: 11px; color: var(--muted);" data-i18n="waitAction">ожидают действия</div>
             </div>
         </div>
     </div>
@@ -814,16 +814,65 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            // 1. Определение темы (темная или светлая)
+            const translations = {
+                en: {
+                    docAnalytics: "Document Analytics", systemStats: "System Statistics", incomingFlow: "Incoming Document Flow",
+                    totalDocs: "Total Documents", processedFiles: "processed files", signedRate: "Signed Rate",
+                    rejectedTitle: "Rejected", requireAttention: "require attention", userAnalytics: "User Analytics",
+                    baseActivity: "Base Activity", audienceDynamics: "Audience Dynamics", registrations: "Registrations",
+                    deletions: "Deletions", usersCount: "Users", activeProfiles: "active profiles",
+                    new30Days: "New (30 days)", churnRate: "Churn Rate", churnDesc: "churn coefficient",
+                    docStatuses: "Document Statuses", distByCat: "Distribution by category", forMonth: "For month:",
+                    incoming: "Incoming", acceptedBySys: "accepted by system", outgoing: "Outgoing",
+                    sentByYou: "sent by you", signed: "Signed", successDone: "successfully completed",
+                    pending: "Pending", waitAction: "waiting for action", documents: "DOCUMENTS"
+                },
+                ru: {
+                    docAnalytics: "Аналитика документооборота", systemStats: "Статистика системы", incomingFlow: "Поток входящих документов",
+                    totalDocs: "Всего документов", processedFiles: "обработано файлов", signedRate: "Доля подписанных",
+                    rejectedTitle: "Отказы (Rejected)", requireAttention: "требуют внимания", userAnalytics: "Аналитика пользователей",
+                    baseActivity: "Активность базы", audienceDynamics: "Динамика прироста аудитории", registrations: "Регистрации",
+                    deletions: "Удаления", usersCount: "Пользователи", activeProfiles: "активных профилей",
+                    new30Days: "Новые (30 дней)", churnRate: "Churn Rate", churnDesc: "коэффициент оттока",
+                    docStatuses: "Статусы документов", distByCat: "Распределение по категориям", forMonth: "За месяц:",
+                    incoming: "Входящие", acceptedBySys: "принято системой", outgoing: "Исходящие",
+                    sentByYou: "отправлено вами", signed: "Подписанные", successDone: "завершено успешно",
+                    pending: "В очереди", waitAction: "ожидают действия", documents: "ДОКУМЕНТОВ"
+                },
+                tj: {
+                    docAnalytics: "Таҳлили ҳуҷҷатҳо", systemStats: "Омори система", incomingFlow: "Ҷараёни ҳуҷҷатҳои воридотӣ",
+                    totalDocs: "Ҳамаи ҳуҷҷатҳо", processedFiles: "файлҳо коркард шуданд", signedRate: "Ҳиссаи имзошуда",
+                    rejectedTitle: "Радшуда", requireAttention: "диққатро талаб мекунад", userAnalytics: "Таҳлили корбарон",
+                    baseActivity: "Фаъолияти база", audienceDynamics: "Динамикаи афзоиши аудитория", registrations: "Бақайдгириҳо",
+                    deletions: "Ҳазфшудаҳо", usersCount: "Корбарон", activeProfiles: "профилҳои фаъол",
+                    new30Days: "Нав (30 рӯз)", churnRate: "Churn Rate", churnDesc: "коэффисиенти хориҷшавӣ",
+                    docStatuses: "Ҳолатҳои ҳуҷҷатҳо", distByCat: "Тақсимшавӣ аз рӯи категорияҳо", forMonth: "Дар моҳ:",
+                    incoming: "Воридотӣ", acceptedBySys: "аз ҷониби система қабул шуд", outgoing: "Содиротӣ",
+                    sentByYou: "аз ҷониби шумо фиристода шуд", signed: "Имзошуда", successDone: "бомуваффақият анҷом ёфт",
+                    pending: "Дар навбат", waitAction: "интизори амал", documents: "ҲУҶҶАТҲО"
+                }
+            };
+
+            function applyAnalyticsTranslations() {
+                const lang = localStorage.getItem('app-lang') || 'ru';
+                const t = translations[lang];
+                document.querySelectorAll('[data-i18n]').forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (t[key]) el.textContent = t[key];
+                });
+                return t;
+            }
+
+            const t = applyAnalyticsTranslations();
+
             const dk = () => document.body.classList.contains('dark') ||
                 document.documentElement.classList.contains('dark') ||
                 (window.matchMedia && window.matchMedia('(prefers-color-scheme:dark)').matches);
 
             const isDark = dk();
-            const fc = isDark ? '#94a3b8' : '#64748b'; // Цвет шрифта для легенды и осей
-            const tTheme = isDark ? 'dark' : 'light'; // Тема для тултипов
+            const fc = isDark ? '#94a3b8' : '#64748b';
+            const tTheme = isDark ? 'dark' : 'light';
 
-            // 2. Общие настройки для ApexCharts
             const co = {
                 chart: { type: 'area', height: 280, toolbar: { show: false }, zoom: { enabled: false }, foreColor: fc },
                 dataLabels: { enabled: false },
@@ -834,28 +883,25 @@
                 xaxis: { axisBorder: { show: false }, axisTicks: { show: false } }
             };
 
-            // 3. График потока документов (ApexCharts)
             new ApexCharts(document.querySelector('#mainChart'), {
                 ...co,
-                series: [{ name: 'Документы', data: {!! json_encode($dailyActivity->pluck('count')) !!} }],
+                series: [{ name: t.incoming || 'Incoming', data: {!! json_encode($dailyActivity->pluck('count')) !!} }],
                 colors: ['#3b82f6'],
                 xaxis: { categories: {!! json_encode($dailyActivity->pluck('date')) !!} },
                 fill: { type: 'gradient', gradient: { opacityFrom: .45, opacityTo: .06 } }
             }).render();
 
-            // 4. График активности пользователей (ApexCharts)
             new ApexCharts(document.querySelector('#userChart'), {
                 ...co,
                 series: [
-                    { name: 'Регистрации', data: {!! json_encode($userActivity->pluck('reg')) !!} },
-                    { name: 'Удаления', data: {!! json_encode($userActivity->pluck('del')) !!} }
+                    { name: t.registrations || 'Registrations', data: {!! json_encode($userActivity->pluck('reg')) !!} },
+                    { name: t.deletions || 'Deletions', data: {!! json_encode($userActivity->pluck('del')) !!} }
                 ],
                 colors: ['#3b82f6', '#ef4444'],
                 xaxis: { categories: {!! json_encode($userActivity->pluck('date')) !!} },
                 fill: { type: 'gradient', gradient: { opacityFrom: .35, opacityTo: 0 } }
             }).render();
 
-            // 5. Плагин для текста в центре Doughnut Chart (Chart.js)
             const centerText = {
                 id: 'centerText',
                 afterDraw(c) {
@@ -863,29 +909,22 @@
                     ctx.save();
                     ctx.textAlign = 'center';
                     ctx.textBaseline = 'middle';
-
-                    // Автоматический выбор цвета текста в зависимости от фона
-                    const textColor = isDark ? '#ffffff' : '#0f172a'; // Белый на черном, Темный на белом
+                    const textColor = isDark ? '#ffffff' : '#0f172a';
                     const subTextColor = isDark ? '#94a3b8' : '#64748b';
-
-                    // Отрисовка центрального числа
                     ctx.font = '800 48px Inter, sans-serif';
                     ctx.fillStyle = textColor;
-
-                    // Отрисовка слова "ДОКУМЕНТОВ"
+                    ctx.fillText('{{ array_sum($statusData) }}', width / 2, height / 2 - 10);
                     ctx.font = '800 11px Inter, sans-serif';
                     ctx.fillStyle = subTextColor;
-                    ctx.fillText('ДОКУМЕНТОВ', width / 2, height / 2 + 25);
-
+                    ctx.fillText(t.documents || 'DOCUMENTS', width / 2, height / 2 + 25);
                     ctx.restore();
                 }
             };
 
-            // 6. Круговой график статусов (Chart.js)
             new Chart(document.getElementById('statusChart'), {
                 type: 'doughnut',
                 data: {
-                    labels: ['Входящие', 'Исходящие', 'Подписанные', 'Ожидание'],
+                    labels: [t.incoming, t.outgoing, t.signed, t.pending],
                     datasets: [{
                         data: [
                             {{ $statusData['incoming'] ?? 0 }},

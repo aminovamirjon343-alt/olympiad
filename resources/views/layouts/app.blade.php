@@ -6,6 +6,7 @@
     <title>DocManager Admin</title>
 
     <script>
+        // Инициализация темы до загрузки контента
         if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
             document.documentElement.classList.add('dark');
         } else {
@@ -15,6 +16,7 @@
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body class="bg-gray-50 dark:bg-dark-900 text-gray-900 dark:text-gray-100 antialiased transition-colors duration-300">
 
@@ -28,10 +30,10 @@
 
         <nav class="flex-1 p-4 space-y-2">
             <a href="#" class="flex items-center gap-3 p-3 rounded-lg bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 font-medium">
-                <i class="bi bi-grid-fill"></i> Панель
+                <i class="bi bi-grid-fill"></i> <span data-i18n="dashboard">Панель</span>
             </a>
             <a href="#" class="flex items-center gap-3 p-3 rounded-lg text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-all">
-                <i class="bi bi-file-earmark-text"></i> Документы
+                <i class="bi bi-file-earmark-text"></i> <span data-i18n="documents">Документы</span>
             </a>
         </nav>
     </aside>
@@ -42,28 +44,36 @@
             <div class="text-sm font-medium text-gray-500" data-i18n="pageTitle">Панель управления</div>
 
             <div class="flex items-center gap-4">
+                <select id="lang-select" class="bg-transparent border-none text-xs font-bold focus:ring-0 cursor-pointer">
+                    <option value="ru">RU</option>
+                    <option value="en">EN</option>
+                    <option value="tj">TJ</option>
+                </select>
+
                 <button id="theme-toggle" class="w-10 h-10 flex items-center justify-center rounded-full border dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 transition-all">
                     <i id="theme-icon" class="bi bi-moon text-gray-600 dark:text-gray-300"></i>
                 </button>
 
                 <div class="flex items-center gap-3 border-l dark:border-gray-700 pl-4">
                     <div class="text-right hidden sm:block">
-                        <p class="text-xs font-bold">{{ Auth::user()->name ?? 'Admin' }}</p>
+                        <p class="text-xs font-bold">{{ Auth::user()->name ?? 'Amir' }}</p>
                         <p class="text-[10px] text-gray-500">Administrator</p>
                     </div>
-                    <div class="w-9 h-9 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold text-xs">AD</div>
+                    <div class="w-9 h-9 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold text-xs">
+                        {{ strtoupper(substr(Auth::user()->name ?? 'AD', 0, 2)) }}
+                    </div>
                 </div>
             </div>
         </header>
 
         <main class="flex-1 overflow-y-auto p-8">
-            {{ $slot ?? '' }}
             @yield('content')
         </main>
     </div>
 </div>
 
 <script>
+    // --- УПРАВЛЕНИЕ ТЕМОЙ ---
     const btn = document.getElementById('theme-toggle');
     const icon = document.getElementById('theme-icon');
     const html = document.documentElement;
@@ -75,14 +85,28 @@
             icon.classList.replace('bi-sun', 'bi-moon');
         }
     }
-
     updateIcon();
 
     btn.addEventListener('click', () => {
         html.classList.toggle('dark');
-        const isDark = html.classList.contains('dark');
-        localStorage.setItem('theme', isDark ? 'dark' : 'light');
+        localStorage.setItem('theme', html.classList.contains('dark') ? 'dark' : 'light');
         updateIcon();
+        // Перезагружаем графики, если нужно (они сами подхватят тему через MutationObserver или просто при обновлении)
+        window.dispatchEvent(new Event('resize'));
+    });
+
+    // --- УПРАВЛЕНИЕ ПЕРЕВОДАМИ ---
+    const langSelect = document.getElementById('lang-select');
+
+    // Устанавливаем текущий язык из хранилища
+    const currentLang = localStorage.getItem('app-lang') || 'ru';
+    langSelect.value = currentLang;
+
+    langSelect.addEventListener('change', (e) => {
+        const lang = e.target.value;
+        localStorage.setItem('app-lang', lang);
+        // Перезагружаем страницу, чтобы графики и PHP-блоки перерисовались с новым языком
+        window.location.reload();
     });
 </script>
 </body>
