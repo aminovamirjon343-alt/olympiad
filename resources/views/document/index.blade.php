@@ -14,34 +14,11 @@
                     </h1>
                 </div>
 
-                <form action="{{ route('documents.index') }}" method="GET" class="flex items-center gap-2">
-                    <div class="relative flex items-center">
-                        <input type="text"
-                               name="search"
-                               id="search-input"
-                               list="documents-list"
-                               value="{{ request('search') }}"
-                               class="bg-white border border-slate-200 text-[10px] text-black rounded-lg pl-3 pr-8 py-1.5 w-40 focus:ring-1 focus:ring-blue-500 outline-none transition-all font-bold shadow-sm"
-                               placeholder="Search..."
-                               data-i18n-placeholder="searchPlaceholder"
-                               autocomplete="off">
-
-                        <datalist id="documents-list">
-                            @foreach($documents as $doc)
-                                <option value="{{ $doc->title }}">
-                            @endforeach
-                        </datalist>
-
-                        <button type="submit" class="absolute right-1 px-1.5 py-1 text-slate-500 hover:text-blue-600 transition-colors">
-                            <i class="bi bi-arrow-right-short text-xl leading-none"></i>
-                        </button>
-                    </div>
 
                     <a href="{{route('documents.create')}}" class="btn-primary-custom">
                         <i class="bi bi-plus-lg me-1"></i>
                         <span data-i18n="newDocument">New Document</span>
                     </a>
-                </form>
             </div>
 
             {{-- Table --}}

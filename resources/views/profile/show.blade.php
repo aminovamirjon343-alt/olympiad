@@ -62,7 +62,8 @@
 
             <div class="max-w-5xl mx-auto mb-10 flex justify-between items-end">
                 <div>
-                    <h1 class="text-xl font-bold doc-main-title tracking-tight flex items-center gap-2 text-white">
+
+                    <h1 class="text-xl font-bold doc-main-title tracking-tight flex items-center gap-2">
                         <span class="w-2 h-6 bg-blue-500 rounded-full shadow-[0_0_10px_rgba(59,130,246,0.5)]"></span>
                         <span data-i18n="profileTitle">Профиль</span>
                     </h1>
@@ -141,144 +142,200 @@
             </div>
 
         </div>
-    </div>
 
-    @php
-        use Carbon\Carbon;
-        $year = now()->year;
-        $startDate = Carbon::create($year, 1, 1)->startOfWeek(Carbon::MONDAY);
-        $endDate = Carbon::create($year, 12, 31)->endOfWeek(Carbon::SUNDAY);
-        $totalDays = $startDate->diffInDays($endDate);
-        $weeks = intval($totalDays / 7) + 1;
-    @endphp
 
-    <div class="activity-card bg-white dark:bg-slate-900 p-8 rounded-[2rem] border border-slate-100 dark:border-slate-800 shadow-xl mt-8 mx-auto max-w-5xl">
-        <style>
-            .gh-wrapper { overflow-x: auto; scrollbar-width: none; padding-bottom: 4px; }
-            .gh-wrapper::-webkit-scrollbar { display: none; }
-            .gh-grid { display: inline-grid; grid-template-areas: ". months" "days squares"; grid-template-columns: 32px 1fr; gap: 6px 10px; min-width: max-content; }
-            .gh-months { grid-area: months; display: grid; grid-template-columns: repeat({{ $weeks }}, 11px); gap: 3px; font-size: 10px; color: #94a3b8; font-weight: 800; }
-            .gh-days { grid-area: days; display: flex; flex-direction: column; justify-content: space-between; height: calc((11px * 7) + (3px * 6)); font-size: 9px; color: #cbd5e1; font-weight: 800; }
-            .gh-squares { grid-area: squares; display: grid; grid-template-rows: repeat(7, 11px); grid-auto-flow: column; grid-auto-columns: 11px; gap: 3px; }
-            .sq { width: 11px; height: 11px; border-radius: 2px; background-color: #ebedf0; transition: all .15s ease; cursor: pointer; }
-            .dark .sq { background-color: #1e293b; }
-            .sq:hover { transform: scale(1.2); }
-            .l1 { background-color: #9be9a8 !important; }
-            .l2 { background-color: #40c463 !important; }
-            .l3 { background-color: #30a14e !important; }
-            .l4 { background-color: #216e39 !important; }
-        </style>
 
-        <div class="flex items-center justify-between mb-6">
-            <div>
-                <h2 class="text-xl font-black text-slate-800 dark:text-white">
-                    <span data-i18n="activityLabel">Активность</span> {{ $year }}
-                </h2>
-                <p class="text-xs text-slate-400 font-bold mt-1" data-i18n="activityPeriod">Январь → Декабрь</p>
+
+
+
+
+        @php
+            use Carbon\Carbon;
+
+            $year = $year ?? now()->year;
+
+            $firstDayOfYear = Carbon::create($year, 1, 1);
+            $startDate = $firstDayOfYear->copy()->startOfWeek(Carbon::MONDAY);
+
+            $lastDayOfYear = Carbon::create($year, 12, 31);
+            $endDate = $lastDayOfYear->copy()->endOfWeek(Carbon::SUNDAY);
+
+            $totalDays = $startDate->diffInDays($endDate) + 1;
+            $weeksCount = ceil($totalDays / 7);
+        @endphp
+
+        <script src="https://unpkg.com/@popperjs/core@2"></script>
+        <script src="https://unpkg.com/tippy.js@6"></script>
+        <link rel="stylesheet" href="https://unpkg.com/tippy.js@6/dist/tippy.css" />
+
+        <div class="activity-card bg-white dark:bg-[#0d1117] p-6 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm mt-8 mx-auto max-w-fit">
+            <style>
+                .gh-wrapper { overflow-x: auto; scrollbar-width: none; position: relative; }
+                .gh-wrapper::-webkit-scrollbar { display: none; }
+
+                .gh-grid {
+                    display: inline-grid;
+                    grid-template-areas: ". months" "days squares";
+                    grid-template-columns: 45px 1fr;
+                    gap: 4px 8px;
+                }
+
+                .gh-months {
+                    grid-area: months;
+                    display: grid;
+                    grid-template-columns: repeat({{ $weeksCount }}, 11px);
+                    gap: 3px;
+                    font-size: 10px;
+                    color: #7d8590;
+                    height: 18px;
+                    position: relative;
+                }
+
+                .gh-days {
+                    grid-area: days;
+                    display: grid;
+                    grid-template-rows: repeat(7, 11px);
+                    gap: 3px;
+                    font-size: 9px;
+                    color: #7d8590;
+                    user-select: none;
+                }
+
+                .gh-day-label {
+                    display: flex;
+                    align-items: center;
+                    height: 11px;
+                    line-height: 1;
+                }
+
+                .gh-squares {
+                    grid-area: squares;
+                    display: grid;
+                    grid-template-rows: repeat(7, 11px);
+                    grid-auto-flow: column;
+                    grid-auto-columns: 11px;
+                    gap: 3px;
+                }
+
+                .sq {
+                    width: 11px;
+                    height: 11px;
+                    border-radius: 2px;
+                    background-color: #ebedf0;
+                    outline: 1px solid rgba(27, 31, 35, 0.06);
+                    outline-offset: -1px;
+                    cursor: pointer;
+                }
+                .dark .sq { background-color: #161b22; outline: 1px solid rgba(255, 255, 255, 0.03); }
+
+                .l1 { background-color: #9be9a8 !important; } .l2 { background-color: #40c463 !important; }
+                .l3 { background-color: #30a14e !important; } .l4 { background-color: #216e39 !important; }
+
+                .dark .l1 { background-color: #0e4429 !important; } .dark .l2 { background-color: #006d32 !important; }
+                .dark .l3 { background-color: #26a641 !important; } .dark .l4 { background-color: #39d353 !important; }
+
+                .sq:hover { outline: 1px solid #24292f; z-index: 10; }
+                .dark .sq:hover { outline: 1px solid #adbac7; }
+
+                /* Стили для Tippy (всплывающего окна) */
+                .tippy-box[data-theme~='github'] {
+                    background-color: #24292f;
+                    color: white;
+                    font-size: 12px;
+                    border-radius: 6px;
+                    padding: 2px;
+                }
+                .dark .tippy-box[data-theme~='github'] {
+                    background-color: #6e7681;
+                    color: #ffffff;
+                }
+            </style>
+
+            <div class="mb-4">
+                <h3 class="text-[14px] font-semibold text-slate-900 dark:text-slate-100">
+                    {{ $activityData ? array_sum($activityData) : 0 }} contributions in {{ $year }}
+                </h3>
             </div>
-        </div>
 
-        <div class="gh-wrapper">
-            <div class="gh-grid">
-                <div class="gh-months">
-                    @for($week = 0; $week < $weeks; $week++)
-                        @php $date = $startDate->copy()->addWeeks($week); @endphp
-                        <div>@if($week == 0 || $date->day <= 7) {{ $date->format('M') }} @endif</div>
-                    @endfor
-                </div>
-                <div class="gh-days">
-                    <span data-i18n="dayMon">Пн</span>
-                    <span data-i18n="dayWed">Ср</span>
-                    <span data-i18n="dayFri">Пт</span>
-                </div>
-                <div class="gh-squares">
-                    @for($week = 0; $week < $weeks; $week++)
-                        @for($dayOfWeek = 0; $dayOfWeek < 7; $dayOfWeek++)
+            <div class="gh-wrapper">
+                <div class="gh-grid">
+
+                    <div class="gh-months select-none">
+                        @php $lastMonth = -1; @endphp
+                        @for($w = 0; $w < $weeksCount; $w++)
                             @php
-                                $day = $startDate->copy()->addDays($week * 7 + $dayOfWeek);
-                                if ($day->year != $year) continue;
+                                $dateInWeek = $startDate->copy()->addWeeks($w);
+                                $month = $dateInWeek->month;
+                            @endphp
+                            <div style="grid-column: {{ $w + 1 }}; position: relative;">
+                                @if($month != $lastMonth && $dateInWeek->year == $year)
+                                    <span style="position: absolute; left: 0; bottom: 0; white-space: nowrap;">
+                                {{ $dateInWeek->translatedFormat('M') }}
+                            </span>
+                                    @php $lastMonth = $month; @endphp
+                                @endif
+                            </div>
+                        @endfor
+                    </div>
+
+                    <div class="gh-days select-none">
+                        <div class="gh-day-label">Пн</div>
+                        <div class="gh-day-label">Вт</div>
+                        <div class="gh-day-label">Ср</div>
+                        <div class="gh-day-label">Чт</div>
+                        <div class="gh-day-label">Пт</div>
+                        <div class="gh-day-label">Сб</div>
+                        <div class="gh-day-label">Вс</div>
+                    </div>
+
+                    <div class="gh-squares">
+                        @for($i = 0; $i < ($weeksCount * 7); $i++)
+                            @php
+                                $day = $startDate->copy()->addDays($i);
+                                $isCurrentYear = $day->year == $year;
                                 $key = $day->format('Y-m-d');
                                 $count = $activityData[$key] ?? 0;
                                 $level = $count > 10 ? 4 : ($count > 5 ? 3 : ($count > 2 ? 2 : ($count > 0 ? 1 : 0)));
+
+                                // Формируем текст для подсказки
+                                $tooltipText = ($count > 0 ? $count : 'No') . ' contributions on ' . $day->translatedFormat('F j, Y');
                             @endphp
-                            <div class="sq {{ $level ? 'l'.$level : '' }}"
-                                 data-date="{{ $day->format('d.m.Y') }}"
-                                 data-count="{{ $count }}"></div>
+
+                            @if($isCurrentYear)
+                                <div class="sq {{ $level ? 'l'.$level : '' }}"
+                                     data-tippy-content="{{ $tooltipText }}">
+                                </div>
+                            @else
+                                <div class="sq opacity-0 pointer-events-none" style="background: transparent; outline: none;"></div>
+                            @endif
                         @endfor
-                    @endfor
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex justify-between items-center mt-4 text-[11px] text-[#7d8590]">
+                <span>Learn how we count contributions</span>
+                <div class="flex items-center gap-1.5">
+                    <span>Less</span>
+                    <div class="sq" style="width: 10px; height: 10px;"></div>
+                    <div class="sq l1" style="width: 10px; height: 10px;"></div>
+                    <div class="sq l2" style="width: 10px; height: 10px;"></div>
+                    <div class="sq l3" style="width: 10px; height: 10px;"></div>
+                    <div class="sq l4" style="width: 10px; height: 10px;"></div>
+                    <span>More</span>
                 </div>
             </div>
         </div>
-    </div>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const translations = {
-                ru: {
-                    profileTitle: "Профиль",
-                    mainInfo: "Основная информация",
-                    statusActive: "Active",
-                    labelFullName: "Полное имя",
-                    labelEmail: "Почтовый индекс",
-                    labelPhone: "Контактный телефон",
-                    labelCreatedAt: "Дата создания",
-                    labelAccess: "Уровень доступа",
-                    accessFull: "Полный административный контроль",
-                    btnEdit: "Изменить",
-                    activityLabel: "Активность",
-                    activityPeriod: "Январь → Декабрь",
-                    dayMon: "Пн", dayWed: "Ср", dayFri: "Пт",
-                    actions: "действий"
-                },
-                tj: {
-                    profileTitle: "Профил",
-                    mainInfo: "Маълумоти асосӣ",
-                    statusActive: "Фаъол",
-                    labelFullName: "Номи пурра",
-                    labelEmail: "Индекси почта",
-                    labelPhone: "Телефони тамос",
-                    labelCreatedAt: "Санаи эҷод",
-                    labelAccess: "Сатҳи дастрасӣ",
-                    accessFull: "Назорати пурраи маъмурӣ",
-                    btnEdit: "Тағйир додан",
-                    activityLabel: "Фаъолият",
-                    activityPeriod: "Январ → Декабр",
-                    dayMon: "Дш", dayWed: "Чш", dayFri: "Ҷм",
-                    actions: "амалҳо"
-                },
-                en: {
-                    profileTitle: "Profile",
-                    mainInfo: "Main Information",
-                    statusActive: "Active",
-                    labelFullName: "Full Name",
-                    labelEmail: "Postal Index",
-                    labelPhone: "Contact Phone",
-                    labelCreatedAt: "Created At",
-                    labelAccess: "Access Level",
-                    accessFull: "Full Administrative Control",
-                    btnEdit: "Edit",
-                    activityLabel: "Activity",
-                    activityPeriod: "January → December",
-                    dayMon: "Mon", dayWed: "Wed", dayFri: "Fri",
-                    actions: "actions"
-                }
-            };
-
-            const lang = localStorage.getItem('app-lang') || 'ru';
-            const t = translations[lang];
-
-            // Текстовые переводы
-            document.querySelectorAll('[data-i18n]').forEach(el => {
-                const key = el.getAttribute('data-i18n');
-                if (t[key]) el.textContent = t[key];
+        <script>
+            // Инициализация подсказок
+            tippy('[data-tippy-content]', {
+                theme: 'github',
+                animation: 'fade',
+                duration: [200, 50],
+                offset: [0, 10],
             });
+        </script>
 
-            // Тултипы для графика
-            document.querySelectorAll('.sq').forEach(sq => {
-                const date = sq.getAttribute('data-date');
-                const count = sq.getAttribute('data-count');
-                sq.title = `${date} — ${count} ${t.actions || 'actions'}`;
-            });
-        });
-    </script>
 @endsection
+

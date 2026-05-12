@@ -714,8 +714,26 @@
                 >
 
                 {{-- Кнопка-стрелка справа --}}
-                <button type="submit" class="search-submit-btn" id="searchArrow">
-                    <i class="bi bi-arrow-right-short" style="font-size: 1.6rem; line-height: 1;"></i>
+                <button type="submit" class="search-submit-btn" id="searchArrow" style="
+    position: absolute;
+    right: 5px;
+    top: 50%;
+    transform: translateY(-50%);
+    background-color: #2563eb; /* Синий фон */
+    color: white;             /* Белый текст */
+    border: none;
+    border-radius: 20px;      /* Скругление */
+    padding: 2px 12px;        /* Отступы по бокам для текста Ок */
+    height: 30px;             /* Фиксированная высота */
+    font-size: 12px;
+    font-weight: bold;
+    display: none;            /* Управляется вашим JS */
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background-color 0.2s;
+">
+                    Ок
                 </button>
             </form>
         </div>

@@ -125,12 +125,18 @@
                                 </div>
                             </div>
 
+                            @php
+                                // Берем дедлайн напрямую из документа, связанного с подписью
+                                $docDeadline = $s->document->deadline ?? null;
+                                $isPastDate = !$s->signed_at && $docDeadline && \Carbon\Carbon::parse($docDeadline)->isPast();
+                            @endphp
+
                             <div class="text-right">
                                 <div class="label-micro dark:text-white" data-i18n="{{ $s->signed_at ? 'labelDone' : 'labelDeadline' }}">
                                     {{ $s->signed_at ? 'Завершено' : 'Дедлайн' }}
                                 </div>
-                                <div class="text-[14px] font-bold leading-none {{ $isPast ? 'text-rose-600' : 'text-slate-800 dark:text-slate-200' }}">
-                                    {{ ($s->signed_at ?? $s->expires_at)?->format('d.m.Y') ?? '--' }}
+                                <div class="text-[14px] font-bold leading-none {{ $isPastDate ? 'text-rose-600' : 'text-slate-800 dark:text-slate-200' }}">
+                                    {{ $docDeadline ? \Carbon\Carbon::parse($docDeadline)->format('d.m.Y') : '--' }}
                                 </div>
                             </div>
                         </div>

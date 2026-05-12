@@ -36,7 +36,8 @@ class ProfileController extends Controller
         return view('profile.show', compact(
             'user',
             'activityData',
-            'startDate'
+            'startDate',
+
         ));
     }
 //    public function show(Request $request): View

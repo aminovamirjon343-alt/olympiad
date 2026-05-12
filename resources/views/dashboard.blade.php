@@ -12,7 +12,9 @@
         </div>
 
         <div class="row g-3 mb-4">
+
             <div class="col-6 col-lg-3">
+                <a href="{{route('documents.index')}}">
                 <div class="stat-card" style="border: 1px solid #dee2e6; border-radius: 12px; padding: 15px;">
                     <div class="d-flex justify-content-between align-items-start mb-3">
                         <div class="stat-icon" style="background:#ede9fe;color:var(--primary);">
@@ -31,11 +33,15 @@
                         Total Documents
                     </div>
                 </div>
+                </a>
             </div>
 
             <div class="col-6 col-lg-3">
+                <a href="{{route('signatures.index')}}">
                 <div class="stat-card" style="border: 1px solid #dee2e6; border-radius: 12px; padding: 15px;">
+
                     <div class="d-flex justify-content-between align-items-start mb-3">
+
                         <div class="stat-icon" style="background:#dcfce7;color:#16a34a;">
                             <i class="bi bi-pen"></i>
                         </div>
@@ -52,10 +58,13 @@
                         Signed
                     </div>
                 </div>
+                </a>
             </div>
 
             <div class="col-6 col-lg-3">
+
                 <div class="stat-card" style="border: 1px solid #dee2e6; border-radius: 12px; padding: 15px;">
+                    <a href="{{route('users.index')}}">
                     <div class="d-flex justify-content-between align-items-start mb-3">
                         <div class="stat-icon" style="background:#dbeafe;color:#2563eb;">
                             <i class="bi bi-people"></i>
@@ -70,12 +79,12 @@
                     <div class="text-muted" style="font-size:13px;">
                         Active Users
                     </div>
-
+                    </a>
                 </div>
 
             </div>
             <div class="col-6 col-lg-3">
-                <a href="#" class="text-decoration-none" style="display: block; height: 100%;">
+                <a href="{{route('analysis.index')}}" class="text-decoration-none" style="display: block; height: 100%;">
                     <div class="stat-card ai-promo-card"
                          style="border: 1px solid rgba(99, 102, 241, 0.3); border-radius: 12px; padding: 15px; background: linear-gradient(145deg, #6366f1, #8b5cf6); position: relative; overflow: hidden; height: 100%; transition: 0.3s;">
 

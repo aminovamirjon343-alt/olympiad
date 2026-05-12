@@ -115,19 +115,34 @@
 
                         <div class="space-y-3 mt-4">
                             @forelse($comments ?? [] as $comment)
-                                <div class="p-4 rounded-2xl shadow-md border border-orange-400/20"
+                                <div class="p-4 rounded-2xl shadow-md border border-orange-400/20 flex flex-col min-w-0"
                                      style="background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%) !important;">
+
                                     <div class="flex justify-between items-center mb-2 pb-2 border-b border-white/20">
-                                        <span class="text-[10px] font-black uppercase tracking-widest text-white">
-                                            {{ $comment->user?->name ?? 'System' }}
-                                        </span>
-                                        <span class="text-[9px] text-white/90 font-bold bg-black/10 px-2 py-0.5 rounded-full">
-                                            {{ $comment->created_at->diffForHumans() }}
-                                        </span>
+                <span class="text-[10px] font-black uppercase tracking-widest text-white truncate mr-2">
+                    {{ $comment->user?->name ?? 'System' }}
+                </span>
+                                        <span class="text-[9px] text-white/90 font-bold bg-black/10 px-2 py-0.5 rounded-full flex-shrink-0">
+                    {{ $comment->created_at->diffForHumans() }}
+                </span>
                                     </div>
-                                    <p class="text-[12px] text-white font-medium leading-relaxed drop-shadow-sm">
+
+                                    <p class="text-[12px] text-white font-medium leading-relaxed drop-shadow-sm break-words overflow-hidden">
                                         {{ $comment->comment }}
                                     </p>
+
+                                    @if(auth()->id() === $document->user_id)
+                                        <div class="flex justify-end mt-3 pt-2">
+                                            <form action="{{ route('comments.destroy', $comment->id) }}" method="POST" onsubmit="return confirm('Удалить этот комментарий?')">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit" class="flex items-center gap-1 text-[10px] text-white/80 hover:text-red-200 transition-colors font-bold uppercase tracking-tighter">
+                                                    <i class="bi bi-trash3"></i>
+                                                    <span>Удалить</span>
+                                                </button>
+                                            </form>
+                                        </div>
+                                    @endif
                                 </div>
                             @empty
                                 <div class="text-center py-8 border-2 border-dashed border-slate-100 rounded-2xl bg-slate-50/50">
