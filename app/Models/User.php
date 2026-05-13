@@ -62,10 +62,9 @@ class User extends Authenticatable
      */
     public function documents()
     {
-        // Указываем 'created_by' как внешний ключ вместо стандартного 'user_id'
-        return $this->hasMany(Document::class, 'created_by');
+        // Связь один-ко-многим: один пользователь создает много документов
+        return $this->hasMany(\App\Models\Document::class, 'created_by');
     }
-
     /**
      * Метод для отправки уведомления (исправленный под стандарт Laravel)
      */

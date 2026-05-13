@@ -81,14 +81,6 @@
                     <span data-i18n="backToList">Назад к списку</span>
                 </a>
 
-                <div>
-                    <h1 class="text-2xl font-bold doc-main-title tracking-tight flex items-center gap-3">
-                        <span class="w-1.5 h-8 bg-blue-500 rounded-full shadow-[0_0_15px_rgba(59,130,246,0.6)]"></span>
-                        <span data-i18n="{{ isset($user) ? 'editUser' : 'newUser' }}">
-                            {{ isset($user) ? 'Редактировать' : 'Новый пользователь' }}
-                        </span>
-                    </h1>
-                </div>
                 <p class="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em] mt-2 opacity-70" data-i18n="{{ isset($user) ? 'editDesc' : 'createDesc' }}">
                     {{ isset($user) ? 'Изменение данных аккаунта' : 'Регистрация в системе управления' }}
                 </p>
@@ -98,7 +90,6 @@
                 <form method="POST" action="{{ isset($user) ? route('users.update', $user->id) : route('users.store') }}" class="space-y-6">
                     @csrf
                     @if(isset($user)) @method('PUT') @endif
-
                     <div>
                         <label class="field-label" data-i18n="labelFullName">Полное имя</label>
                         <input name="name" type="text" required class="w-full input-custom shadow-sm"

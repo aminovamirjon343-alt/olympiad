@@ -40,6 +40,26 @@ class ProfileController extends Controller
 
         ));
     }
+    public function updateGeneral(Request $request)
+    {
+        $user = auth()->user();
+
+        // Валидация данных
+        $data = $request->validate([
+            'email_notifications' => 'nullable|string', // чекбоксы приходят как "on" или отсутствуют
+            'tg_notifications'    => 'nullable|string',
+            'language'            => 'required|string|in:ru,tg',
+        ]);
+
+        // Обновляем данные (преобразуем чекбоксы в boolean)
+        $user->update([
+            'email_notifications' => $request->has('email_notifications'),
+            'tg_notifications'    => $request->has('tg_notifications'),
+            'language'            => $data['language'],
+        ]);
+
+        return back()->with('success', 'Настройки успешно обновлены!');
+    }
 //    public function show(Request $request): View
 //    {
 //        $user = $request->user();

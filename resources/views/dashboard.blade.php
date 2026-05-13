@@ -14,7 +14,7 @@
         <div class="row g-3 mb-4">
 
             <div class="col-6 col-lg-3">
-                <a href="{{route('documents.index')}}">
+
                 <div class="stat-card" style="border: 1px solid #dee2e6; border-radius: 12px; padding: 15px;">
                     <div class="d-flex justify-content-between align-items-start mb-3">
                         <div class="stat-icon" style="background:#ede9fe;color:var(--primary);">
@@ -33,11 +33,10 @@
                         Total Documents
                     </div>
                 </div>
-                </a>
+
             </div>
 
             <div class="col-6 col-lg-3">
-                <a href="{{route('signatures.index')}}">
                 <div class="stat-card" style="border: 1px solid #dee2e6; border-radius: 12px; padding: 15px;">
 
                     <div class="d-flex justify-content-between align-items-start mb-3">
@@ -58,13 +57,12 @@
                         Signed
                     </div>
                 </div>
-                </a>
             </div>
 
             <div class="col-6 col-lg-3">
 
                 <div class="stat-card" style="border: 1px solid #dee2e6; border-radius: 12px; padding: 15px;">
-                    <a href="{{route('users.index')}}">
+
                     <div class="d-flex justify-content-between align-items-start mb-3">
                         <div class="stat-icon" style="background:#dbeafe;color:#2563eb;">
                             <i class="bi bi-people"></i>
@@ -79,12 +77,12 @@
                     <div class="text-muted" style="font-size:13px;">
                         Active Users
                     </div>
-                    </a>
+
                 </div>
 
             </div>
             <div class="col-6 col-lg-3">
-                <a href="{{route('analysis.index')}}" class="text-decoration-none" style="display: block; height: 100%;">
+
                     <div class="stat-card ai-promo-card"
                          style="border: 1px solid rgba(99, 102, 241, 0.3); border-radius: 12px; padding: 15px; background: linear-gradient(145deg, #6366f1, #8b5cf6); position: relative; overflow: hidden; height: 100%; transition: 0.3s;">
 
@@ -109,7 +107,7 @@
 
                         <div class="shimmer-effect"></div>
                     </div>
-                </a>
+
             </div>
 
             <style>
@@ -251,7 +249,7 @@
                     <h6 class="fw-bold mb-3" data-i18n="quickActions">Quick Actions</h6>
                     <div class="d-grid gap-2">
                         <a href="{{route('documents.create')}}" class="btn btn-outline-primary btn-sm rounded-3" onclick="showPage('documents', null)"><i class="bi bi-plus-lg me-2"></i><span data-i18n="createDocument">Create Document</span></a>
-                        <a href="{{route('analysis.index')}}" class="btn btn-outline-warning btn-sm rounded-3" onclick="showPage('workflow', null)"><i class="bi bi-arrow-repeat me-2"></i><span data-i18n="reviewWorkflow">Analysis</span></a>
+                        <a href="{{route('analysis.index')}}" class="btn btn-outline-warning btn-sm rounded-3" onclick="showPage('analysis', null)"><i class="bi bi-arrow-repeat me-2"></i><span data-i18n="reviewWorkflow">Analysis</span></a>
                         <a href="{{route('signatures.create')}}" class="btn btn-outline-success btn-sm rounded-3" onclick="showPage('signatures', null)"><i class="bi bi-pen me-2"></i><span data-i18n="manageSignatures">Manage Signatures</span></a>
                         <a href="{{route('notifications.index')}}" class="btn btn-outline-info btn-sm rounded-3" onclick="showPage('notifications', null)"><i class="bi bi-bell me-2"></i><span data-i18n="checkNotifications">Check Notifications</span></a>
                     </div>
@@ -379,6 +377,88 @@
                 border: none !important;
             }
         }</style>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const translations = {
+                ru: {
+                    welcomeBack: "С возвращением",
+                    dashSubtitle: "Вот что происходит с вашими документами сегодня.",
+                    totalDocs: "Всего документов",
+                    signed: "Подписано",
+                    badgeUsers: "Пользователи",
+                    activeUsers: "Активные пользователи",
+                    aiTitle: "AI Анализ",
+                    aiSub: "Мгновенный разбор",
+                    recentDocuments: "Последние документы",
+                    viewAll: "Смотреть все",
+                    thDoc: "Документ", thStatus: "Статус", thDeadline: "Срок", thDate: "Дата", thActions: "Действия",
+                    quickActions: "Быстрые действия",
+                    createDocument: "Создать документ",
+                    reviewWorkflow: "Анализ",
+                    manageSignatures: "Управление подписями",
+                    checkNotifications: "Уведомления",
+                    activityLog: "Журнал активности",
+                    live: "Live",
+                    actSigned: "подписал(а) документ",
+                    actReview: "отправил(а) на согласование",
+                    actCreated: "создал(а) новый документ",
+                    emptyLog: "История активности пуста"
+                },
+                tj: {
+                    welcomeBack: "Хуш омадед",
+                    dashSubtitle: "Инҷо вазъи ҳуҷҷатҳои шумо имрӯз.",
+                    totalDocs: "Ҳамаи ҳуҷҷатҳо",
+                    signed: "Имзошуда",
+                    badgeUsers: "Корбарон",
+                    activeUsers: "Корбарони фаъол",
+                    aiTitle: "Таҳлили AI",
+                    aiSub: "Таҳлили фаврӣ",
+                    recentDocuments: "Ҳуҷҷатҳои охирин",
+                    viewAll: "Ҳамааш",
+                    thDoc: "Ҳуҷҷат", thStatus: "Статус", thDeadline: "Мӯҳлат", thDate: "Сана", thActions: "Амалҳо",
+                    quickActions: "Амалҳои фаврӣ",
+                    createDocument: "Эҷоди ҳуҷҷат",
+                    reviewWorkflow: "Таҳлил",
+                    manageSignatures: "Имзоҳо",
+                    checkNotifications: "Огоҳиномаҳо",
+                    activityLog: "Журнали фаъолият",
+                    live: "Зинда",
+                    actSigned: "ҳуҷҷатро имзо кард",
+                    actReview: "барои тасдиқ фиристод",
+                    actCreated: "ҳуҷҷати нав сохт",
+                    emptyLog: "Таърихи фаъолият холӣ аст"
+                }
+            };
+
+            // Функция для применения перевода
+            function applyTranslations() {
+                const lang = localStorage.getItem('app-lang') || 'tj'; // По умолчанию TJ, как на скриншоте
+                const t = translations[lang] || translations['ru'];
+
+                document.querySelectorAll('[data-i18n]').forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (t[key]) {
+                        // Если внутри есть теги (например, <span>), используем innerHTML, иначе textContent
+                        if (el.children.length > 0) {
+                            // Находим текстовый узел и меняем только его, не трогая теги
+                            el.childNodes.forEach(node => {
+                                if (node.nodeType === Node.TEXT_NODE && node.textContent.trim() !== "") {
+                                    node.textContent = t[key];
+                                }
+                            });
+                        } else {
+                            el.textContent = t[key];
+                        }
+                    }
+                });
+            }
+
+            // Запускаем сразу
+            applyTranslations();
+
+            // Если у тебя есть переключатель языка, повесь на него событие вызова applyTranslations()
+        });
+    </script>
 @endsection
 
 

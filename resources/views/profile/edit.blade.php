@@ -256,7 +256,6 @@
                                 </form>
                             </div>
                         </div>
-
                     </div>
 
                 </section>
@@ -269,7 +268,6 @@
             const translations = {
                 ru: {
                     btnBack: "Назад",
-                    settingsTitle: "Настройка",
                     tabProfile: "Профиль",
                     tabSecurity: "Безопасность",
                     deleteWarning: "Удаление аккаунта сотрет все данные безвозвратно.",
@@ -283,7 +281,6 @@
                 },
                 tj: {
                     btnBack: "Бозгашт",
-                    settingsTitle: "Танзимот",
                     tabProfile: "Профил",
                     tabSecurity: "Амният",
                     deleteWarning: "Нест кардани аккаунт ҳамаи маълумотро ба таври ҳамешагӣ нест мекунад.",
@@ -297,7 +294,6 @@
                 },
                 en: {
                     btnBack: "Back",
-                    settingsTitle: "Settings",
                     tabProfile: "Profile",
                     tabSecurity: "Security",
                     deleteWarning: "Deleting your account will erase all data permanently.",
@@ -314,24 +310,30 @@
             const lang = localStorage.getItem('app-lang') || 'ru';
             const t = translations[lang];
 
+            // Основной перевод текста
             document.querySelectorAll('[data-i18n]').forEach(el => {
                 const key = el.getAttribute('data-i18n');
                 if (t[key]) el.textContent = t[key];
             });
 
+            // Перевод плейсхолдеров
             document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
                 const key = el.getAttribute('data-i18n-placeholder');
                 if (t[key]) el.placeholder = t[key];
+            });
+
+            // Применяем кастомные стили к кнопкам Laravel форм, если они не являются кнопками удаления
+            document.querySelectorAll('button[type="submit"]').forEach(btn => {
+                if (!btn.classList.contains('bg-red-600')) {
+                    btn.classList.add('btn-save-custom');
+                }
             });
         });
 
         function openCustomDeleteModal() {
             const m = document.getElementById('customDeleteModal');
             m.style.display = 'flex';
-
-            setTimeout(() => {
-                document.getElementById('customPasswordInput').focus();
-            }, 100);
+            setTimeout(() => { document.getElementById('customPasswordInput').focus(); }, 100);
         }
 
         function closeCustomDeleteModal() {
@@ -341,10 +343,8 @@
 
         function submitLaravelDeletion(e) {
             e.preventDefault();
-
             const password = document.getElementById('customPasswordInput').value;
             const realForm = document.getElementById('delete-user-form');
-
             if (realForm) {
                 realForm.querySelector('input[name="password"]').value = password;
                 realForm.submit();
@@ -353,16 +353,7 @@
 
         window.onclick = function(event) {
             const m = document.getElementById('customDeleteModal');
-
-            if (event.target == m) {
-                closeCustomDeleteModal();
-            }
+            if (event.target == m) closeCustomDeleteModal();
         }
-
-        document.querySelectorAll('button[type="submit"]').forEach(btn => {
-            if (!btn.classList.contains('bg-red-600')) {
-                btn.classList.add('btn-save-custom');
-            }
-        });
     </script>
 @endsection

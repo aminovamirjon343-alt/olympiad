@@ -264,106 +264,106 @@
 
 <body>
 {{-- resources/views/layouts/admin.blade.php --}}
-<div id="edo-loader">
-    <div class="loader-wrapper">
-        <div class="animation-zone">
-            <div class="document-item">
-                <div class="doc-body">
-                    <div class="doc-line"></div>
-                    <div class="doc-line short"></div>
-                    <div class="doc-stamp"></div>
-                </div>
-            </div>
-            <div class="plane-v4">
-                <svg viewBox="0 0 100 100">
-                    <path d="M15 50 L85 20 L55 55 L55 75 L70 65 L85 20 L35 65 L15 50 Z" fill="#3498db" stroke="#fff" stroke-width="1.5"/>
-                </svg>
-            </div>
-        </div>
-        <h2 class="status-text">Загрузка данных...</h2>
-       <div class="progress-bar"></div>
-    </div>
-</div>
+{{--<div id="edo-loader">--}}
+{{--    <div class="loader-wrapper">--}}
+{{--        <div class="animation-zone">--}}
+{{--            <div class="document-item">--}}
+{{--                <div class="doc-body">--}}
+{{--                    <div class="doc-line"></div>--}}
+{{--                    <div class="doc-line short"></div>--}}
+{{--                    <div class="doc-stamp"></div>--}}
+{{--                </div>--}}
+{{--            </div>--}}
+{{--            <div class="plane-v4">--}}
+{{--                <svg viewBox="0 0 100 100">--}}
+{{--                    <path d="M15 50 L85 20 L55 55 L55 75 L70 65 L85 20 L35 65 L15 50 Z" fill="#3498db" stroke="#fff" stroke-width="1.5"/>--}}
+{{--                </svg>--}}
+{{--            </div>--}}
+{{--        </div>--}}
+{{--        <h2 class="status-text">Загрузка данных...</h2>--}}
+{{--       <div class="progress-bar"></div>--}}
+{{--    </div>--}}
+{{--</div>--}}
 
-<style>
-    /* Прячем скролл, пока идет загрузка */
-    body.loading { overflow: hidden; }
+{{--<style>--}}
+{{--    /* Прячем скролл, пока идет загрузка */--}}
+{{--    body.loading { overflow: hidden; }--}}
 
-    #edo-loader {
-        position: fixed; inset: 0;
-        background: #ffffff;
-        display: flex; flex-direction: column; justify-content: center; align-items: center;
-        z-index: 999999; font-family: 'Inter', system-ui, -apple-system, sans-serif;
-        opacity: 1; visibility: visible;
-        transition: opacity 0.5s ease;
-    }
+{{--    #edo-loader {--}}
+{{--        position: fixed; inset: 0;--}}
+{{--        background: #ffffff;--}}
+{{--        display: flex; flex-direction: column; justify-content: center; align-items: center;--}}
+{{--        z-index: 999999; font-family: 'Inter', system-ui, -apple-system, sans-serif;--}}
+{{--        opacity: 1; visibility: visible;--}}
+{{--        transition: opacity 0.5s ease;--}}
+{{--    }--}}
 
-    .animation-zone { position: relative; width: 300px; height: 180px; }
+{{--    .animation-zone { position: relative; width: 300px; height: 180px; }--}}
 
-    .document-item {
-        position: absolute; top: 50%; left: 50%;
-        width: 50px; height: 65px;
-        background: #fff; border: 2px solid #3498db; border-radius: 4px;
-        transform: translate(-50%, -50%);
-        box-shadow: 0 15px 35px rgba(52, 152, 219, 0.15);
-        animation: docState 2.8s infinite ease-in-out;
-    }
+{{--    .document-item {--}}
+{{--        position: absolute; top: 50%; left: 50%;--}}
+{{--        width: 50px; height: 65px;--}}
+{{--        background: #fff; border: 2px solid #3498db; border-radius: 4px;--}}
+{{--        transform: translate(-50%, -50%);--}}
+{{--        box-shadow: 0 15px 35px rgba(52, 152, 219, 0.15);--}}
+{{--        animation: docState 2.8s infinite ease-in-out;--}}
+{{--    }--}}
 
-    .doc-body { padding: 8px; }
-    .doc-line { height: 3px; background: #ebf5fb; margin-bottom: 6px; border-radius: 2px; }
-    .doc-line.short { width: 60%; }
-    .doc-stamp { position: absolute; bottom: 8px; right: 8px; width: 10px; height: 10px; border: 1px solid #3498db; border-radius: 50%; }
+{{--    .doc-body { padding: 8px; }--}}
+{{--    .doc-line { height: 3px; background: #ebf5fb; margin-bottom: 6px; border-radius: 2px; }--}}
+{{--    .doc-line.short { width: 60%; }--}}
+{{--    .doc-stamp { position: absolute; bottom: 8px; right: 8px; width: 10px; height: 10px; border: 1px solid #3498db; border-radius: 50%; }--}}
 
-    .plane-v4 {
-        position: absolute; width: 65px; height: 65px;
-        top: 50%; left: 50%;
-        filter: drop-shadow(0 5px 15px rgba(52, 152, 219, 0.3));
-        animation: strikeCatch 2.8s infinite cubic-bezier(0.5, 0, 0.5, 1);
-    }
+{{--    .plane-v4 {--}}
+{{--        position: absolute; width: 65px; height: 65px;--}}
+{{--        top: 50%; left: 50%;--}}
+{{--        filter: drop-shadow(0 5px 15px rgba(52, 152, 219, 0.3));--}}
+{{--        animation: strikeCatch 2.8s infinite cubic-bezier(0.5, 0, 0.5, 1);--}}
+{{--    }--}}
 
-    @keyframes docState {
-        0% { transform: translate(-50%, 40px); opacity: 0; }
-        20%, 45% { transform: translate(-50%, -50%); opacity: 1; }
-        60%, 100% { transform: translate(400px, -500px) rotate(30deg); opacity: 0; }
-    }
+{{--    @keyframes docState {--}}
+{{--        0% { transform: translate(-50%, 40px); opacity: 0; }--}}
+{{--        20%, 45% { transform: translate(-50%, -50%); opacity: 1; }--}}
+{{--        60%, 100% { transform: translate(400px, -500px) rotate(30deg); opacity: 0; }--}}
+{{--    }--}}
 
-    @keyframes strikeCatch {
-        0% { transform: translate(-350px, 200px) rotate(-10deg); opacity: 0; }
-        20% { opacity: 1; }
-        45% { transform: translate(-15px, -15px) rotate(0deg) scale(1.1); }
-        65%, 100% { transform: translate(500px, -600px) rotate(-20deg); opacity: 1; }
-    }
+{{--    @keyframes strikeCatch {--}}
+{{--        0% { transform: translate(-350px, 200px) rotate(-10deg); opacity: 0; }--}}
+{{--        20% { opacity: 1; }--}}
+{{--        45% { transform: translate(-15px, -15px) rotate(0deg) scale(1.1); }--}}
+{{--        65%, 100% { transform: translate(500px, -600px) rotate(-20deg); opacity: 1; }--}}
+{{--    }--}}
 
-    .status-text { margin-top: 20px; color: #2c3e50; text-align: center; font-size: 1.4rem; font-weight: 600; letter-spacing: -0.02em; }
+{{--    .status-text { margin-top: 20px; color: #2c3e50; text-align: center; font-size: 1.4rem; font-weight: 600; letter-spacing: -0.02em; }--}}
 
-    .progress-bar {
-        width: 130px; height: 4px; background: #ebf5fb;
-        margin: 15px auto; border-radius: 10px; position: relative; overflow: hidden;
-    }
-    .progress-bar::after {
-        content: ''; position: absolute; left: -100%; width: 100%; height: 100%;
-        background: #3498db; animation: lineLoad 2.8s infinite;
-    }
-    @keyframes lineLoad { 0% { left: -100%; } 50%, 100% { left: 100%; } }
+{{--    .progress-bar {--}}
+{{--        width: 130px; height: 4px; background: #ebf5fb;--}}
+{{--        margin: 15px auto; border-radius: 10px; position: relative; overflow: hidden;--}}
+{{--    }--}}
+{{--    .progress-bar::after {--}}
+{{--        content: ''; position: absolute; left: -100%; width: 100%; height: 100%;--}}
+{{--        background: #3498db; animation: lineLoad 2.8s infinite;--}}
+{{--    }--}}
+{{--    @keyframes lineLoad { 0% { left: -100%; } 50%, 100% { left: 100%; } }--}}
 
-    .loader-hidden { opacity: 0 !important; visibility: hidden !important; }
-</style>
+{{--    .loader-hidden { opacity: 0 !important; visibility: hidden !important; }--}}
+{{--</style>--}}
 
-<script>
-    document.body.classList.add('loading');
+{{--<script>--}}
+{{--    document.body.classList.add('loading');--}}
 
-    window.onbeforeunload = function() {
-        document.getElementById('edo-loader').classList.remove('loader-hidden');
-    };
+{{--    window.onbeforeunload = function() {--}}
+{{--        document.getElementById('edo-loader').classList.remove('loader-hidden');--}}
+{{--    };--}}
 
-    window.addEventListener("load", function() {
-        const loader = document.getElementById('edo-loader');
-        setTimeout(() => {
-            loader.classList.add('loader-hidden');
-            document.body.classList.remove('loading');
-        }, 1200);
-    });
-</script>
+{{--    window.addEventListener("load", function() {--}}
+{{--        const loader = document.getElementById('edo-loader');--}}
+{{--        setTimeout(() => {--}}
+{{--            loader.classList.add('loader-hidden');--}}
+{{--            document.body.classList.remove('loading');--}}
+{{--        }, 1200);--}}
+{{--    });--}}
+{{--</script>--}}
 {{--<div id="edo-loader">--}}
 {{--    <div class="loader-wrapper">--}}
 {{--        <div class="animation-zone">--}}
@@ -1130,57 +1130,7 @@
 
 
     <!-- Profile Edit Page -->
-    <section class="page-section" id="page-profile-edit">
-        <h4 class="fw-bold mb-4" data-i18n="editProfile">Edit Profile</h4>
-        <div class="row g-3">
-            <div class="col-lg-8">
-                <div class="stat-card">
-                    <form onsubmit="event.preventDefault(); saveProfile()">
-                        <div class="row g-3">
-                            <div class="col-md-6">
-                                <label class="form-label fw-semibold" data-i18n="fullName">Full Name</label>
-                                <input type="text" class="form-control" value="Admin User">
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label fw-semibold">Email</label>
-                                <input type="email" class="form-control" value="admin@doc.sys">
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label fw-semibold" data-i18n="phone">Phone</label>
-                                <input type="text" class="form-control" value="+992 90 123 4567">
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label fw-semibold" data-i18n="department">Department</label>
-                                <input type="text" class="form-control" value="IT Department">
-                            </div>
-                            <div class="col-12">
-                                <label class="form-label fw-semibold" data-i18n="bio">Bio</label>
-                                <textarea class="form-control" rows="3">System Administrator</textarea>
-                            </div>
-                            <div class="col-12 d-flex gap-2">
-                                <button type="submit" class="btn-primary-custom" data-i18n="saveChanges">Save Changes</button>
-                                <a href="/profile" class="btn btn-outline-secondary rounded-3" onclick="showPage('profile', null)" data-i18n="cancel">Cancel</a>
-                            </div>
-                        </div>
-                    </form>
-                </div>
-            </div>
-            <div class="col-lg-4">
-                <div class="stat-card">
-                    <h6 class="fw-bold mb-3" data-i18n="changePassword">Change Password</h6>
-                    <div class="d-grid gap-2">
-                        <input type="password" class="form-control" placeholder="Current Password" data-i18n-placeholder="currentPassword">
-                        <input type="password" class="form-control" placeholder="New Password" data-i18n-placeholder="newPassword">
-                        <input type="password" class="form-control" placeholder="Confirm Password" data-i18n-placeholder="confirmPassword">
-                        <button class="btn btn-outline-warning btn-sm rounded-3 mt-2" data-i18n="updatePassword">Update Password</button>
-                    </div>
-                    <hr>
-                    <h6 class="fw-bold mb-3 text-danger" data-i18n="dangerZone">Danger Zone</h6>
-                    <button class="btn btn-outline-danger btn-sm rounded-3 w-100" onclick="deleteProfile()" data-i18n="deleteAccount">Delete Account</button>
-                </div>
-            </div>
-        </div>
-    </section>
+
 
 </main>
 
@@ -1207,7 +1157,7 @@
             signed: "Signed", activeUsers: "Active Users", recentDocuments: "Recent Documents", viewAll: "View All",
             document: "Document", author: "Author", status: "Status", date: "Date", actions: "Actions",
             approved: "Approved", pending: "Pending", draft: "Draft", rejected: "Rejected",
-            quickActions: "Quick Actions", createDocument: "Create Document", reviewWorkflow: "Review Workflow",
+            quickActions: "Quick Actions", createDocument: "Create Document", reviewWorkflow: "Review analysis",
             manageSignatures: "Manage Signatures", checkNotifications: "Check Notifications",
             activityLog: "Activity Log", workflowSubtitle: "Document approval workflow",
             newWorkflow: "New Workflow", wfCreated: "Created", wfReviewed: "Reviewed by Manager",
@@ -1238,7 +1188,7 @@
             signed: "Подписано", activeUsers: "Активных пользователей", recentDocuments: "Последние документы", viewAll: "Все",
             document: "Документ", author: "Автор", status: "Статус", date: "Дата", actions: "Действия",
             approved: "Утверждён", pending: "Ожидает", draft: "Черновик", rejected: "Отклонён",
-            quickActions: "Быстрые действия", createDocument: "Создать документ", reviewWorkflow: "Проверить процессы",
+            quickActions: "Быстрые действия", createDocument: "Создать документ", reviewWorkflow: "Проверить анализы",
             manageSignatures: "Управление подписями", checkNotifications: "Проверить уведомления",
             activityLog: "Журнал активности", workflowSubtitle: "Процесс утверждения документов",
             newWorkflow: "Новый процесс", wfCreated: "Создан", wfReviewed: "Проверен менеджером",
@@ -1269,7 +1219,7 @@
             signed: "Имзошуда", activeUsers: "Корбарони фаъол", recentDocuments: "Ҳуҷҷатҳои охирин", viewAll: "Ҳама",
             document: "Ҳуҷҷат", author: "Муаллиф", status: "Ҳолат", date: "Сана", actions: "Амалҳо",
             approved: "Тасдиқшуда", pending: "Дар интизорӣ", draft: "Пешнавис", rejected: "Радшуда",
-            quickActions: "Амалҳои зуд", createDocument: "Сохтани ҳуҷҷат", reviewWorkflow: "Баррасии раванд",
+            quickActions: "Амалҳои зуд", createDocument: "Сохтани ҳуҷҷат", reviewWorkflow: "Таҳлил",
             manageSignatures: "Идоракунии имзоҳо", checkNotifications: "Санҷиши огоҳиҳо",
             activityLog: "Журнали фаъолият", workflowSubtitle: "Раванди тасдиқи ҳуҷҷатҳо",
             newWorkflow: "Раванди нав", wfCreated: "Сохта шуд", wfReviewed: "Аз ҷониби менеҷер баррасӣ шуд",

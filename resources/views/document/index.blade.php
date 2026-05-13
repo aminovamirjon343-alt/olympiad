@@ -10,15 +10,18 @@
                 <div>
                     <h1 class="text-xl font-bold doc-main-title tracking-tight flex items-center gap-2">
                         <span class="w-2 h-6 bg-blue-500 rounded-full shadow-[0_0_10px_rgba(59,130,246,0.5)]"></span>
-                        <span data-i18n="documentsTitle">DOCUMENTS</span>
+                        <span data-i18n="documents">DOCUMENTS</span>
                     </h1>
                 </div>
 
+                <form action="{{ route('documents.index') }}" method="GET" class="flex items-center gap-2">
 
-                    <a href="{{route('documents.create')}}" class="btn-primary-custom">
+
+                    <a href="{{route('documents.create')}}" class="btn-primary-custom" onclick="showPage('documents', null)">
                         <i class="bi bi-plus-lg me-1"></i>
                         <span data-i18n="newDocument">New Document</span>
                     </a>
+                </form>
             </div>
 
             {{-- Table --}}
@@ -26,7 +29,7 @@
                 <table class="w-full text-left border-collapse bg-white">
                     <thead>
                     <tr class="border-b border-slate-200 bg-slate-50/50">
-                        <th class="px-4 py-2 text-[9px] font-medium text-black uppercase tracking-[0.2em]">ID</th>
+                        <th class="px-4 py-2 text-[9px] font-medium text-black uppercase tracking-[0.2em]" data-i18n="id">ID</th>
                         <th class="px-4 py-2 text-[9px] font-medium text-black uppercase tracking-[0.2em]" data-i18n="docInfo">Document Info</th>
                         <th class="px-4 py-2 text-center text-[9px] font-medium text-black uppercase tracking-[0.2em]" data-i18n="deadline">Deadline</th>
                         <th class="px-4 py-2 text-center text-[9px] font-medium text-black uppercase tracking-[0.2em]" data-i18n="status">Status</th>
@@ -51,7 +54,7 @@
 
                                     @if(auth()->user()->is_admin)
                                         <span class="text-[8px] font-bold text-slate-400 uppercase tracking-tighter">
-                                            <span data-i18n="authorBy">By</span>: {{ $doc->createdBy->name ?? 'System' }}
+                                            <span data-i18n="by">By</span>: {{ $doc->createdBy->name ?? 'System' }}
                                         </span>
                                     @endif
 
@@ -68,8 +71,8 @@
                             </td>
                             <td class="px-4 py-2 text-center">
                                 @php
-                                    $statusVal = strtolower($doc->status);
-                                    $colors = match($statusVal) {
+                                    $status = strtolower($doc->status);
+                                    $colors = match($status) {
                                         'draft' => ['bg' => '#f1f5f9', 'text' => '#475569', 'border' => '#cbd5e1'],
                                         'active', 'approved' => ['bg' => '#eff6ff', 'text' => '#1d4ed8', 'border' => '#93c5fd'],
                                         'rejected' => ['bg' => '#fef2f2', 'text' => '#dc2626', 'border' => '#fecaca'],
@@ -77,7 +80,7 @@
                                     };
                                 @endphp
 
-                                <span class="status-badge" data-status="{{ $statusVal }}" style="display: inline-flex; align-items: center; justify-content: center; background-color: {{ $colors['bg'] }}; color: {{ $colors['text'] }}; border: 1px solid {{ $colors['border'] }}; padding: 4px 12px; border-radius: 6px; font-weight: 800; font-size: 9px; text-transform: uppercase; letter-spacing: 0.5px; min-width: 90px;">
+                                <span style="display: inline-flex; align-items: center; justify-content: center; background-color: {{ $colors['bg'] }}; color: {{ $colors['text'] }}; border: 1px solid {{ $colors['border'] }}; padding: 4px 12px; border-radius: 6px; font-weight: 800; font-size: 9px; text-transform: uppercase; letter-spacing: 0.5px; min-width: 90px;">
                                     {{ $doc->status_label }}
                                 </span>
                             </td>
@@ -95,8 +98,8 @@
                                     <div class="w-12 h-12 rounded-full flex items-center justify-center mb-3" style="background-color: #f1f5f9; border: 1px solid #e2e8f0;">
                                         <i class="bi bi-search text-xl text-black opacity-30"></i>
                                     </div>
-                                    <p class="text-[11px] font-bold uppercase tracking-widest text-black" data-i18n="noDocFound">Документ не найден</p>
-                                    <p class="text-[9px] mt-1 mb-4 uppercase text-black opacity-70" data-i18n="tryChangeQuery">Попробуйте изменить запрос</p>
+                                    <p class="text-[11px] font-bold uppercase tracking-widest text-black" data-i18n="docNotFound">Документ не найден</p>
+                                    <p class="text-[9px] mt-1 mb-4 uppercase text-black opacity-70" data-i18n="tryDifferentSearch">Попробуйте изменить запрос</p>
                                     <a href="{{ route('documents.index') }}" class="px-3 py-1 bg-slate-100 hover:bg-blue-600 hover:text-white text-slate-600 text-[9px] font-bold uppercase rounded transition-all" data-i18n="resetSearch">
                                         Сбросить поиск
                                     </a>
@@ -114,67 +117,54 @@
         </div>
     </div>
 
-    {{-- Скрипт перевода внизу страницы --}}
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const translations = {
                 en: {
-                    documentsTitle: "DOCUMENTS",
-                    searchPlaceholder: "Search documents...",
+                    documents: "DOCUMENTS",
+                    searchPlaceholder: "Search...",
                     newDocument: "New Document",
+                    id: "ID",
                     docInfo: "Document Info",
                     deadline: "Deadline",
                     status: "Status",
                     actions: "Actions",
-                    authorBy: "By",
-                    noDocFound: "Document not found",
-                    tryChangeQuery: "Try changing your search query",
-                    resetSearch: "Reset Search",
-                    draft: "Draft",
-                    active: "Active",
-                    approved: "Approved",
-                    rejected: "Rejected",
-                    pending: "Pending"
+                    by: "By",
+                    docNotFound: "Document not found",
+                    tryDifferentSearch: "Try changing your search query",
+                    resetSearch: "Reset search"
                 },
                 ru: {
-                    documentsTitle: "ДОКУМЕНТЫ",
-                    searchPlaceholder: "Поиск документов...",
+                    documents: "ДОКУМЕНТЫ",
+                    searchPlaceholder: "Поиск...",
                     newDocument: "Новый документ",
-                    docInfo: "Информация",
+                    id: "ID",
+                    docInfo: "Инфо о документе",
                     deadline: "Срок",
                     status: "Статус",
                     actions: "Действия",
-                    authorBy: "Автор",
-                    noDocFound: "Документ не найден",
-                    tryChangeQuery: "Попробуйте изменить запрос",
-                    resetSearch: "Сбросить поиск",
-                    draft: "Черновик",
-                    active: "Активен",
-                    approved: "Утвержден",
-                    rejected: "Отклонен",
-                    pending: "Ожидает"
+                    by: "От",
+                    docNotFound: "Документ не найден",
+                    tryDifferentSearch: "Попробуйте изменить запрос",
+                    resetSearch: "Сбросить поиск"
                 },
                 tj: {
-                    documentsTitle: "ҲУҶҶАТҲО",
-                    searchPlaceholder: "Ҷустуҷӯи ҳуҷҷатҳо...",
+                    documents: "ҲУҶҶАТҲО",
+                    searchPlaceholder: "Ҷустуҷӯ...",
                     newDocument: "Ҳуҷҷати нав",
-                    docInfo: "Маълумот",
+                    id: "ID",
+                    docInfo: "Маълумоти ҳуҷҷат",
                     deadline: "Мӯҳлат",
-                    status: "Ҳолат",
+                    status: "Статус",
                     actions: "Амалҳо",
-                    authorBy: "Муаллиф",
-                    noDocFound: "Ҳуҷҷат ёфт нашуд",
-                    tryChangeQuery: "Кӯшиш кунед дархостро иваз кунед",
-                    resetSearch: "Тоза кардан",
-                    draft: "Пешнавис",
-                    active: "Фаъол",
-                    approved: "Тасдиқшуда",
-                    rejected: "Радшуда",
-                    pending: "Дар интизорӣ"
+                    by: "Аз ҷониби",
+                    docNotFound: "Ҳуҷҷат ёфт нашуд",
+                    tryDifferentSearch: "Кӯшиш кунед дархостро иваз кунед",
+                    resetSearch: "Тоза кардани ҷустуҷӯ"
                 }
             };
 
-            function applyIndexTranslations() {
+            function applyTranslations() {
                 const lang = localStorage.getItem('app-lang') || 'ru';
                 const t = translations[lang];
                 if (!t) return;
@@ -188,22 +178,11 @@
                     const key = el.getAttribute('data-i18n-placeholder');
                     if (t[key]) el.setAttribute('placeholder', t[key]);
                 });
-
-                document.querySelectorAll('.status-badge').forEach(el => {
-                    const statusKey = el.getAttribute('data-status');
-                    if (t[statusKey]) el.textContent = t[statusKey];
-                });
             }
 
-            applyIndexTranslations();
-
-            // Следим за изменениями в localStorage (смена языка в другом окне/компоненте)
-            window.addEventListener('storage', (e) => {
-                if (e.key === 'app-lang') applyIndexTranslations();
-            });
-
-            // Для мгновенного обновления, если кнопка смены языка просто меняет localStorage
-            setInterval(applyIndexTranslations, 1000);
+            applyTranslations();
+            // Интервал для отслеживания смены языка без перезагрузки
+            setInterval(applyTranslations, 1000);
         });
     </script>
 @endsection

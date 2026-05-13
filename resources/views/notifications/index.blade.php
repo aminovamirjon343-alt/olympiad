@@ -3,7 +3,13 @@
 @section('content')
     <div class="notif-container">
         <div class="notif-header">
-            <h2 data-i18n="notifTitle">Уведомления</h2>
+            <div class="max-w-5xl mx-auto mb-10 flex justify-between items-end">
+
+                <h1 class="text-xl font-bold doc-main-title tracking-tight flex items-center gap-2">
+                    <span class="w-2 h-6 bg-blue-500 rounded-full shadow-[0_0_10px_rgba(59,130,246,0.5)]"></span>
+                    <span data-i18n="notifTitle">Уведомления</span>
+                </h1>
+            </div>
             @if(isset($unreadCount) && $unreadCount > 0)
                 <span class="unread-count"><span data-i18n="newNotifs">У вас новые:</span> {{ $unreadCount }}</span>
             @endif
