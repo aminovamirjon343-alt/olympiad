@@ -45,6 +45,7 @@
                 justify-content: center;
                 border-top: 1px solid rgba(0, 0, 0, 0.08);
                 border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+                position: relative;
             }
             .btn-primary-custom {
                 background-color: var(--primary-color);
@@ -63,6 +64,19 @@
             }
             .action-link { font-weight: 800; text-transform: uppercase; font-size: 10px; letter-spacing: 0.1em; }
             .label-micro { font-size: 8px !important; font-weight: 900 !important; text-transform: uppercase !important; letter-spacing: 0.15em !important; opacity: 0.4; }
+
+            /* Индикатор формата */
+            .format-badge {
+                position: absolute;
+                top: 8px;
+                right: 8px;
+                padding: 2px 6px;
+                border-radius: 6px;
+                font-size: 8px;
+                font-weight: 900;
+                color: white;
+                text-transform: uppercase;
+            }
         </style>
 
         <div class="sig-page">
@@ -84,7 +98,11 @@
 
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                 @forelse($signatures as $index => $s)
-                    @php $isPast = !$s->signed_at && $s->expires_at && $s->expires_at->isPast(); @endphp
+                    @php
+                        $isPast = !$s->signed_at && $s->expires_at && $s->expires_at->isPast();
+                        $extension = $s->document && $s->document->file_path ? strtolower(pathinfo($s->document->file_path, PATHINFO_EXTENSION)) : null;
+                        $isWord = in_array($extension, ['doc', 'docx']);
+                    @endphp
 
                     <div class="card-sig {{ $isPast ? 'card-overdue' : '' }}">
                         <div class="px-6 py-4 flex justify-between items-center">
@@ -92,19 +110,32 @@
                                 @if($isPast)
                                     <span data-i18n="overdueLabel">❗ СРОК ИСТЕК</span>
                                 @else
-                                    <span data-i18n="docLabel">Документ</span> #{{ $index + 1 }}
+                                    <span data-i18n="docLabel">Документ</span> #{{ ($signatures->currentPage() - 1) * $signatures->perPage() + $index + 1 }}
                                 @endif
                             </span>
                             <span class="label-micro">ID-{{ $s->id }}</span>
                         </div>
 
                         <div class="px-6 pb-5">
-                            <h3 class="text-xl font-bold leading-tight truncate text-slate-800 dark:text-slate-100 tracking-tight">
-                                {{ $s->document->title ?? 'Без названия' }}
-                            </h3>
+                            <div class="flex items-center gap-2 mb-1">
+                                @if($isWord)
+                                    <i class="bi bi-file-earmark-word-fill text-blue-500 text-sm"></i>
+                                @elseif($extension == 'pdf')
+                                    <i class="bi bi-file-earmark-pdf-fill text-red-500 text-sm"></i>
+                                @endif
+                                <h3 class="text-xl font-bold leading-tight truncate text-slate-800 dark:text-slate-100 tracking-tight">
+                                    {{ $s->document->title ?? 'Без названия' }}
+                                </h3>
+                            </div>
                         </div>
 
                         <div class="sig-area">
+                            @if($extension)
+                                <div class="format-badge {{ $isWord ? 'bg-blue-600' : 'bg-red-600' }}">
+                                    {{ $extension }}
+                                </div>
+                            @endif
+
                             @if($s->signature)
                                 <img src="{{ $s->signature }}" class="signature-img h-16 w-auto object-contain" alt="Signature">
                             @else
@@ -121,12 +152,11 @@
                                 </div>
                                 <div>
                                     <div class="label-micro dark:text-white" data-i18n="labelExecutor">Исполнитель</div>
-                                    <div class="text-[14px] font-bold leading-none text-slate-800 dark:text-slate-200 tracking-tight">{{ $s->user->name ?? 'Неизвестен' }}</div>
+                                    <div class="text-[14px] font-bold leading-none text-slate-800 dark:text-slate-200 tracking-tight">{{ Str::limit($s->user->name ?? 'Неизвестен', 12) }}</div>
                                 </div>
                             </div>
 
                             @php
-                                // Берем дедлайн напрямую из документа, связанного с подписью
                                 $docDeadline = $s->document->deadline ?? null;
                                 $isPastDate = !$s->signed_at && $docDeadline && \Carbon\Carbon::parse($docDeadline)->isPast();
                             @endphp

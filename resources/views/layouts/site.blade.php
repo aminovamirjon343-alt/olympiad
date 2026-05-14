@@ -403,49 +403,95 @@
         </div>
 
         <!-- Main Title -->
-        <h1 class="hero-title text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-black tracking-tight mb-6 leading-[0.95]">
-            <span class="block text-white" data-i18n="hero_title_1">Документы.</span>
-            <span class="block gradient-text" data-i18n="hero_title_2">Подписаны.</span>
-            <span class="block text-white" data-i18n="hero_title_3">Мгновенно.</span>
+        <h1 class="hero-title text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black tracking-tight mb-6 leading-tight">
+            <span class="block text-white" data-i18n="hero_title_1">Электронный документооборот</span>
+            <span class="block gradient-text" data-i18n="hero_title_2">в новом формате</span>
         </h1>
 
         <!-- Subtitle -->
         <p class="max-w-2xl mx-auto text-lg sm:text-xl text-slate-400 mb-12 leading-relaxed animate-fade-in" style="animation-delay: 0.5s" data-i18n="hero_subtitle">
-            DocSign — интеллектуальная платформа электронного документооборота с AI-аналитикой, цифровой подписью и абсолютной безопасностью. Создано для бизнеса Таджикистана.
+            DocSign — современная платформа для работы с документами. Подписывайте, анализируйте и храните файлы в один клик. Простое и надежное решение для каждого в Таджикистане.
         </p>
 
         <!-- CTA Buttons -->
-        <div class="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16 animate-slide-up" style="animation-delay: 0.8s">
-            <a href="#contact" class="btn-primary px-8 py-4 rounded-2xl text-base font-bold text-white shadow-2xl shadow-blue-500/25 flex items-center gap-3 w-full sm:w-auto justify-center">
-                <span data-i18n="hero_cta_primary">Попробовать бесплатно</span>
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
+        <div class="flex flex-wrap items-center justify-center gap-4 mb-16 animate-slide-up" style="animation-delay: 0.8s">
+            <!-- Поделиться в Telegram -->
+            <a href="https://t.me/share/url?url=https://your-site.tj&text=DocSign — Электронный документооборот нового поколения" target="_blank" class="btn-primary px-8 py-4 rounded-2xl text-base font-bold text-white shadow-2xl shadow-blue-500/25 flex items-center gap-3 w-full sm:w-auto justify-center bg-[#24A1DE]">
+                <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M11.944 0C5.346 0 0 5.346 0 11.944c0 6.597 5.346 11.944 11.944 11.944 6.598 0 11.944-5.347 11.944-11.944C23.888 5.346 18.542 0 11.944 0zM18.17 6.83l-2.113 9.968c-.15.66-.543.824-1.096.515l-3.218-2.373-1.553 1.493c-.17.172-.315.315-.646.315l.23-3.267 5.946-5.372c.258-.23-.056-.358-.401-.13l-7.35 4.628-3.166-1c-.687-.215-.702-.687.143-.1l12.355-4.76c.572-.215 1.07.127.91.892z"/>
+                </svg>
+                <span>Поделиться</span>
             </a>
-            <a href="#features" class="btn-outline px-8 py-4 rounded-2xl text-base font-bold text-slate-300 flex items-center gap-3 w-full sm:w-auto justify-center">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                <span data-i18n="hero_cta_secondary">Смотреть демо</span>
+
+            <!-- Поделиться в WhatsApp -->
+            <a href="https://api.whatsapp.com/send?text=Посмотри DocSign — Электронный документооборот: https://your-site.tj"
+               target="_blank"
+               class="px-8 py-4 rounded-2xl text-base font-bold text-white shadow-2xl shadow-green-500/40 flex items-center gap-3 w-full sm:w-auto justify-center transition-all hover:opacity-90 border-none"
+               style="background-color: #25D366 !important;">
+                <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/>
+                </svg>
+                <span>WhatsApp</span>
+            </a>
+
+            <!-- Ссылка на Instagram (в Instagram нельзя просто "поделиться ссылкой", поэтому оставляем ссылку на профиль) -->
+            <a href="https://instagram.com/ваш_логин" target="_blank" class="btn-outline px-8 py-4 rounded-2xl text-base font-bold text-slate-300 flex items-center gap-3 w-full sm:w-auto justify-center hover:text-white hover:bg-gradient-to-tr from-[#f9ce34] via-[#ee2a7b] to-[#6228d7] border-slate-700">
+                <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 1.17.054 1.805.249 2.227.412.558.217.957.477 1.377.896.42.419.68.818.896 1.377.163.422.358 1.057.412 2.227.058 1.266.07 1.646.07 4.85s-.012 3.584-.07 4.85c-.054 1.17-.249 1.805-.412 2.227-.217.558-.477.957-.896 1.377-.419.42-.818.68-1.377.896-.422.163-1.057.358-2.227.412-1.266.058-1.646.07-4.85.07s-3.584-.012-4.85-.07c-1.17-.054-1.805-.249-2.227-.412-.558-.217-.957-.477-1.377-.896-.419-.42-.68-.818-.896-1.377-.163-.422-.358-1.057-.412-2.227-.058-1.266-.07-1.646-.07-4.85s.012-3.584.07-4.85c.054-1.17.249-1.805.412-2.227.217-.558.477-.957.896-1.377.419-.42.818-.68 1.377-.896.422-.163 1.057-.358 2.227-.412 1.266-.058 1.646-.07 4.85-.07M12 0C8.741 0 8.333.014 7.053.072 5.775.132 4.905.333 4.14.63c-.789.306-1.459.717-2.126 1.384S.935 3.35.63 4.14C.333 4.905.131 5.775.072 7.053.014 8.333 0 8.741 0 12s.014 3.667.072 4.947c.06 1.277.261 2.148.558 2.913.306.788.717 1.459 1.384 2.126s1.355 1.078 2.126 1.384c.766.296 1.636.499 2.913.558C8.333 23.986 8.741 24 12 24s3.667-.014 4.947-.072c1.277-.06 2.148-.262 2.913-.558.788-.306 1.459-.718 2.126-1.384s1.078-1.354 1.384-2.126c.296-.765.499-1.636.558-2.913.06-1.28.072-1.687.072-4.947s-.015-3.667-.072-4.947c-.06-1.277-.262-2.149-.558-2.913-.306-.789-.718-1.459-1.384-2.126s-1.354-1.078-2.126-1.384c-.765-.296-1.636-.499-2.913-.558C15.667.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg>
+                <span>Instagram</span>
             </a>
         </div>
 
         <!-- Stats -->
         <div class="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto animate-fade-in" style="animation-delay: 1.2s">
-            <div class="stat-card rounded-2xl p-5">
-                <div class="text-3xl md:text-4xl font-black gradient-text counter" data-target="99.9">0</div>
-                <div class="text-xs text-slate-400 mt-1" data-i18n="stat_uptime">% Uptime</div>
+
+            <!-- Скорость оформления -->
+            <div class="stat-card group rounded-2xl p-5 bg-white/5 border border-white/10 backdrop-blur-xl hover:bg-white/10 transition-all duration-300">
+                <div class="text-3xl md:text-4xl font-black gradient-text"><span class="counter" data-target="60">0</span> сек</div>
+                <div class="text-[10px] uppercase tracking-[0.2em] text-blue-400 font-bold mb-1">Скорость</div>
+                <div class="text-xs text-slate-300 leading-tight">на оформление одного документа</div>
             </div>
-            <div class="stat-card rounded-2xl p-5">
-                <div class="text-3xl md:text-4xl font-black gradient-text"><span class="counter" data-target="50">0</span>K+</div>
-                <div class="text-xs text-slate-400 mt-1" data-i18n="stat_docs">Документов/день</div>
+
+            <!-- Экология / Экономия бумаги -->
+            <div class="stat-card group rounded-2xl p-5 bg-white/5 border border-white/10 backdrop-blur-xl hover:bg-white/10 transition-all duration-300">
+                <div class="flex justify-between items-start mb-2">
+                    <div class="text-3xl md:text-4xl font-black gradient-text"><span class="counter" data-target="10">0</span>К+</div>
+                    <!-- Иконка пользователей / сообщества -->
+                    <div class="p-1.5 bg-green-500/20 rounded-lg text-green-400">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                        </svg>
+                    </div>
+                </div>
+
+                <div class="text-[10px] uppercase tracking-[0.2em] text-green-400 font-bold mb-1">Пользователи</div>
+                <div class="text-xs text-slate-300 leading-tight">активных пользователей по всей стране</div>
             </div>
-            <div class="stat-card rounded-2xl p-5">
-                <div class="text-3xl md:text-4xl font-black gradient-text"><span class="counter" data-target="256">0</span>-bit</div>
-                <div class="text-xs text-slate-400 mt-1" data-i18n="stat_encryption">Шифрование</div>
+
+            <!-- Доступность -->
+            <div class="stat-card group rounded-2xl p-5 bg-white/5 border border-white/10 backdrop-blur-xl hover:bg-white/10 transition-all duration-300">
+                <div class="flex justify-between items-start mb-2">
+                    <div class="text-3xl md:text-4xl font-black gradient-text">24/7</div>
+                    <!-- Иконка карты Таджикистана или локации -->
+                    <div class="p-1.5 bg-purple-500/20 rounded-lg text-purple-400">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                    </div>
+                </div>
+
+                <div class="text-[10px] uppercase tracking-[0.2em] text-purple-400 font-bold mb-1">ДАСТРАСӢ</div>
+                <div class="text-xs text-slate-300 leading-tight">имзогузорӣ дар тамоми ҳудуди Тоҷикистон</div>
             </div>
-            <div class="stat-card rounded-2xl p-5">
-                <div class="text-3xl md:text-4xl font-black gradient-text"><span class="counter" data-target="0">0</span>.<span class="counter" data-target="3">0</span>s</div>
-                <div class="text-xs text-slate-400 mt-1" data-i18n="stat_response">Время ответа</div>
+
+            <!-- Надежность -->
+            <div class="stat-card group rounded-2xl p-5 bg-white/5 border border-white/10 backdrop-blur-xl hover:bg-white/10 transition-all duration-300">
+                <div class="text-3xl md:text-4xl font-black gradient-text"><span class="counter" data-target="100">0</span>%</div>
+                <div class="text-[10px] uppercase tracking-[0.2em] text-amber-400 font-bold mb-1">Защита</div>
+                <div class="text-xs text-slate-300 leading-tight">юридическая сила документов</div>
             </div>
+
         </div>
-    </div>
 
     <!-- Scroll Indicator -->
     <div class="absolute bottom-8 left-1/2 -translate-x-1/2 animate-bounce-gentle">
@@ -478,18 +524,21 @@
         <!-- Features Grid -->
         <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             <!-- Feature 1: PDF Signing -->
+
             <div class="scroll-reveal glass rounded-3xl p-8 card-hover group">
-                <div class="feature-icon w-14 h-14 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
+                <div class="feature-icon w-14 h-14 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300 bg-blue-500/10">
+                    <!-- Иконка QR-кода -->
                     <svg class="w-7 h-7 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 4v1m-3.322-.133l.5 1m-3.044 1.133l.5 1M21 12h-1m-1.133 3.322l-1 .5m-1.133 3.044l-1 .5M12 20v-1m3.322.133l-.5-1m3.044-1.133l-.5-1M3 12h1m1.133-3.322l1-.5m1.133-3.044l1-.5M9 9h6v6H9V9z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M5 5h2v2H5V5zm12 0h2v2h2v2h-2v2h-2v-2h-2V7h2V5zm0 12h2v2h2v2h-2v2h-2v-2h-2v-2h2v-2zm-12 12h2v2H5v-2z" />
                     </svg>
                 </div>
-                <h3 class="text-xl font-bold text-white mb-3" data-i18n="f1_title">Электронная подпись</h3>
-                <p class="text-slate-400 text-sm leading-relaxed mb-4" data-i18n="f1_desc">
-                    FPDI библиотека физически «вшивает» изображение подписи в оригинальный PDF. Каждая подпись привязана к конкретному файлу.
+                <h3 class="text-xl font-bold text-white mb-3" data-i18n="qr_title">Электронная подпись</h3>
+                <p class="text-slate-400 text-sm leading-relaxed mb-4" data-i18n="qr_desc">
+                    Система генерирует уникальный QR-код для каждого документа. Любой проверяющий может мгновенно подтвердить легитимность файла через камеру смартфона.
                 </p>
-                <div class="code-block rounded-xl p-4 text-xs font-mono">
-                    <span class="text-purple-400">$pdf</span><span class="text-slate-500">-></span><span class="text-blue-400">injectSignature</span><span class="text-slate-500">(</span><span class="text-green-400">'sign.png'</span><span class="text-slate-500">);</span>
+                <div class="code-block rounded-xl p-4 text-xs font-mono bg-black/30 border border-white/5">
+                    <span class="text-purple-400">$pdf</span><span class="text-slate-500">-></span><span class="text-blue-400">addQRCode</span><span class="text-slate-500">(</span><span class="text-green-400">'https://docsign.tj/verify/ID'</span><span class="text-slate-500">);</span>
                 </div>
             </div>
 
@@ -505,28 +554,58 @@
                     Гибкая система аутентификации и авторизации с разделением ролей. Администраторы, менеджеры, пользователи — полный контроль доступа.
                 </p>
                 <div class="flex flex-wrap gap-2">
-                    <span class="px-3 py-1 rounded-full text-xs font-medium bg-blue-500/10 text-blue-400 border border-blue-500/20">Admin</span>
-                    <span class="px-3 py-1 rounded-full text-xs font-medium bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">Manager</span>
-                    <span class="px-3 py-1 rounded-full text-xs font-medium bg-purple-500/10 text-purple-400 border border-purple-500/20">User</span>
-                    <span class="px-3 py-1 rounded-full text-xs font-medium bg-green-500/10 text-green-400 border border-green-500/20">Auditor</span>
+                    <!-- Администратор - Полный доступ -->
+                    <span class="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-red-500/10 text-red-400 border border-red-500/20 shadow-lg shadow-red-500/5">
+        Admin
+    </span>
+
+                    <!-- Директор - Утверждение и подпись -->
+                    <span class="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-purple-500/10 text-purple-400 border border-purple-500/20 shadow-lg shadow-purple-500/5">
+        Director
+    </span>
+
+                    <!-- Сотрудник - Работа с документами -->
+                    <span class="px-3 py-1 rounded-full text-xs font-bold upper case tracking-wider bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 shadow-lg shadow-cyan-500/5">
+        Employee
+    </span>
+
+                    <!-- Пользователь - Просмотр/Клиент -->
+                    <span class="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-slate-500/10 text-slate-400 border border-slate-500/20">
+        User
+    </span>
                 </div>
             </div>
 
             <!-- Feature 3: Database -->
             <div class="scroll-reveal glass rounded-3xl p-8 card-hover group" style="transition-delay: 0.2s">
-                <div class="feature-icon w-14 h-14 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
+                <div class="feature-icon w-14 h-14 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300 bg-purple-500/10">
+                    <!-- Обновленная иконка структуры связей -->
                     <svg class="w-7 h-7 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
                     </svg>
                 </div>
-                <h3 class="text-xl font-bold text-white mb-3" data-i18n="f3_title">MySQL Архитектура</h3>
+                <h3 class="text-xl font-bold text-white mb-3" data-i18n="f3_title">Архитектура БД</h3>
                 <p class="text-slate-400 text-sm leading-relaxed mb-4" data-i18n="f3_desc">
-                    Четкая структура связей (foreign keys) между пользователями, документами и логами. Миграции через php artisan.
+                    Оптимизированная MySQL структура с поддержкой целостности данных. Полная история действий и строгая привязка подписей к документам.
                 </p>
-                <div class="code-block rounded-xl p-4 text-xs font-mono space-y-1">
-                    <div><span class="text-purple-400">users</span> <span class="text-slate-500">→</span> <span class="text-blue-400">1:N</span> <span class="text-purple-400">→ documents</span></div>
-                    <div><span class="text-purple-400">documents</span> <span class="text-slate-500">→</span> <span class="text-blue-400">1:N</span> <span class="text-purple-400">→ logs</span></div>
-                    <div><span class="text-purple-400">signatures</span> <span class="text-slate-500">→</span> <span class="text-blue-400">1:1</span> <span class="text-purple-400">→ files</span></div>
+
+                <!-- Схема связей в стиле кода -->
+                <div class="code-block rounded-xl p-4 text-[11px] font-mono space-y-2 bg-black/30 border border-white/5">
+                    <div class="flex items-center gap-2">
+                        <span class="text-purple-400">Users</span>
+                        <span class="text-slate-600">──(hasMany)──▶</span>
+                        <span class="text-blue-400">Documents</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="text-purple-400">Docs</span>
+                        <span class="text-slate-600">──(hasMany)──▶</span>
+                        <span class="text-blue-400">Audit_Logs</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="text-purple-400">Sign</span>
+                        <span class="text-slate-600">──(belongsTo)─▶</span>
+                        <span class="text-blue-400">File_Meta</span>
+                    </div>
                 </div>
             </div>
 
@@ -563,7 +642,7 @@
                 </p>
                 <div class="flex items-center gap-2 text-xs text-slate-500">
                     <svg class="w-4 h-4 text-green-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
-                    <span>PDF, DOCX, XLSX, PNG</span>
+                    <span>PDF, DOCX, Excel</span>
                 </div>
             </div>
 
@@ -578,13 +657,27 @@
                 <p class="text-slate-400 text-sm leading-relaxed mb-4" data-i18n="f6_desc">
                     Глубокая настройка тёмной темы — таблицы, модальные окна и шрифты меняют цвета так, чтобы глаза не уставали.
                 </p>
-                <div class="flex items-center gap-3">
-                    <div class="w-8 h-8 rounded-lg bg-slate-800 border border-slate-700"></div>
-                    <div class="w-8 h-8 rounded-lg bg-blue-900/50 border border-blue-700/50"></div>
-                    <div class="w-8 h-8 rounded-lg bg-slate-900 border border-slate-800"></div>
-                    <div class="w-8 h-8 rounded-lg bg-indigo-900/50 border border-indigo-700/50"></div>
-                    <div class="w-8 h-8 rounded-lg bg-cyan-900/50 border border-cyan-700/50"></div>
-                </div>
+                <div class="flex flex-wrap items-center gap-3 p-4 bg-black/40 rounded-2xl border border-white/10 backdrop-blur-md">
+                    <!-- Черный (Глубокий фон) -->
+                    <div class="w-9 h-9 rounded-xl bg-slate-950 border border-slate-800 shadow-xl" title="Deep Black"></div>
+
+                    <!-- Синий (Яркий сапфир) -->
+                    <div class="w-9 h-9 rounded-xl bg-blue-500 border border-blue-400/50 shadow-[0_0_15px_rgba(59,130,246,0.5)]" title="Bright Blue"></div>
+
+                    <!-- Голубой (Неоновый циан) -->
+                    <div class="w-9 h-9 rounded-xl bg-cyan-400 border border-cyan-300/50 shadow-[0_0_15px_rgba(34,211,238,0.5)]" title="Electric Cyan"></div>
+
+                    <!-- Красный (Яркий рубин) -->
+                    <div class="w-9 h-9 rounded-xl bg-red-500 border border-red-400/50 shadow-[0_0_15px_rgba(239,68,68,0.5)]" title="Vibrant Red"></div>
+
+                    <!-- Оранжевый (Сочный апельсин) -->
+                    <div class="w-9 h-9 rounded-xl bg-orange-500 border border-orange-400/50 shadow-[0_0_15px_rgba(249,115,22,0.5)]" title="Safety Orange"></div>
+
+                    <!-- Желтый (Яркое золото) -->
+                    <div class="w-9 h-9 rounded-xl bg-yellow-400 border border-yellow-300/50 shadow-[0_0_15px_rgba(250,204,21,0.5)]" title="Bright Yellow"></div>
+
+                    <!-- Серый (Металлик) -->
+               </div>
                 <div class="text-xs text-slate-500 mt-1" data-i18n="f6_palette">Цветовая палитра</div>
             </div>
         </div>
@@ -603,7 +696,7 @@
                 <span class="w-8 h-px bg-cyan-400"></span>
             </span>
             <h2 class="text-4xl sm:text-5xl md:text-6xl font-black text-white mb-6" data-i18n="tech_title">
-                Под капотом
+                Системы
             </h2>
             <p class="max-w-2xl mx-auto text-lg text-slate-400" data-i18n="tech_subtitle">
                 Мощный стек технологий, обеспечивающий скорость, надёжность и масштабируемость
@@ -624,7 +717,7 @@
                     </div>
                     <div class="p-6 font-mono text-sm space-y-2 overflow-x-auto">
                         <div class="text-slate-500">// 🛠 Технологический стек</div>
-                        <div><span class="text-purple-400">framework</span><span class="text-slate-500">:</span> <span class="text-green-400">'Laravel 11.x (PHP)'</span><span class="text-slate-500">,</span></div>
+                        <div><span class="text-purple-400">framework</span><span class="text-slate-500">:</span> <span class="text-green-400">'Laravel 1.x (PHP)'</span><span class="text-slate-500">,</span></div>
                         <div><span class="text-purple-400">database</span><span class="text-slate-500">:</span> <span class="text-green-400">'MySQL 8.0'</span><span class="text-slate-500">,</span></div>
                         <div><span class="text-purple-400">frontend</span><span class="text-slate-500">:</span> <span class="text-green-400">'TailwindCSS + Bootstrap'</span><span class="text-slate-500">,</span></div>
                         <div><span class="text-purple-400">pdf_engine</span><span class="text-slate-500">:</span> <span class="text-green-400">'FPDI / TCPDF'</span><span class="text-slate-500">,</span></div>
@@ -646,7 +739,7 @@
                         <span class="text-2xl">🐘</span>
                     </div>
                     <div>
-                        <h4 class="text-lg font-bold text-white mb-1">Laravel 11</h4>
+                        <h4 class="text-lg font-bold text-white mb-1">Laravel 13</h4>
                         <p class="text-sm text-slate-400" data-i18n="tech_laravel">Последняя версия PHP-фреймворка. Высокая скорость, безопасность и элегантный синтаксис.</p>
                     </div>
                 </div>
@@ -656,7 +749,7 @@
                         <span class="text-2xl">🗄️</span>
                     </div>
                     <div>
-                        <h4 class="text-lg font-bold text-white mb-1">MySQL 8.0</h4>
+                        <h4 class="text-lg font-bold text-white mb-1">MySQL 8.4</h4>
                         <p class="text-sm text-slate-400" data-i18n="tech_mysql">Надёжная СУБД с foreign keys, индексами и оптимизированными запросами для больших данных.</p>
                     </div>
                 </div>
@@ -671,16 +764,26 @@
                     </div>
                 </div>
 
-                <div class="scroll-reveal glass rounded-2xl p-6 card-hover flex items-start gap-4" style="transition-delay: 0.3s">
-                    <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-500/20 to-amber-600/20 border border-amber-500/30 flex items-center justify-center flex-shrink-0">
-                        <span class="text-2xl">📄</span>
+                <div class="scroll-reveal glass group rounded-2xl p-6 border border-white/5 hover:border-orange-500/30 transition-all duration-500" style="transition-delay: 0.3s">
+                    <div class="flex items-center gap-5">
+                        <div class="w-14 h-14 rounded-2xl bg-orange-500/10 flex items-center justify-center text-3xl group-hover:scale-110 transition-transform duration-300">
+                            📑
+                        </div>
+                        <div>
+                            <h4 class="text-lg font-bold text-white group-hover:text-orange-400 transition-colors">Универсальный Engine</h4>
+                            <p class="text-sm text-slate-400 leading-relaxed">
+                                Полная поддержка <span class="text-blue-400 font-semibold">PDF, Word и Excel</span>. Система интеллектуально интегрирует подписи и печати в структуру любого офисного документа, сохраняя его исходное форматирование.
+                            </p>
+                        </div>
                     </div>
-                    <div>
-                        <h4 class="text-lg font-bold text-white mb-1">FPDI Engine</h4>
-                        <p class="text-sm text-slate-400" data-i18n="tech_pdf">Физическая вшивка подписи в PDF-файл. Цифровой след привязан к каждому документу.</p>
+
+                    <!-- Визуальные индикаторы форматов -->
+                    <div class="flex gap-2 mt-4 ml-[76px]">
+                        <span class="text-[10px] px-2 py-0.5 rounded bg-red-500/10 text-red-400 border border-red-500/20 font-bold">PDF</span>
+                        <span class="text-[10px] px-2 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20 font-bold">DOCX</span>
+                        <span class="text-[10px] px-2 py-0.5 rounded bg-green-500/10 text-green-400 border border-green-500/20 font-bold">XLSX</span>
                     </div>
                 </div>
-            </div>
         </div>
     </div>
 </section>
@@ -706,46 +809,94 @@
 
         <!-- Security Features Grid -->
         <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <div class="scroll-reveal glass rounded-2xl p-6 card-hover text-center">
-                <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-green-500/20 to-emerald-500/20 border border-green-500/30 flex items-center justify-center mx-auto mb-4">
-                    <svg class="w-8 h-8 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
-                    </svg>
-                </div>
-                <h4 class="text-lg font-bold text-white mb-2" data-i18n="sec1_title">SSL/TLS</h4>
-                <p class="text-sm text-slate-400" data-i18n="sec1_desc">Шифрование всех данных при передаче</p>
-            </div>
-
-            <div class="scroll-reveal glass rounded-2xl p-6 card-hover text-center" style="transition-delay: 0.1s">
-                <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500/20 to-cyan-500/20 border border-blue-500/30 flex items-center justify-center mx-auto mb-4">
+            <!-- 1. Карточка Версии -->
+            <div class="scroll-reveal glass rounded-2xl p-6 card-hover text-center border border-white/5">
+                <div class="relative w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500/20 to-cyan-500/20 border border-blue-500/30 flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300">
                     <svg class="w-8 h-8 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
                     </svg>
+                    <span class="absolute -top-1 -right-1 flex h-3 w-3">
+                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                <span class="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
+            </span>
                 </div>
-                <h4 class="text-lg font-bold text-white mb-2" data-i18n="sec2_title">256-bit</h4>
-                <p class="text-sm text-slate-400" data-i18n="sec2_desc">AES-256 шифрование данных</p>
+                <h4 class="text-lg font-bold text-white mb-1" data-i18n="ver_title">Версия 2.5.0-stable</h4>
+                <div class="inline-block px-3 py-0.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-[10px] text-blue-400 font-bold uppercase tracking-wider mb-3">
+                    Latest Release
+                </div>
+                <p class="text-sm text-slate-400 leading-relaxed" data-i18n="ver_desc">
+                    Регулярные обновления безопасности и поддержка новых форматов документов.
+                </p>
             </div>
 
-            <div class="scroll-reveal glass rounded-2xl p-6 card-hover text-center" style="transition-delay: 0.2s">
-                <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-purple-500/20 to-pink-500/20 border border-purple-500/30 flex items-center justify-center mx-auto mb-4">
+            <!-- 2. Карточка Уведомлений -->
+            <div class="scroll-reveal glass rounded-2xl p-6 card-hover text-center border border-white/5" style="transition-delay: 0.1s">
+                <div class="relative w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500/20 to-indigo-500/20 border border-blue-500/30 flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300">
+                    <svg class="w-8 h-8 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                    </svg>
+                    <span class="absolute top-4 right-4 flex h-3 w-3">
+                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                <span class="relative inline-flex rounded-full h-3 w-3 bg-red-500 border border-slate-900"></span>
+            </span>
+                </div>
+                <h4 class="text-lg font-bold text-white mb-2" data-i18n="sec2_title">Smart Notify</h4>
+                <p class="text-sm text-slate-400 leading-relaxed" data-i18n="sec2_desc">
+                    Мгновенные оповещения о статусе документов. Контролируйте процесс в реальном времени.
+                </p>
+                <div class="flex justify-center gap-3 mt-4">
+                    <span class="text-[10px] font-bold text-blue-400 opacity-60">EMAIL</span>
+                    <span class="text-[10px] font-bold text-slate-600">•</span>
+                    <span class="text-[10px] font-bold text-blue-400 opacity-60">SYSTEM</span>
+                </div>
+            </div>
+
+            <!-- 3. Карточка Логов -->
+            <div class="scroll-reveal glass rounded-2xl p-6 card-hover text-center border border-white/5" style="transition-delay: 0.2s">
+                <div class="relative w-16 h-16 rounded-2xl bg-gradient-to-br from-purple-500/20 to-pink-500/20 border border-purple-500/30 flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300">
                     <svg class="w-8 h-8 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                 </div>
-                <h4 class="text-lg font-bold text-white mb-2" data-i18n="sec3_title">Hashing</h4>
-                <p class="text-sm text-slate-400" data-i18n="sec3_desc">bcrypt хеширование паролей</p>
+                <h4 class="text-lg font-bold text-white mb-2" data-i18n="sec3_title">Audit Logs</h4>
+                <p class="text-sm text-slate-400 leading-relaxed" data-i18n="sec3_desc">
+                    Детальная история всех операций. Каждый шаг под строгим учетом.
+                </p>
+                <div class="mt-4 space-y-1.5 text-left bg-black/20 p-3 rounded-xl border border-white/5">
+                    <div class="flex items-center gap-2 text-[9px] font-mono text-green-400/80">
+                        <span class="w-1.5 h-1.5 rounded-full bg-green-500"></span>
+                        <span>SIGNED: Admin</span>
+                    </div>
+                    <div class="flex items-center gap-2 text-[9px] font-mono text-blue-400/80">
+                        <span class="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
+                        <span>VIEWED: Director</span>
+                    </div>
+                </div>
             </div>
 
-            <div class="scroll-reveal glass rounded-2xl p-6 card-hover text-center" style="transition-delay: 0.3s">
-                <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-amber-500/20 to-orange-500/20 border border-amber-500/30 flex items-center justify-center mx-auto mb-4">
+            <!-- 4. Карточка Черновиков -->
+            <div class="scroll-reveal glass rounded-2xl p-6 card-hover text-center border border-white/5" style="transition-delay: 0.3s">
+                <div class="relative w-16 h-16 rounded-2xl bg-gradient-to-br from-amber-500/20 to-orange-500/20 border border-amber-500/30 flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300">
                     <svg class="w-8 h-8 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                     </svg>
                 </div>
-                <h4 class="text-lg font-bold text-white mb-2" data-i18n="sec4_title">Audit Log</h4>
-                <p class="text-sm text-slate-400" data-i18n="sec4_desc">Полный журнал действий пользователей</p>
+                <h4 class="text-lg font-bold text-white mb-2" data-i18n="sec4_title">Drafts</h4>
+                <p class="text-sm text-slate-400 leading-relaxed" data-i18n="sec4_desc">
+                    Сохраняйте прогресс в один клик. Система запомнит все внесенные данные.
+                </p>
+                <div class="mt-4 flex items-center justify-center gap-2 py-2 px-3 bg-amber-500/10 rounded-xl border border-amber-500/20">
+            <span class="flex h-2 w-2 relative">
+                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                <span class="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
+            </span>
+                    <span class="text-[10px] font-bold text-amber-400 uppercase tracking-widest">Saved</span>
+                </div>
             </div>
-        </div>
+        </div> <!-- Конец Grid -->
+
+        <!-- Блок детальной безопасности (вынесен за пределы сетки для ширины) -->
+
 
         <!-- Security Detail Block -->
         <div class="scroll-reveal mt-16 glass-strong rounded-3xl p-8 md:p-12">
@@ -804,6 +955,9 @@
     </div>
 </section>
 
+
+
+
 <!-- AI Section -->
 <section id="ai" class="relative py-32 overflow-hidden">
     <div class="absolute inset-0 bg-gradient-to-b from-transparent via-amber-950/10 to-transparent"></div>
@@ -825,112 +979,244 @@
         </div>
 
         <!-- AI Dashboard Preview -->
-        <div class="scroll-reveal glass-strong rounded-3xl overflow-hidden shadow-2xl shadow-blue-500/10">
-            <!-- Dashboard Header -->
-            <div class="flex items-center justify-between px-6 py-4 border-b border-slate-700/50">
-                <div class="flex items-center gap-3">
-                    <div class="w-3 h-3 rounded-full bg-amber-400 animate-pulse"></div>
-                    <span class="text-sm font-semibold text-white" data-i18n="ai_dashboard">Панель AI-анализа</span>
-                </div>
-                <div class="flex items-center gap-2">
-                    <span class="px-3 py-1 rounded-full text-xs font-medium bg-green-500/10 text-green-400 border border-green-500/20" data-i18n="ai_active">Активен</span>
+        <style>
+            /* Основной фон для секции аналитики */
+            .section-analytics {
+                background: #0f172a; /* Глубокий темный фон */
+                padding: 20px;
+                border-radius: 24px;
+            }
+
+            /* Стили карточек (Glassmorphism) */
+            .acard {
+                background: rgba(30, 41, 59, 0.5); /* Полупрозрачный темно-синий */
+                backdrop-filter: blur(16px);
+                -webkit-backdrop-filter: blur(16px);
+                border: 1px solid rgba(255, 255, 255, 0.08);
+                border-radius: 20px;
+                padding: 1.5rem;
+                height: 100%;
+                transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                position: relative;
+                overflow: hidden;
+            }
+
+            .acard:hover {
+                transform: translateY(-5px);
+                background: rgba(30, 41, 59, 0.7);
+                border-color: rgba(139, 92, 246, 0.4); /* Фиолетовое свечение при ховере */
+                box-shadow: 0 15px 30px rgba(0, 0, 0, 0.4);
+            }
+
+            /* Стили текста */
+            .slabel {
+                font-size: 0.75rem;
+                text-transform: uppercase;
+                letter-spacing: 1.2px;
+                color: #94a3b8;
+                font-weight: 700;
+            }
+
+            .bignum {
+                font-size: 2.5rem;
+                font-weight: 800;
+                letter-spacing: -1.5px;
+                color: #f8fafc;
+                line-height: 1;
+            }
+
+            /* Полоска прогресса */
+            .progbg {
+                height: 8px;
+                background: rgba(255, 255, 255, 0.05);
+                border-radius: 10px;
+                margin-top: 15px;
+                overflow: hidden;
+            }
+
+            .progbg .fill {
+                height: 100%;
+                border-radius: 10px;
+                transition: width 1.5s ease-in-out;
+            }
+
+            /* Точки легенды */
+            .legend-dot {
+                width: 10px;
+                height: 10px;
+                border-radius: 50%;
+                display: inline-block;
+            }
+
+            /* Кастомный заголовок */
+            .accent {
+                width: 4px;
+                height: 24px;
+                border-radius: 4px;
+                display: inline-block;
+                margin-right: 12px;
+                vertical-align: middle;
+            }
+
+            /* Стили для ApexCharts (чтобы тултипы были темными) */
+            .apexcharts-tooltip {
+                background: #1e293b !important;
+                border: 1px solid rgba(255, 255, 255, 0.1) !important;
+                color: #fff !important;
+                box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5) !important;
+            }
+        </style>
+        <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                // Получаем данные из Laravel контроллера
+                const userActivityData = @json($userActivity ?? []);
+
+                const options = {
+                    series: [{
+                        name: 'Регистрации',
+                        data: userActivityData.map(item => item.reg)
+                    }, {
+                        name: 'Удаления',
+                        data: userActivityData.map(item => item.del)
+                    }],
+                    chart: {
+                        type: 'area',
+                        height: 280,
+                        toolbar: { show: false },
+                        zoom: { enabled: false },
+                        background: 'transparent',
+                        foreColor: '#64748b',
+                        fontFamily: 'Inter, sans-serif'
+                    },
+                    colors: ['#3b82f6', '#ef4444'], // Синий для новых, Красный для удалений
+                    fill: {
+                        type: 'gradient',
+                        gradient: {
+                            shadeIntensity: 1,
+                            opacityFrom: 0.3,
+                            opacityTo: 0.0,
+                            stops: [0, 90, 100]
+                        }
+                    },
+                    stroke: {
+                        curve: 'smooth',
+                        width: 3
+                    },
+                    dataLabels: { enabled: false },
+                    grid: {
+                        borderColor: 'rgba(255, 255, 255, 0.05)',
+                        strokeDashArray: 4,
+                        yaxis: { lines: { show: true } }
+                    },
+                    xaxis: {
+                        categories: userActivityData.map(item => item.date),
+                        axisBorder: { show: false },
+                        axisTicks: { show: false },
+                    },
+                    yaxis: {
+                        tickAmount: 4,
+                    },
+                    tooltip: {
+                        theme: 'dark',
+                        x: { show: true },
+                        marker: { show: true }
+                    },
+                    legend: { show: false }
+                };
+
+                const chart = new ApexCharts(document.querySelector("#userChart"), options);
+                chart.render();
+            });
+        </script>
+        <div class="section-title mt-5 mb-4">
+            <div class="accent" style="background:#8b5cf6;box-shadow:0 0 12px #8b5cf680"></div><span data-i18n="userAnalytics">Аналитика пользователей</span>
+        </div>
+
+        <div class="row g-3">
+            <div class="col-12">
+                <div class="acard">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <div><div class="slabel" data-i18n="baseActivity">Активность базы</div><h6 class="mb-0 fw-bold" style="color:var(--text)" data-i18n="audienceDynamics">Динамика прироста аудитории</h6></div>
+                        <div class="d-flex gap-3">
+                            <small class="d-flex align-items-center gap-1" style="color:#3b82f6"><span class="legend-dot" style="background:#3b82f6"></span><span data-i18n="registrations">Регистрации</span></small>
+                            <small class="d-flex align-items-center gap-1" style="color:#ef4444"><span class="legend-dot" style="background:#ef4444"></span><span data-i18n="deletions">Удаления</span></small>
+                        </div>
+                    </div>
+                    <div id="userChart"></div>
                 </div>
             </div>
 
-            <!-- Dashboard Content -->
-            <div class="p-6 md:p-8">
-                <div class="grid md:grid-cols-3 gap-6 mb-8">
-                    <div class="bg-slate-800/50 rounded-2xl p-5 border border-slate-700/50">
-                        <div class="text-xs text-slate-500 mb-2" data-i18n="ai_metric1">Обработано документов</div>
-                        <div class="text-3xl font-black text-white">12,847</div>
-                        <div class="flex items-center gap-1 mt-2">
-                            <svg class="w-4 h-4 text-green-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M12 7a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0V8.414l-4.293 4.293a1 1 0 01-1.414 0L8 10.414l-4.293 4.293a1 1 0 01-1.414-1.414l5-5a1 1 0 011.414 0L11 10.586 14.586 7H12z" clip-rule="evenodd"/></svg>
-                            <span class="text-xs text-green-400 font-medium">+23.5%</span>
-                        </div>
+            <!-- Используем flex-контейнер для принудительного выстраивания в ряд -->
+            <div class="d-flex flex-column flex-md-row gap-3 mt-4" style="width: 100%;">
+
+                <!-- Карточка 1 -->
+                <div style="flex: 1;">
+                    <div class="acard h-100">
+                        <div class="slabel" data-i18n="usersCount">Пользователи</div>
+                        <div class="bignum mt-2">{{ $totalUsers ?? 0 }}</div>
+                        <small style="color:#94a3b8" data-i18n="activeProfiles">активных профилей</small>
                     </div>
-                    <div class="bg-slate-800/50 rounded-2xl p-5 border border-slate-700/50">
-                        <div class="text-xs text-slate-500 mb-2" data-i18n="ai_metric2">Точность анализа</div>
-                        <div class="text-3xl font-black gradient-text-warm">94.7%</div>
-                        <div class="flex items-center gap-1 mt-2">
-                            <svg class="w-4 h-4 text-green-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M12 7a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0V8.414l-4.293 4.293a1 1 0 01-1.414 0L8 10.414l-4.293 4.293a1 1 0 01-1.414-1.414l5-5a1 1 0 011.414 0L11 10.586 14.586 7H12z" clip-rule="evenodd"/></svg>
-                            <span class="text-xs text-green-400 font-medium">+2.1%</span>
-                        </div>
-                    </div>
-                    <div class="bg-slate-800/50 rounded-2xl p-5 border border-slate-700/50">
-                        <div class="text-xs text-slate-500 mb-2" data-i18n="ai_metric3">Время обработки</div>
-                        <div class="text-3xl font-black text-white">0.3<span class="text-lg text-slate-400">s</span></div>
-                        <div class="flex items-center gap-1 mt-2">
-                            <svg class="w-4 h-4 text-green-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M12 7a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0V8.414l-4.293 4.293a1 1 0 01-1.414 0L8 10.414l-4.293 4.293a1 1 0 01-1.414-1.414l5-5a1 1 0 011.414 0L11 10.586 14.586 7H12z" clip-rule="evenodd"/></svg>
-                            <span class="text-xs text-green-400 font-medium">-15.2%</span>
+                </div>
+
+                <!-- Карточка 2 -->
+                <div style="flex: 1;">
+                    <div class="acard h-100">
+                        <div class="slabel" data-i18n="new30Days">Новые (30 дней)</div>
+                        <div class="bignum mt-2" style="color:#10b981">{{ $newThisMonth ?? 0 }}</div>
+                        <div class="progbg">
+                            @php $userRate = $totalUsers > 0 ? min(($newThisMonth / $totalUsers) * 100, 100) : 0; @endphp
+                            <div class="fill" style="width:{{ $userRate }}%;background:#10b981"></div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Chart Visualization -->
-                <div class="bg-slate-800/30 rounded-2xl p-6 border border-slate-700/50">
-                    <div class="flex items-center justify-between mb-6">
-                        <h4 class="text-sm font-semibold text-white" data-i18n="ai_chart_title">Аналитика за 7 дней</h4>
-                        <div class="flex items-center gap-4 text-xs">
-                            <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-blue-400"></span> <span data-i18n="ai_chart_docs">Документы</span></span>
-                            <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-amber-400"></span> <span data-i18n="ai_chart_signs">Подписи</span></span>
-                        </div>
-                    </div>
-                    <div class="flex items-end gap-2 h-40">
-                        <div class="flex-1 flex flex-col items-center gap-1">
-                            <div class="w-full bg-blue-500/30 rounded-t-md relative" style="height: 60%">
-                                <div class="absolute bottom-0 w-full bg-blue-500/60 rounded-t-md" style="height: 70%"></div>
-                            </div>
-                            <div class="w-full bg-amber-500/20 rounded-t-md" style="height: 40%"></div>
-                            <span class="text-[10px] text-slate-500">Пн</span>
-                        </div>
-                        <div class="flex-1 flex flex-col items-center gap-1">
-                            <div class="w-full bg-blue-500/30 rounded-t-md relative" style="height: 75%">
-                                <div class="absolute bottom-0 w-full bg-blue-500/60 rounded-t-md" style="height: 65%"></div>
-                            </div>
-                            <div class="w-full bg-amber-500/20 rounded-t-md" style="height: 50%"></div>
-                            <span class="text-[10px] text-slate-500">Вт</span>
-                        </div>
-                        <div class="flex-1 flex flex-col items-center gap-1">
-                            <div class="w-full bg-blue-500/30 rounded-t-md relative" style="height: 85%">
-                                <div class="absolute bottom-0 w-full bg-blue-500/60 rounded-t-md" style="height: 80%"></div>
-                            </div>
-                            <div class="w-full bg-amber-500/20 rounded-t-md" style="height: 60%"></div>
-                            <span class="text-[10px] text-slate-500">Ср</span>
-                        </div>
-                        <div class="flex-1 flex flex-col items-center gap-1">
-                            <div class="w-full bg-blue-500/30 rounded-t-md relative" style="height: 65%">
-                                <div class="absolute bottom-0 w-full bg-blue-500/60 rounded-t-md" style="height: 55%"></div>
-                            </div>
-                            <div class="w-full bg-amber-500/20 rounded-t-md" style="height: 45%"></div>
-                            <span class="text-[10px] text-slate-500">Чт</span>
-                        </div>
-                        <div class="flex-1 flex flex-col items-center gap-1">
-                            <div class="w-full bg-blue-500/30 rounded-t-md relative" style="height: 95%">
-                                <div class="absolute bottom-0 w-full bg-blue-500/60 rounded-t-md" style="height: 90%"></div>
-                            </div>
-                            <div class="w-full bg-amber-500/20 rounded-t-md" style="height: 70%"></div>
-                            <span class="text-[10px] text-slate-500">Пт</span>
-                        </div>
-                        <div class="flex-1 flex flex-col items-center gap-1">
-                            <div class="w-full bg-blue-500/30 rounded-t-md relative" style="height: 50%">
-                                <div class="absolute bottom-0 w-full bg-blue-500/60 rounded-t-md" style="height: 40%"></div>
-                            </div>
-                            <div class="w-full bg-amber-500/20 rounded-t-md" style="height: 30%"></div>
-                            <span class="text-[10px] text-slate-500">Сб</span>
-                        </div>
-                        <div class="flex-1 flex flex-col items-center gap-1">
-                            <div class="w-full bg-blue-500/30 rounded-t-md relative" style="height: 40%">
-                                <div class="absolute bottom-0 w-full bg-blue-500/60 rounded-t-md" style="height: 35%"></div>
-                            </div>
-                            <div class="w-full bg-amber-500/20 rounded-t-md" style="height: 25%"></div>
-                            <span class="text-[10px] text-slate-500">Вс</span>
-                        </div>
+                <!-- Карточка 3 -->
+                <div style="flex: 1;">
+                    <div class="acard h-100" style="border-top:3px solid #ef4444">
+                        <div class="slabel" style="color:#ef4444" data-i18n="churnRate">Churn Rate</div>
+                        <div class="bignum mt-2">{{ $churnRate ?? 0 }}%</div>
+                        <small style="color:#94a3b8" data-i18n="churnDesc">коэффициент оттока</small>
                     </div>
                 </div>
+
             </div>
         </div>
+
     </div>
 </section>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 <!-- Contact / CTA Section -->
 <section id="contact" class="relative py-32 overflow-hidden">
@@ -1006,7 +1292,7 @@
         </div>
         <div class="line-glow mb-8"></div>
         <div class="flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-slate-500">
-            <span>© 2024 DocSign. <span data-i18n="footer_rights">Все права защищены.</span></span>
+            <span>© 2026 DocSign. <span data-i18n="footer_rights">Все права защищены.</span></span>
             <span class="flex items-center gap-2">
                 <span class="text-base">🇹🇯</span>
                 <span data-i18n="footer_made">Сделано в Таджикистане</span>

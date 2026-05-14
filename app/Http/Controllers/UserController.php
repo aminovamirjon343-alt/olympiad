@@ -3,33 +3,25 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
-use App\Models\Document; // Импортируем модель документов
+use App\Models\Document;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB; // Импортируем фасад DB для сырых запросов
-use Illuminate\Support\Facades\Hash; // Рекомендуется для работы с паролями
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Auth;
 
 class UserController extends Controller
 {
-    /**
-     * Список всех пользователей
-     */
     public function index()
     {
         $users = User::all();
         return view('users.index', compact('users'));
     }
 
-    /**
-     * Форма создания пользователя
-     */
     public function create()
     {
         return view('users.create');
     }
 
-    /**
-     * Сохранение нового пользователя
-     */
     public function store(Request $request)
     {
         $data = $request->validate([
@@ -40,19 +32,16 @@ class UserController extends Controller
             'role'     => 'required|in:admin,employee,director,user',
         ]);
 
-        $data['password'] = Hash::make($data['password']);
+        $user = new User($data);
+        $user->password = Hash::make($request->password);
+        $user->created_by = Auth::id();
+        $user->save();
 
-        User::create($data);
-
-        return redirect()->route('users.index')->with('success', 'User created 👤');
+        return redirect()->route('users.index')->with('success', 'Пользователь создан!');
     }
 
-    /**
-     * Просмотр профиля пользователя и его активности
-     */
     public function show(User $user)
     {
-        // Собираем данные об активности пользователя (созданные документы) за текущий год
         $activityData = Document::where('created_by', $user->id)
             ->whereYear('created_at', now()->year)
             ->select(
@@ -66,19 +55,50 @@ class UserController extends Controller
         return view('users.show', compact('user', 'activityData'));
     }
 
-    /**
-     * Форма редактирования
-     */
     public function edit(User $user)
     {
-        return view('users.edit', compact('user'));
+        $authId = (int)auth()->id();
+        $creatorId = $user->created_by;
+
+        // 1. Вместо abort — перенаправляем назад в профиль с ошибкой
+        if (strtolower($user->role) === 'user') {
+            return redirect()->route('users.show', $user->id)
+                ->with('error', 'Роль USER неприкасаема');
+        }
+
+        // 2. РАЗРЕШАЕМ РЕДАКТИРОВАНИЕ
+        if (
+            $user->id === $authId ||
+            (int)$creatorId === $authId ||
+            ($authId === 10 && is_null($creatorId))
+        ) {
+            return view('users.edit', compact('user'));
+        }
+
+        // Вместо abort для всех остальных случаев
+        return redirect()->route('users.show', $user->id)
+            ->with('error', "Вы не можете редактировать этого пользователя. Создатель ID: " . ($creatorId ?? 'не указан'));
     }
 
-    /**
-     * Обновление данных пользователя
-     */
     public function update(Request $request, User $user)
     {
+        $authId = (int)Auth::id();
+
+        // Защита: роль 'user'
+        if (strtolower($user->role) === 'user') {
+            return redirect()->route('users.show', $user->id)
+                ->with('error', 'Этого пользователя нельзя изменять');
+        }
+
+        $isOwner = (int)$user->created_by === $authId;
+        $isSelf = $user->id === $authId;
+        $isSuperAdminFix = ($authId === 10 && is_null($user->created_by));
+
+        if (!$isOwner && !$isSuperAdminFix && !$isSelf) {
+            return redirect()->route('users.show', $user->id)
+                ->with('error', 'У вас нет прав на обновление этого профиля');
+        }
+
         $data = $request->validate([
             'name'  => 'required|string|max:255',
             'email' => 'required|email|unique:users,email,' . $user->id,
@@ -88,15 +108,26 @@ class UserController extends Controller
 
         $user->update($data);
 
-        return redirect()->route('users.index')->with('success', 'Updated');
+        return redirect()->route('users.index')->with('success', 'Данные обновлены ✅');
     }
 
-    /**
-     * Удаление пользователя
-     */
     public function destroy(User $user)
     {
+        $authUser = Auth::user();
+
+        if ($user->id === $authUser->id) {
+            return back()->with('error', 'Вы не можете удалить самого себя');
+        }
+
+        if (strtolower($user->role) === 'user') {
+            return back()->with('error', 'Этого пользователя нельзя трогать, он независим');
+        }
+
+        if ((int)$user->created_by !== (int)$authUser->id && (int)$authUser->id !== 10) {
+            return back()->with('error', 'Вы можете удалять только тех, кого добавили сами');
+        }
+
         $user->delete();
-        return redirect()->route('users.index')->with('success', 'User deleted');
+        return redirect()->route('users.index')->with('success', 'Сотрудник удален');
     }
 }

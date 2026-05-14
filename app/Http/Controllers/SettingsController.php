@@ -46,4 +46,30 @@ class SettingsController extends Controller
 
         return back()->with('success', 'Подпись обновлена!');
     }
+    public function update(Request $request)
+    {
+        $validated = $request->validate([
+            'edi_enabled' => 'nullable|boolean',
+            'api_key' => 'required|string|max:255',
+            'api_url' => 'required|url',
+            'certificate' => 'nullable|file|mimes:p12,pem,cer|max:2048',
+            'webhook_url' => 'nullable|url',
+        ]);
+
+        // Сохранение настроек в БД (пример через модель Setting)
+        foreach ($validated as $key => $value) {
+            if ($key === 'certificate' && $request->hasFile('certificate')) {
+                // Сохранение файла
+                $path = $request->file('certificate')->store('edi/certificates', 'private');
+                \App\Models\Setting::updateOrCreate(['key' => 'certificate_path'], ['value' => $path]);
+            } else {
+                \App\Models\Setting::updateOrCreate(
+                    ['key' => $key],
+                    ['value' => is_bool($value) ? (int)$value : $value]
+                );
+            }
+        }
+
+        return back()->with('success', 'Настройки ЭДО обновлены.');
+    }
 }

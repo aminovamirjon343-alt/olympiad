@@ -62,38 +62,59 @@
 
                     {{-- Файл --}}
                     @if($document->file_path)
+                        @php
+                            $extension = strtolower(pathinfo($document->file_path, PATHINFO_EXTENSION));
+                            $isWord = $extension === 'docx' || $extension === 'doc';
+                        @endphp
+
                         <div class="bg-white rounded-lg border border-slate-200 p-4 flex items-center justify-between group hover:border-blue-400 transition-all shadow-sm">
                             <div class="flex items-center gap-4">
-                                <div class="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center text-blue-600 border border-blue-100 group-hover:bg-blue-600 group-hover:text-white transition-colors">
-                                    <i class="bi bi-file-earmark-pdf-fill text-xl"></i>
+                                {{-- ИСПРАВЛЕНО: Динамическая иконка в зависимости от формата --}}
+                                <div class="w-10 h-10 rounded-lg flex items-center justify-center border transition-colors {{ $isWord ? 'bg-blue-50 text-blue-600 border-blue-100 group-hover:bg-blue-600' : 'bg-red-50 text-red-600 border-red-100 group-hover:bg-red-600' }} group-hover:text-white">
+                                    @if($isWord)
+                                        <i class="bi bi-file-earmark-word-fill text-xl"></i>
+                                    @else
+                                        <i class="bi bi-file-earmark-pdf-fill text-xl"></i>
+                                    @endif
                                 </div>
                                 <div class="overflow-hidden">
                                     <p class="text-[11px] font-bold text-black uppercase tracking-wide truncate max-w-[200px] md:max-w-xs">
                                         {{ basename($document->file_path) }}
                                     </p>
                                     <div class="flex items-center gap-2">
-                                        <span class="text-[9px] font-bold text-blue-600 uppercase">PDF Asset</span>
+                                        {{-- ИСПРАВЛЕНО: Динамический текст формата --}}
+                                        <span class="text-[9px] font-bold {{ $isWord ? 'text-blue-600' : 'text-red-600' }} uppercase">
+                                            {{ $isWord ? 'WORD Asset' : 'PDF Asset' }}
+                                        </span>
                                         <span class="w-1 h-1 rounded-full bg-slate-300"></span>
                                         <span class="text-[9px] text-black opacity-60 uppercase font-medium" data-i18n="readyView">Ready to View</span>
                                     </div>
                                 </div>
                             </div>
-                            <a href="{{ asset('storage/' . $document->file_path) }}" target="_blank"
-                               class="flex items-center gap-2 px-3 py-2 rounded-md bg-slate-100 text-black hover:bg-blue-600 hover:text-white transition-all border border-slate-200 shadow-sm">
+
+                            {{-- ИСПРАВЛЕНО: Для Word убран target="_blank", так как он сразу скачивается --}}
+                            <a href="{{ asset('storage/' . $document->file_path) }}" @if(!$isWord) target="_blank" @endif
+                            class="flex items-center gap-2 px-3 py-2 rounded-md bg-slate-100 text-black hover:bg-blue-600 hover:text-white transition-all border border-slate-200 shadow-sm">
                                 <span class="text-[10px] font-black uppercase tracking-tighter" data-i18n="viewBtn">Смотреть</span>
                                 <i class="bi bi-eye-fill text-sm"></i>
                             </a>
                         </div>
-                    @endif
 
-                    <a href="{{ asset('storage/' . $document->file_path) }}"
-                       download="{{ $document->title }}.pdf"
-                       class="h-10 px-4 bg-green-600 text-white rounded-xl font-semibold uppercase tracking-widest text-xs flex items-center justify-center hover:scale-[1.01] active:scale-95 transition shadow-lg">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                        </svg>
-                        <span data-i18n="downloadPdf">СКАЧАТЬ PDF</span>
-                    </a>
+                        {{-- КНОПКА СКАЧИВАНИЯ --}}
+                        {{-- ИСПРАВЛЕНО: Динамический data-i18n и текст в зависимости от формата --}}
+                        <a href="{{ asset('storage/' . $document->file_path) }}"
+                           download="{{ $document->title }}.{{ $extension }}"
+                           class="h-10 px-4 {{ $isWord ? 'bg-blue-600' : 'bg-green-600' }} text-white rounded-xl font-semibold uppercase tracking-widest text-xs flex items-center justify-center hover:scale-[1.01] active:scale-95 transition shadow-lg">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                            </svg>
+                            @if($isWord)
+                                <span data-i18n="downloadWord">СКАЧАТЬ WORD</span>
+                            @else
+                                <span data-i18n="downloadPdf">СКАЧАТЬ PDF</span>
+                            @endif
+                        </a>
+                    @endif
 
                     {{-- Комментарии --}}
                     <div class="space-y-4">
@@ -119,12 +140,12 @@
                                      style="background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%) !important;">
 
                                     <div class="flex justify-between items-center mb-2 pb-2 border-b border-white/20">
-                <span class="text-[10px] font-black uppercase tracking-widest text-white truncate mr-2">
-                    {{ $comment->user?->name ?? 'System' }}
-                </span>
+                                        <span class="text-[10px] font-black uppercase tracking-widest text-white truncate mr-2">
+                                            {{ $comment->user?->name ?? 'System' }}
+                                        </span>
                                         <span class="text-[9px] text-white/90 font-bold bg-black/10 px-2 py-0.5 rounded-full flex-shrink-0">
-                    {{ $comment->created_at->diffForHumans() }}
-                </span>
+                                            {{ $comment->created_at->diffForHumans() }}
+                                        </span>
                                     </div>
 
                                     <p class="text-[12px] text-white font-medium leading-relaxed drop-shadow-sm break-words overflow-hidden">
@@ -227,7 +248,7 @@
             const translations = {
                 en: {
                     back: "Back", edit: "Edit", delete: "Delete",
-                    readyView: "Ready to View", viewBtn: "View", downloadPdf: "DOWNLOAD PDF",
+                    readyView: "Ready to View", viewBtn: "View", downloadPdf: "DOWNLOAD PDF", downloadWord: "DOWNLOAD WORD",
                     systemNotes: "SYSTEM NOTES", commentPlaceholder: "Leave a comment...",
                     noNotes: "No notes yet", details: "Details", signature: "Signature",
                     signed: "Signed", notSigned: "Not Signed", status: "Status",
@@ -237,7 +258,7 @@
                 },
                 ru: {
                     back: "Назад", edit: "Редактировать", delete: "Удалить",
-                    readyView: "Готов к просмотру", viewBtn: "Смотреть", downloadPdf: "СКАЧАТЬ PDF",
+                    readyView: "Готов к просмотру", viewBtn: "Смотреть", downloadPdf: "СКАЧАТЬ PDF", downloadWord: "СКАЧАТЬ WORD",
                     systemNotes: "СИСТЕМНЫЕ ЗАМЕТКИ", commentPlaceholder: "Оставьте комментарий...",
                     noNotes: "Заметок пока нет", details: "Детали", signature: "Подпись",
                     signed: "Подписан", notSigned: "Не подписан", status: "Статус",
@@ -247,7 +268,7 @@
                 },
                 tj: {
                     back: "Қафо", edit: "Вироиш", delete: "Ҳазф кардан",
-                    readyView: "Барои тамошо омода", viewBtn: "Дидан", downloadPdf: "БОРГИРИИ PDF",
+                    readyView: "Барои тамошо омода", viewBtn: "Дидан", downloadPdf: "БОРГИРИИ PDF", downloadWord: "БОРГИРИИ WORD",
                     systemNotes: "ҚАЙДҲОИ СИСТЕМА", commentPlaceholder: "Фикр гузоред...",
                     noNotes: "Қайдҳо нестанд", details: "Тафсилот", signature: "Имзо",
                     signed: "Имзошуда", notSigned: "Имзо нашудааст", status: "Ҳолат",

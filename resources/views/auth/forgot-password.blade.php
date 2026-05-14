@@ -31,7 +31,7 @@
             align-items: center;
             justify-content: center;
             background: var(--bg-dark);
-            overflow: hidden;
+            overflow-x: hidden;
             position: relative;
         }
 
@@ -116,20 +116,12 @@
         @keyframes shimmer {
             0%, 100% { background-position: 0% 50%; } 50% { background-position: 100% 50%; }
         }
-        .reset-card::after {
-            content: ''; position: absolute; top: -1px; left: -1px; right: -1px; bottom: -1px;
-            border-radius: 24px;
-            background: linear-gradient(135deg, rgba(245, 158, 11, 0.15), transparent 40%, transparent 60%, rgba(79, 70, 229, 0.1));
-            z-index: -1; pointer-events: none;
-        }
 
-        .logo-section { text-align: center; margin-bottom: 32px; animation: logoAppear 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.2s both; }
-        @keyframes logoAppear { 0% { opacity: 0; transform: translateY(15px); } 100% { opacity: 1; transform: translateY(0); } }
+        .logo-section { text-align: center; margin-bottom: 32px; }
         .logo-img {
             width: 80px; height: 80px; border-radius: 20px; margin: 0 auto 16px; display: block;
             box-shadow: 0 8px 30px rgba(245, 158, 11, 0.25); transition: transform 0.3s ease;
         }
-        .logo-img:hover { transform: scale(1.05) rotate(2deg); }
         .logo-title { font-size: 28px; font-weight: 800; color: var(--text-primary); letter-spacing: -0.5px; margin-bottom: 4px; }
         .logo-title span { background: linear-gradient(135deg, #f59e0b, var(--accent)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
         .logo-subtitle { font-size: 12px; font-weight: 500; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 2px; }
@@ -137,65 +129,31 @@
         .info-banner {
             display: flex; align-items: flex-start; gap: 12px; padding: 14px 16px;
             background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.15);
-            border-radius: 12px; margin-bottom: 24px; animation: formAppear 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.25s both;
+            border-radius: 12px; margin-bottom: 24px;
         }
         .info-banner svg { width: 18px; height: 18px; color: #f59e0b; flex-shrink: 0; margin-top: 1px; }
         .info-banner p { font-size: 13px; color: var(--text-secondary); line-height: 1.5; }
 
-        .session-status {
-            padding: 12px 16px; border-radius: 12px; margin-bottom: 20px;
-            font-size: 13px; font-weight: 600; text-align: center;
-            animation: formAppear 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.2s both;
-        }
-        .session-status.success { background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.25); color: #34d399; }
-
-        .form-group { margin-bottom: 20px; animation: formAppear 0.6s cubic-bezier(0.16, 1, 0.3, 1) both; }
-        .form-group:nth-child(1) { animation-delay: 0.35s; }
-        @keyframes formAppear { 0% { opacity: 0; transform: translateX(-15px); } 100% { opacity: 1; transform: translateX(0); } }
-
-        .form-label { display: block; font-size: 13px; font-weight: 600; color: var(--text-secondary); margin-bottom: 8px; letter-spacing: 0.3px; }
+        .form-group { margin-bottom: 20px; }
+        .form-label { display: block; font-size: 13px; font-weight: 600; color: var(--text-secondary); margin-bottom: 8px; }
         .input-wrapper { position: relative; }
         .input-icon {
             position: absolute; left: 16px; top: 50%; transform: translateY(-50%);
-            width: 20px; height: 20px; color: var(--text-secondary);
-            transition: color 0.3s ease; pointer-events: none; z-index: 2;
+            width: 20px; height: 20px; color: var(--text-secondary); z-index: 2;
         }
         .form-input {
             width: 100%; padding: 14px 16px 14px 48px; background: rgba(30, 41, 59, 0.5);
             border: 1px solid var(--border); border-radius: 14px; color: var(--text-primary);
-            font-family: 'Figtree', sans-serif; font-size: 15px; font-weight: 500;
-            transition: all 0.3s ease; outline: none;
+            font-family: 'Figtree', sans-serif; font-size: 15px; transition: all 0.3s ease; outline: none;
         }
-        .form-input::placeholder { color: rgba(148, 163, 184, 0.4); }
-        .form-input:focus {
-            border-color: var(--accent); background: rgba(30, 41, 59, 0.8);
-            box-shadow: 0 0 0 4px rgba(6, 182, 212, 0.15), 0 0 20px rgba(6, 182, 212, 0.1);
-        }
-        .form-input:-webkit-autofill {
-            -webkit-box-shadow: 0 0 0 30px rgba(30, 41, 59, 0.9) inset !important;
-            -webkit-text-fill-color: var(--text-primary) !important; caret-color: var(--text-primary);
-        }
-        .form-input.error { border-color: #ef4444; box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.15); }
-        .error-message { font-size: 12px; color: #ef4444; margin-top: 6px; font-weight: 500; }
+        .form-input:focus { border-color: var(--accent); background: rgba(30, 41, 59, 0.8); box-shadow: 0 0 0 4px rgba(6, 182, 212, 0.15); }
+        .form-input.error { border-color: #ef4444; }
 
         .submit-btn {
             width: 100%; padding: 16px; background: linear-gradient(135deg, #f59e0b, var(--primary));
             border: none; border-radius: 14px; color: white; font-family: 'Figtree', sans-serif;
-            font-size: 15px; font-weight: 700; cursor: pointer; position: relative;
-            overflow: hidden; transition: all 0.3s ease; letter-spacing: 0.3px;
-            animation: formAppear 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.5s both;
+            font-size: 15px; font-weight: 700; cursor: pointer; position: relative; overflow: hidden;
         }
-        .submit-btn::before {
-            content: ''; position: absolute; inset: 0;
-            background: linear-gradient(135deg, var(--accent), var(--primary-light));
-            opacity: 0; transition: opacity 0.3s ease;
-        }
-        .submit-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(245, 158, 11, 0.25), 0 0 40px rgba(79, 70, 229, 0.15); }
-        .submit-btn:hover::before { opacity: 1; }
-        .submit-btn:active { transform: translateY(0); }
-        .submit-btn .btn-text { position: relative; z-index: 1; display: flex; align-items: center; justify-content: center; gap: 8px; }
-        .submit-btn .btn-arrow { transition: transform 0.3s ease; }
-        .submit-btn:hover .btn-arrow { transform: translateX(4px); }
         .submit-btn.loading .btn-text { opacity: 0; }
         .submit-btn.loading::after {
             content: ''; position: absolute; width: 24px; height: 24px;
@@ -205,42 +163,22 @@
         }
         @keyframes spin { to { transform: rotate(360deg); } }
 
-        .back-link-section { text-align: center; margin-top: 24px; animation: formAppear 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.6s both; }
-        .back-link {
-            font-size: 14px; color: var(--text-secondary); text-decoration: none;
-            font-weight: 500; transition: all 0.2s ease; display: inline-flex;
-            align-items: center; gap: 6px;
-        }
-        .back-link svg { width: 16px; height: 16px; transition: transform 0.3s ease; }
+        .back-link-section { text-align: center; margin-top: 24px; }
+        .back-link { font-size: 14px; color: var(--text-secondary); text-decoration: none; display: inline-flex; align-items: center; gap: 6px; transition: 0.2s; }
         .back-link:hover { color: var(--accent); }
-        .back-link:hover svg { transform: translateX(-4px); }
 
-        .footer-badges {
-            display: flex; justify-content: center; gap: 24px; margin-top: 32px;
-            animation: footerAppear 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.8s both;
-        }
-        @keyframes footerAppear { 0% { opacity: 0; transform: translateY(10px); } 100% { opacity: 1; transform: translateY(0); } }
-        .badge { display: flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 600; color: var(--text-secondary); opacity: 0.7; }
+        .footer-badges { display: flex; justify-content: center; gap: 24px; margin-top: 32px; opacity: 0.6; }
+        .badge { display: flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 600; color: var(--text-secondary); }
         .badge svg { width: 14px; height: 14px; color: #f59e0b; }
-        .copyright { text-align: center; margin-top: 20px; font-size: 12px; color: rgba(148, 163, 184, 0.4); font-weight: 500; animation: footerAppear 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.9s both; }
+        .copyright { text-align: center; margin-top: 20px; font-size: 12px; color: rgba(148, 163, 184, 0.4); }
 
         .notification {
             position: fixed; top: 20px; left: 50%; transform: translateX(-50%) translateY(-100px);
-            padding: 14px 24px; border-radius: 12px; font-size: 14px; font-weight: 600;
-            z-index: 1000; transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+            padding: 14px 24px; border-radius: 12px; font-size: 14px; z-index: 1000; transition: 0.5s;
             backdrop-filter: blur(20px);
         }
         .notification.show { transform: translateX(-50%) translateY(0); }
-        .notification.success { background: rgba(16, 185, 129, 0.2); border: 1px solid rgba(16, 185, 129, 0.3); color: #34d399; }
         .notification.error { background: rgba(239, 68, 68, 0.2); border: 1px solid rgba(239, 68, 68, 0.3); color: #f87171; }
-
-        @media (max-width: 520px) {
-            .container { padding: 16px; }
-            .reset-card { padding: 36px 24px; border-radius: 20px; }
-            .logo-title { font-size: 24px; }
-            .lang-switcher { top: 12px; right: 12px; }
-            .lang-btn { padding: 6px 10px; font-size: 12px; }
-        }
     </style>
 </head>
 <body>
@@ -250,7 +188,7 @@
 <div class="notification" id="notification"></div>
 
 <div class="lang-switcher">
-    <button type="button" class="lang-btn active" data-lang="ru" onclick="switchLang('ru')">🇺 РУ</button>
+    <button type="button" class="lang-btn" data-lang="ru" onclick="switchLang('ru')">🇺 РУ</button>
     <button type="button" class="lang-btn" data-lang="tj" onclick="switchLang('tj')">🇹🇯 TJ</button>
     <button type="button" class="lang-btn" data-lang="en" onclick="switchLang('en')">🇬🇧 EN</button>
 </div>
@@ -264,14 +202,14 @@
         </div>
 
         <div class="info-banner">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/>
-            </svg>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
             <p data-i18n="infoBanner">Забыли пароль? Введите email и мы отправим ссылку для создания нового пароля.</p>
         </div>
 
         @if(session('status'))
-            <div class="session-status success">{{ session('status') }}</div>
+            <div style="padding: 12px; background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.2); color: #34d399; border-radius: 12px; margin-bottom: 20px; font-size: 13px; text-align: center;">
+                {{ session('status') }}
+            </div>
         @endif
 
         <form method="POST" action="{{ route('password.email') }}" id="resetForm" onsubmit="return handleReset(event)">
@@ -281,28 +219,22 @@
                 <div class="input-wrapper">
                     <input type="email" name="email" id="email" class="form-input @error('email') error @enderror"
                            value="{{ old('email') }}" data-i18n-placeholder="emailPlaceholder"
-                           placeholder="name@company.com" required autofocus autocomplete="username">
-                    <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>
-                    </svg>
+                           placeholder="name@company.com" required autofocus>
+                    <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
                 </div>
-                @error('email')<div class="error-message">{{ $message }}</div>@enderror
+                @error('email')<div style="color: #ef4444; font-size: 12px; margin-top: 5px;">{{ $message }}</div>@enderror
             </div>
+
             <button type="submit" class="submit-btn" id="submitBtn">
-                    <span class="btn-text">
-                        <span data-i18n="sendBtn">Отправить ссылку</span>
-                        <svg class="btn-arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                            <rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/><path d="M12 12h10"/>
-                        </svg>
-                    </span>
+                <span class="btn-text">
+                    <span data-i18n="sendBtn">Отправить ссылку</span>
+                </span>
             </button>
         </form>
 
         <div class="back-link-section">
             <a href="{{ route('login') }}" class="back-link">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M19 12H5"/><path d="m12 19-7-7 7-7"/>
-                </svg>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></svg>
                 <span data-i18n="backLink">Вернуться к входу</span>
             </a>
         </div>
@@ -317,6 +249,7 @@
 </div>
 
 <script>
+    // Частицы
     function createParticles() {
         const c = document.getElementById('particles');
         for (let i = 0; i < 30; i++) {
@@ -327,35 +260,63 @@
             p.style.width = p.style.height = (Math.random() * 3 + 1) + 'px';
             p.style.opacity = Math.random() * 0.5 + 0.1; c.appendChild(p);
         }
-    } createParticles();
+    }
+    createParticles();
 
+    // Переводы
     const translations = {
-        ru: { subtitle: 'Восстановление пароля', infoBanner: 'Забыли пароль? Введите email и мы отправим ссылку для создания нового пароля.', emailLabel: 'Электронная почта', emailPlaceholder: 'name@company.com', sendBtn: 'Отправить ссылку', backLink: 'Вернуться к входу', badgeSecurity: 'Защита', badgeSign: 'ЭЦП', rights: 'Все права защищены.', invalidEmail: 'Неверный формат email', emptyEmail: 'Введите email', sent: 'Ссылка отправлена! Проверьте почту.' },
-        tj: { subtitle: 'Барқарорсозии рамз', infoBanner: 'Рамзро фаромӯш кардед? Email-ро ворид кунед, мо пайванди барқарорсозиро мефиристем.', emailLabel: 'Почтаи электронӣ', emailPlaceholder: 'name@company.com', sendBtn: 'Фиристодани пайванд', backLink: 'Бозгашт ба вуруд', badgeSecurity: 'Ҳифз', badgeSign: 'ЭИИ', rights: 'Ҳуқуқҳо ҳифз шудаанд.', invalidEmail: 'Формати email нодуруст', emptyEmail: 'Email-ро ворид кунед', sent: 'Пайванд фиристода шуд! Почтаро санҷед.' },
-        en: { subtitle: 'Reset Password', infoBanner: 'Forgot your password? Enter your email and we\'ll send you a reset link.', emailLabel: 'Email Address', emailPlaceholder: 'name@company.com', sendBtn: 'Send Reset Link', backLink: 'Back to Sign In', badgeSecurity: 'Security', badgeSign: 'EDS', rights: 'All rights reserved.', invalidEmail: 'Invalid email format', emptyEmail: 'Please enter email', sent: 'Link sent! Check your inbox.' }
+        ru: { subtitle: 'Восстановление пароля', infoBanner: 'Забыли пароль? Введите email и мы отправим ссылку для создания нового пароля.', emailLabel: 'Электронная почта', emailPlaceholder: 'name@company.com', sendBtn: 'Отправить ссылку', backLink: 'Вернуться к входу', badgeSecurity: 'Защита', badgeSign: 'ЭЦП', rights: 'Все права защищены.', invalidEmail: 'Неверный формат email', emptyEmail: 'Введите email' },
+        tj: { subtitle: 'Барқарорсозии рамз', infoBanner: 'Рамзро фаромӯш кардед? Email-ро ворид кунед, мо пайванди барқарорсозиро мефиристем.', emailLabel: 'Почтаи электронӣ', emailPlaceholder: 'name@company.com', sendBtn: 'Фиристодани пайванд', backLink: 'Бозгашт ба вуруд', badgeSecurity: 'Ҳифз', badgeSign: 'ЭИИ', rights: 'Ҳуқуқҳо ҳифз шудаанд.', invalidEmail: 'Формати email нодуруст', emptyEmail: 'Email-ро ворид кунед' },
+        en: { subtitle: 'Reset Password', infoBanner: 'Forgot your password? Enter your email and we\'ll send you a reset link.', emailLabel: 'Email Address', emailPlaceholder: 'name@company.com', sendBtn: 'Send Reset Link', backLink: 'Back to Sign In', badgeSecurity: 'Security', badgeSign: 'EDS', rights: 'All rights reserved.', invalidEmail: 'Invalid email format', emptyEmail: 'Please enter email' }
     };
+
     let currentLang = 'ru';
+
     function switchLang(lang) {
         currentLang = lang;
+        localStorage.setItem('docSign_lang', lang); // Сохраняем выбор
+
         document.querySelectorAll('.lang-btn').forEach(b => b.classList.toggle('active', b.dataset.lang === lang));
         document.documentElement.lang = lang;
+
         const t = translations[lang];
         document.querySelectorAll('[data-i18n]').forEach(el => { if (t[el.dataset.i18n]) el.textContent = t[el.dataset.i18n]; });
         document.querySelectorAll('[data-i18n-placeholder]').forEach(el => { if (t[el.dataset.i18nPlaceholder]) el.placeholder = t[el.dataset.i18nPlaceholder]; });
     }
+
+    // Инициализация языка при загрузке
+    document.addEventListener('DOMContentLoaded', () => {
+        const savedLang = localStorage.getItem('docSign_lang') || 'ru';
+        switchLang(savedLang);
+    });
+
     function showNotification(msg, type) {
         const n = document.getElementById('notification'); n.textContent = msg; n.className = `notification ${type} show`;
         setTimeout(() => n.classList.remove('show'), 3000);
     }
+
     function handleReset(e) {
         const email = document.getElementById('email'), btn = document.getElementById('submitBtn'), t = translations[currentLang];
         email.classList.remove('error');
-        if (!email.value.trim()) { email.classList.add('error'); showNotification(t.emptyEmail, 'error'); return false; }
-        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.value)) { email.classList.add('error'); showNotification(t.invalidEmail, 'error'); return false; }
-        btn.classList.add('loading'); btn.disabled = true;
-        setTimeout(() => { btn.classList.remove('loading'); btn.disabled = false; showNotification(t.sent, 'success'); }, 2000);
-        return true;
+
+        if (!email.value.trim()) {
+            email.classList.add('error');
+            showNotification(t.emptyEmail, 'error');
+            e.preventDefault();
+            return false;
+        }
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.value)) {
+            email.classList.add('error');
+            showNotification(t.invalidEmail, 'error');
+            e.preventDefault();
+            return false;
+        }
+
+        btn.classList.add('loading');
+        btn.style.pointerEvents = 'none';
+        return true; // Позволяем Laravel отправить форму
     }
+
     document.getElementById('email')?.addEventListener('input', function() { this.classList.remove('error'); });
 </script>
 </body>

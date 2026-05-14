@@ -583,10 +583,58 @@
 
 <!-- Language switcher -->
 <div class="lang-switcher">
-    <button type="button" class="lang-btn active" data-lang="ru" onclick="switchLang('ru')">🇺 РУ</button>
-    <button type="button" class="lang-btn" data-lang="tj" onclick="switchLang('tj')">🇹🇯 TJ</button>
-    <button type="button" class="lang-btn" data-lang="en" onclick="switchLang('en')">🇬🇧 EN</button>
+    <select class="lang-select" onchange="switchLang(this.value)">
+        <option value="ru" selected>🇷🇺 RU</option>
+        <option value="tj">🇹🇯 TJ</option>
+        <option value="en">🇬🇧 EN</option>
+    </select>
 </div>
+
+
+<style>
+    .lang-switcher {
+        display: inline-block;
+        margin: 10px;
+        font-family: 'Segoe UI', Roboto, sans-serif;
+    }
+
+    .lang-select {
+        /* Основной стиль: темно-синий градиент */
+        background: linear-gradient(145deg, #1a2a6c, #101a44);
+        color: #ffffff;
+        padding: 10px 15px;
+        border-radius: 8px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        outline: none;
+        appearance: none; /* Убираем стандартную стрелку браузера */
+        -webkit-appearance: none;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    }
+
+    /* Эффект при наведении */
+    .lang-select:hover {
+        background: #1e3a8a;
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+        transform: translateY(-1px);
+    }
+
+    /* Фокус (когда нажали) */
+    .lang-select:focus {
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.4);
+    }
+
+    /* Стили для выпадающего списка (в некоторых браузерах) */
+    .lang-select option {
+        background-color: #101a44;
+        color: white;
+        padding: 10px;
+    }
+</style>
 
 <div class="container">
     <div class="register-card">

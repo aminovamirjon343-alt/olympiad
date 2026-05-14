@@ -91,7 +91,8 @@
                             </div>
                             <div>
                                 <label class="label">📎 <span data-i18n="fileLabel">Файл</span></label>
-                                <input type="file" name="file_path" id="file" class="hidden">
+                                {{-- ИСПРАВЛЕНО: Добавлен accept=".pdf,.docx", чтобы операционная система сразу предлагала только нужные форматы --}}
+                                <input type="file" name="file_path" id="file" accept=".pdf,.docx" class="hidden">
                                 <label for="file" class="flex items-center justify-between px-6 h-12 border border-slate-200 rounded-2xl bg-white cursor-pointer shadow-sm hover:border-black transition">
                                     <span id="file-name" class="text-[10px] font-[1000] uppercase tracking-[0.2em] text-black truncate pr-2" data-i18n="chooseFile">
                                         Выберите файл

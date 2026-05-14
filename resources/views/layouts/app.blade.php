@@ -24,7 +24,8 @@
 
     <aside class="w-64 bg-white dark:bg-dark-800 border-r dark:border-gray-700 hidden md:flex flex-col">
         <div class="p-6 flex items-center gap-3 border-b dark:border-gray-700">
-            <i class="bi bi-file-earmark-text-fill text-blue-600 text-2xl"></i>
+            <!-- Ваше фото 67.png -->
+            <img src="{{ asset('img/67.png') }}" alt="Logo" class="w-8 h-8 rounded-lg object-cover shadow-sm">
             <span class="font-bold text-lg tracking-tight">DocManager</span>
         </div>
 

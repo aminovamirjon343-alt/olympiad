@@ -553,11 +553,10 @@
         <div class="collapse ps-4 mt-1 space-y-1" id="documentsMenu">
             <div class="my-1 border-t border-slate-100 mx-2"></div>
 
-            {{-- Потоки --}}
             {{-- Все документы --}}
             <a href="{{ route('documents.index') }}" class="nav-link" onclick="showPage('documents', this)">
                 <i class="bi bi-file-earmark-text"></i>
-                <span class="tracking-widest uppercase text-[10px] font-bold">All Docs</span>
+                <span data-i18n="allDocs" class="tracking-widest uppercase text-[10px] font-bold">All Docs</span>
             </a>
 
             <div class="my-1 border-t border-slate-100 mx-2"></div>
@@ -565,12 +564,12 @@
             {{-- Потоки --}}
             <a href="{{ route('documents.index', ['type' => 'incoming']) }}" class="nav-link" onclick="showPage('incoming', this)">
                 <i class="bi bi-download"></i>
-                <span class="tracking-widest uppercase text-[10px]">Incoming</span>
+                <span data-i18n="incoming" class="tracking-widest uppercase text-[10px]">Incoming</span>
             </a>
 
             <a href="{{ route('documents.index', ['type' => 'outgoing']) }}" class="nav-link" onclick="showPage('outgoing', this)">
                 <i class="bi bi-upload"></i>
-                <span class="tracking-widest uppercase text-[10px]">Outgoing</span>
+                <span data-i18n="outgoing" class="tracking-widest uppercase text-[10px]">Outgoing</span>
             </a>
 
             <div class="my-1 border-t border-slate-100 mx-2"></div>
@@ -578,17 +577,17 @@
             {{-- Статусы --}}
             <a href="{{ route('documents.index', ['status' => 'waiting']) }}" class="nav-link text-orange-600" onclick="showPage('waiting', this)">
                 <i class="bi bi-clock-history"></i>
-                <span class="tracking-widest uppercase text-[10px]">Waiting</span>
+                <span data-i18n="waiting" class="tracking-widest uppercase text-[10px]">Waiting</span>
             </a>
 
             <a href="{{ route('documents.index', ['status' => 'signed']) }}" class="nav-link text-green-600" onclick="showPage('signed', this)">
                 <i class="bi bi-check-circle"></i>
-                <span class="tracking-widest uppercase text-[10px]">Signed</span>
+                <span data-i18n="signed" class="tracking-widest uppercase text-[10px]">Signed</span>
             </a>
 
             <a href="{{ route('documents.index', ['status' => 'draft']) }}" class="nav-link text-slate-400" onclick="showPage('drafts', this)">
                 <i class="bi bi-pencil-square"></i>
-                <span class="tracking-widest uppercase text-[10px]">Drafts</span>
+                <span data-i18n="drafts" class="tracking-widest uppercase text-[10px]">Drafts</span>
             </a>
         </div>
     </li>
@@ -934,15 +933,7 @@
                 <div class="d-flex justify-content-between align-items-center p-3 border-bottom">
                     <strong>Notifications</strong>
 
-                    <a href="{{ route('notifications.clearAll') }}"
-                       class="btn btn-sm btn-outline-danger"
-                       onclick="event.preventDefault(); document.getElementById('clear-all').submit();">
-                        Clear All
-                    </a>
 
-                    <form id="clear-all" method="POST" action="{{ route('notifications.clearAll') }}" style="display:none;">
-                        @csrf
-                    </form>
                 </div>
 
                 {{-- LIST --}}
@@ -1020,11 +1011,7 @@
                 </div>
 
                 {{-- FOOTER (ADMIN LINK) --}}
-                <a href="{{ route('notifications.index') }}"
-                   class="d-block text-center p-3"
-                   style="color:var(--primary);font-size:13px;font-weight:500;text-decoration:none;">
-                    View All
-                </a>
+
 
             </div>
         </div>
@@ -1054,7 +1041,8 @@
             <ul class="dropdown-menu dropdown-menu-end p-2 shadow border-0" style="border-radius:12px; min-width: 200px; background: var(--card-bg, #fff);">
                 <li>
                     <a class="dropdown-item rounded-2 py-2" href="{{ route('profile.show') }}">
-                        <i class="bi bi-person me-2"></i><span>Профиль</span>
+                        <i class="bi bi-person me-2"></i>
+                        <span data-i18n="profile">Профиль</span>
                     </a>
                 </li>
                 <li><hr class="dropdown-divider opacity-50"></li>
@@ -1062,7 +1050,8 @@
                     <form method="POST" action="{{ route('logout') }}" id="logout-form">
                         @csrf
                         <a class="dropdown-item text-danger rounded-2 py-2" href="#" onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
-                            <i class="bi bi-box-arrow-left me-2"></i><span>Выйти</span>
+                            <i class="bi bi-box-arrow-left me-2"></i>
+                            <span data-i18n="logout">Выйти</span>
                         </a>
                     </form>
                 </li>
@@ -1176,7 +1165,16 @@
             markRead: "Mark Read", clearAll: "Clear All", myProfile: "My Profile",
             searchHint: "Type to search across documents, users, and comments",
             sign: "Sign", profileSaved: "Profile saved successfully!", profileDeleted: "Account deleted!",
-            loggedOut: "Logged out successfully!"
+            loggedOut: "Logged out successfully!",
+            allDocs: "All Docs",
+            incoming: "Incoming",
+            outgoing: "Outgoing",
+            waiting: "Waiting",
+            signed: "Signed",
+            drafts: "Drafts",
+            analysis: "Analysis",
+            profile: "My Profile",
+            logout: "Logout",
         },
         ru: {
             systemName: "Система Документов", mainMenu: "Главное", dashboard: "Панель", documents: "Документы",
@@ -1207,7 +1205,16 @@
             markRead: "Отметить прочитанным", clearAll: "Очистить все", myProfile: "Мой профиль",
             searchHint: "Введите текст для поиска по документам, пользователям и комментариям",
             sign: "Подписать", profileSaved: "Профиль сохранён!", profileDeleted: "Аккаунт удалён!",
-            loggedOut: "Вы вышли из системы!"
+            loggedOut: "Вы вышли из системы!",
+            allDocs: "Все документы",
+            incoming: "Входящие",
+            outgoing: "Исходящие",
+            waiting: "Ожидают",
+            signed: "Подписаны",
+            drafts: "Черновики",
+            analysis: "Аналитика",
+            profile: "Профиль",
+            logout: "Выйти",
         },
         tj: {
             systemName: "Системаи Ҳуҷҷатҳо", mainMenu: "Асосӣ", dashboard: "Панел", documents: "Ҳуҷҷатҳо",
@@ -1238,7 +1245,16 @@
             markRead: "Хондашуда ишора кардан", clearAll: "Тоза кардани ҳама", myProfile: "Профили ман",
             searchHint: "Барои ҷустуҷӯ дар ҳуҷҷатҳо, корбарон ва шарҳҳо нависед",
             sign: "Имзо кардан", profileSaved: "Профил захира шуд!", profileDeleted: "Аккаунт нест карда шуд!",
-            loggedOut: "Шумо аз система баромадед!"
+            loggedOut: "Шумо аз система баромадед!",
+            allDocs: "Ҳамаи ҳуҷҷатҳо",
+            incoming: "Воридотӣ",
+            outgoing: "Содиротӣ",
+            waiting: "Дар интизорӣ",
+            signed: "Имзошуда",
+            drafts: "Пешнавсҳо",
+            analysis: "Таҳлил",
+            profile: "Профил",
+            logout: "Баромадан",
         },
 
 

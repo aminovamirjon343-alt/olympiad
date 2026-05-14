@@ -116,7 +116,8 @@
                             </div>
                             <div>
                                 <label class="label">📎 <span data-i18n="newFileOptional">Новый файл (Опционально)</span></label>
-                                <input type="file" name="file_path" id="file" class="hidden">
+                                {{-- ИСПРАВЛЕНО: Добавлен accept=".pdf,.docx" для фильтрации расширений файлов --}}
+                                <input type="file" name="file_path" id="file" accept=".pdf,.docx" class="hidden">
                                 <label for="file" class="flex items-center justify-between px-6 h-[54px] border border-slate-200 rounded-2xl bg-white cursor-pointer shadow-sm hover:border-black transition">
                                     <span id="file-name" class="text-[10px] font-[1000] uppercase tracking-[0.2em] text-black truncate max-w-[120px]">
                                         {{ $document->file_path ? basename($document->file_path) : 'Выбрать файл' }}

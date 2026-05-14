@@ -107,6 +107,7 @@ use App\Http\Controllers\DocumentWorkflowController;
 use App\Http\Controllers\DocumentVersionController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SearchController;
+use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\NotificationController;
 use Illuminate\Support\Facades\Route;
@@ -166,7 +167,7 @@ Route::middleware(['auth'])->group(function () {
 
     Route::get('/documents/{id}/pdf', [DocumentController::class, 'downloadPdf'])->name('documents.pdf');
     Route::post('/documents/{id}/sign', [DocumentController::class, 'sign'])->name('documents.sign');
-
+    Route::get('/documents/{id}/download-word', [DocumentController::class, 'downloadWord'])->name('documents.downloadWord');
     Route::resource('users', UserController::class);
     Route::resource('signatures', DocumentSignatureController::class);
     Route::resource('versions', DocumentVersionController::class);
@@ -215,18 +216,25 @@ Route::middleware(['auth'])->group(function () {
 });
 Route::middleware(['auth'])->group(function () {
 
-    // Страница настроек (теперь доступна по /setting)
+    // Страница настроек
     Route::get('/setting', function () {
         return view('settings.index');
     })->name('settings');
 
-    // Обновление подписи (используем твой ProfileController)
+    // Обновление подписи
     Route::post('/settings/signature', [ProfileController::class, 'updateSignature'])
         ->name('settings.signature.update');
 
-    // Добавь этот маршрут, чтобы форма уведомлений не выдавала ошибку 404
+    // Обновление общих настроек
     Route::post('/settings/general', [ProfileController::class, 'updateGeneral'])
         ->name('settings.general.update');
+
+    // 🔥 НОВЫЙ: Обновление настроек ЭДО
+    Route::put('/settings/edi', [SettingsController::class, 'update'])
+        ->name('settings.update');
+    Route::get('/', [App\Http\Controllers\AnalysisController::class, 'index'])->name('site.home');
+
+    Route::get('/site', [App\Http\Controllers\AnalysisController::class, 'index'])->name('site.main');
 });
 
 

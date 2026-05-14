@@ -674,10 +674,58 @@
 
 <!-- Language switcher -->
 <div class="lang-switcher">
-    <button type="button" class="lang-btn active" data-lang="ru" onclick="switchLang('ru')">🇺 РУ</button>
-    <button type="button" class="lang-btn" data-lang="tj" onclick="switchLang('tj')">🇹🇯 TJ</button>
-    <button type="button" class="lang-btn" data-lang="en" onclick="switchLang('en')">🇬🇧 EN</button>
+    <select class="lang-select" onchange="switchLang(this.value)">
+        <option value="ru" selected>🇷🇺 RU</option>
+        <option value="tj">🇹🇯 TJ</option>
+        <option value="en">🇬🇧 EN</option>
+    </select>
 </div>
+
+
+<style>
+    .lang-switcher {
+        display: inline-block;
+        margin: 10px;
+        font-family: 'Segoe UI', Roboto, sans-serif;
+    }
+
+    .lang-select {
+        /* Основной стиль: темно-синий градиент */
+        background: linear-gradient(145deg, #1a2a6c, #101a44);
+        color: #ffffff;
+        padding: 10px 15px;
+        border-radius: 8px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        outline: none;
+        appearance: none; /* Убираем стандартную стрелку браузера */
+        -webkit-appearance: none;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    }
+
+    /* Эффект при наведении */
+    .lang-select:hover {
+        background: #1e3a8a;
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+        transform: translateY(-1px);
+    }
+
+    /* Фокус (когда нажали) */
+    .lang-select:focus {
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.4);
+    }
+
+    /* Стили для выпадающего списка (в некоторых браузерах) */
+    .lang-select option {
+        background-color: #101a44;
+        color: white;
+        padding: 10px;
+    }
+</style>
 
 <div class="container">
     <div class="login-card">
@@ -800,24 +848,7 @@
     </div>
 
     <!-- Footer badges -->
-    <div class="footer-badges">
-        <div class="badge">
-            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z"/></svg>
-            <span>SSL</span>
-        </div>
-        <div class="badge">
-            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg>
-            <span data-i18n="badgeSecurity">Защита</span>
-        </div>
-        <div class="badge">
-            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17 3H7c-1.1 0-2 .9-2 2v16l7-3 7 3V5c0-1.1-.9-2-2-2z"/></svg>
-            <span data-i18n="badgeSign">ЭЦП</span>
-        </div>
-    </div>
 
-    <p class="copyright">
-        © {{ date('Y') }} DocSign Ecosystem. <span data-i18n="rights">Все права защищены.</span>
-    </p>
 </div>
 
 <script>
