@@ -73,16 +73,24 @@
                                 @php
                                     $status = strtolower($doc->status);
                                     $colors = match($status) {
-                                        'draft' => ['bg' => '#f1f5f9', 'text' => '#475569', 'border' => '#cbd5e1'],
-                                        'active', 'approved' => ['bg' => '#eff6ff', 'text' => '#1d4ed8', 'border' => '#93c5fd'],
-                                        'rejected' => ['bg' => '#fef2f2', 'text' => '#dc2626', 'border' => '#fecaca'],
-                                        default => ['bg' => '#fff7ed', 'text' => '#ea580c', 'border' => '#fdba74'],
+                                        'draft'      => ['bg' => '#f1f5f9', 'text' => '#475569', 'border' => '#cbd5e1'],
+                                        'active'     => ['bg' => '#eff6ff', 'text' => '#1d4ed8', 'border' => '#93c5fd'],
+                                        'approved', 'completed' => ['bg' => '#f0fdf4', 'text' => '#166534', 'border' => '#bbf7d0'], // Зеленый для готовых
+                                        'processing' => ['bg' => '#fefce8', 'text' => '#854d0e', 'border' => '#fef08a'], // Желтый для процесса
+                                        'rejected'   => ['bg' => '#fef2f2', 'text' => '#dc2626', 'border' => '#fecaca'],
+                                        default      => ['bg' => '#fff7ed', 'text' => '#ea580c', 'border' => '#fdba74'],
                                     };
                                 @endphp
 
                                 <span style="display: inline-flex; align-items: center; justify-content: center; background-color: {{ $colors['bg'] }}; color: {{ $colors['text'] }}; border: 1px solid {{ $colors['border'] }}; padding: 4px 12px; border-radius: 6px; font-weight: 800; font-size: 9px; text-transform: uppercase; letter-spacing: 0.5px; min-width: 90px;">
-                                    {{ $doc->status_label }}
-                                </span>
+        @if($status == 'processing')
+                                        В процессе
+                                    @elseif($status == 'completed')
+                                        Завершено
+                                    @else
+                                        {{ $doc->status_label }}
+                                    @endif
+    </span>
                             </td>
 
                             <td class="px-4 py-2 text-right">

@@ -290,73 +290,21 @@
             $extension = pathinfo($filePath, PATHINFO_EXTENSION);
             $isWord = in_array(strtolower($extension), ['doc', 'docx']);
             $isPdf = strtolower($extension) === 'pdf';
-            // Ссылка на Google Docs Viewer для предпросмотра Word
             $previewUrl = $isWord
                 ? 'https://docs.google.com/gview?url=' . asset('storage/' . $filePath) . '&embedded=true'
                 : asset('storage/' . $filePath);
         @endphp
 
         <style>
-            .view-sig-page {
-                --primary-color: #6366f1;
-                font-family: 'Inter', sans-serif !important;
-            }
-
-            .view-sig-page *, .view-sig-page label, .view-sig-page p, .view-sig-page span {
-                font-family: 'Inter', sans-serif !important;
-            }
-
-            .form-card {
-                background: #ffffff !important;
-                border-radius: 1.5rem;
-                border: 1px solid rgba(0, 0, 0, 0.08);
-                box-shadow: 0 4px 20px rgba(0,0,0,0.03);
-            }
-
-            .dark .form-card {
-                background: #1e293b !important;
-                border-color: rgba(255,255,255,0.1);
-            }
-
-            .label-micro {
-                font-size: 10px !important;
-                font-weight: 800 !important;
-                text-transform: uppercase !important;
-                letter-spacing: 0.1em !important;
-                color: #94a3b8;
-            }
-
-            .data-text {
-                font-size: 15px !important;
-                font-weight: 700;
-                color: #1e293b;
-            }
+            .view-sig-page { --primary-color: #6366f1; font-family: 'Inter', sans-serif !important; }
+            .form-card { background: #ffffff !important; border-radius: 1.5rem; border: 1px solid rgba(0, 0, 0, 0.08); box-shadow: 0 4px 20px rgba(0,0,0,0.03); }
+            .dark .form-card { background: #1e293b !important; border-color: rgba(255,255,255,0.1); }
+            .label-micro { font-size: 10px !important; font-weight: 800 !important; text-transform: uppercase !important; letter-spacing: 0.1em !important; color: #94a3b8; }
+            .data-text { font-size: 15px !important; font-weight: 700; color: #1e293b; }
             .dark .data-text { color: #f8fafc; }
-
-            .badge-status {
-                font-size: 10px;
-                font-weight: 900;
-                padding: 4px 12px;
-                border-radius: 8px;
-                text-transform: uppercase;
-            }
-
-            .preview-container {
-                height: 800px;
-                border-radius: 1.5rem;
-                overflow: hidden;
-                border: 1px solid rgba(0,0,0,0.1);
-                background: #f1f5f9;
-                position: relative;
-            }
-
-            .format-indicator {
-                padding: 4px 10px;
-                border-radius: 6px;
-                color: white;
-                font-size: 10px;
-                font-weight: 900;
-            }
+            .badge-status { font-size: 10px; font-weight: 900; padding: 4px 12px; border-radius: 8px; text-transform: uppercase; }
+            .preview-container { height: 800px; border-radius: 1.5rem; overflow: hidden; border: 1px solid rgba(0,0,0,0.1); background: #f1f5f9; position: relative; }
+            .format-indicator { padding: 4px 10px; border-radius: 6px; color: white; font-size: 10px; font-weight: 900; }
         </style>
 
         <div class="view-sig-page">
@@ -377,7 +325,6 @@
             </div>
 
             <div class="flex flex-col gap-6">
-
                 {{-- ИНФОРМАЦИОННАЯ КАРТОЧКА --}}
                 <div class="form-card p-8">
                     <div class="grid grid-cols-1 md:grid-cols-4 gap-12">
@@ -411,7 +358,7 @@
                             </div>
                         </div>
 
-                        {{-- Исполнитель и Подпись --}}
+                        {{-- Исполнитель и Кнопка --}}
                         <div class="flex flex-col justify-between">
                             <div class="text-right">
                                 <label class="label-micro block mb-1" data-i18n="executorLabel">Создал</label>
@@ -420,15 +367,17 @@
                             </div>
                             <div class="mt-4">
                                 @if(!$signature->signed_at)
-                                    <a href="{{ route('signatures.edit', $signature->id) }}"
+                                    {{-- Переход на страницу создания подписи с ID текущего документа --}}
+                                    <a href="{{ route('signatures.create', ['document_id' => $signature->document_id]) }}"
                                        class="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-3 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-all shadow-lg shadow-indigo-500/20">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
-                                        <span data-i18n="signBtn">Подписать сейчас</span>
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                        <span data-i18n="signBtn">Подписать и наложить QR</span>
                                     </a>
                                 @else
+                                    {{-- Вывод штампа подписи --}}
                                     <div class="bg-slate-50 dark:bg-slate-800/50 p-2 rounded-xl border border-dashed border-slate-200 dark:border-slate-700 flex flex-col items-center">
-                                        <img src="{{ $signature->signature }}" class="max-h-10 object-contain dark:invert opacity-80" alt="Sig">
-                                        <span class="text-[8px] font-bold text-slate-400 mt-1 uppercase">Digital Signature Verified</span>
+                                        <img src="{{ asset('storage/' . $signature->signature) }}" class="max-h-12 object-contain" alt="QR-Stamp">
+                                        <span class="text-[8px] font-bold text-emerald-500 mt-1 uppercase tracking-tighter">Verified Digital Signature</span>
                                     </div>
                                 @endif
                             </div>
@@ -441,19 +390,14 @@
                     <div class="flex items-center justify-between mb-6">
                         <div class="flex items-center gap-3">
                             <span class="label-micro" data-i18n="previewLabel">Предпросмотр</span>
-                            @if($isWord)
-                                <span class="text-[9px] bg-blue-100 text-blue-700 px-2 py-0.5 rounded font-bold uppercase">Online Viewer</span>
-                            @endif
+                            @if($isWord) <span class="text-[9px] bg-blue-100 text-blue-700 px-2 py-0.5 rounded font-bold uppercase">Cloud Viewer</span> @endif
                         </div>
-
                         <div class="flex gap-3">
                             @if($filePath)
                                 <button onclick="toggleFullScreen()" class="bg-slate-100 text-slate-600 p-2 rounded-lg hover:bg-indigo-600 hover:text-white transition-all">
                                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg>
                                 </button>
-
-                                <a href="{{ asset('storage/' . $filePath) }}" download
-                                   class="bg-slate-900 text-white px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-indigo-600 transition-all flex items-center gap-2">
+                                <a href="{{ asset('storage/' . $filePath) }}" download class="bg-slate-900 text-white px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-indigo-600 transition-all flex items-center gap-2">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
                                     <span data-i18n="downloadBtn">Скачать</span>
                                 </a>
@@ -463,18 +407,9 @@
 
                     <div class="preview-container" id="previewBox">
                         @if($filePath)
-                            @if($isPdf)
-                                <iframe src="{{ $previewUrl }}#toolbar=0" class="w-full h-full" frameborder="0"></iframe>
-                            @elseif($isWord)
-                                <iframe src="{{ $previewUrl }}" class="w-full h-full" frameborder="0"></iframe>
-                            @else
-                                <div class="flex flex-col items-center justify-center h-full text-slate-400">
-                                    <svg class="w-16 h-16 mb-4 opacity-20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
-                                    <p class="label-micro" data-i18n="noPreview">Предпросмотр недоступен для этого формата</p>
-                                </div>
-                            @endif
+                            <iframe src="{{ $previewUrl }}{{ $isPdf ? '#toolbar=0' : '' }}" class="w-full h-full" frameborder="0"></iframe>
                         @else
-                            <div class="flex items-center justify-center h-full text-slate-300 label-micro" data-i18n="noFile">Файл не найден</div>
+                            <div class="flex items-center justify-center h-full text-slate-300 label-micro">Файл не загружен</div>
                         @endif
                     </div>
                 </div>
@@ -486,42 +421,20 @@
         document.addEventListener('DOMContentLoaded', function () {
             const translations = {
                 ru: {
-                    backToList: "Реестр документов",
-                    cardTitle: "Карточка документа",
-                    statusLabel: "Статус",
-                    statusSigned: "Подписано",
-                    statusPending: "Ожидание",
-                    idLabel: "ID Номер",
-                    descLabel: "Краткое содержание",
-                    nameLabel: "Название документа",
-                    executorLabel: "Создал",
-                    signBtn: "Подписать сейчас",
-                    previewLabel: "Предпросмотр",
-                    downloadBtn: "Скачать",
-                    noFile: "Файл не найден",
-                    noPreview: "Предпросмотр недоступен"
+                    backToList: "Реестр документов", cardTitle: "Карточка документа", statusLabel: "Статус",
+                    statusSigned: "Подписано", statusPending: "Ожидание", idLabel: "ID Номер",
+                    descLabel: "Краткое содержание", nameLabel: "Название документа", executorLabel: "Создал",
+                    signBtn: "Подписать и наложить QR", previewLabel: "Предпросмотр", downloadBtn: "Скачать"
                 },
                 tj: {
-                    backToList: "Феҳристи ҳуҷҷатҳо",
-                    cardTitle: "Корти ҳуҷҷат",
-                    statusLabel: "Статус",
-                    statusSigned: "Имзо шуд",
-                    statusPending: "Интизорӣ",
-                    idLabel: "ID Рақам",
-                    descLabel: "Мазмуни кӯтоҳ",
-                    nameLabel: "Номи ҳуҷҷат",
-                    executorLabel: "Сохт",
-                    signBtn: "Имзо кардан",
-                    previewLabel: "Пешнамоиш",
-                    downloadBtn: "Боргирӣ",
-                    noFile: "Файл ёфт нашуд",
-                    noPreview: "Пешнамоиш дастнорас аст"
+                    backToList: "Феҳристи ҳуҷҷатҳо", cardTitle: "Корти ҳуҷҷат", statusLabel: "Статус",
+                    statusSigned: "Имзо шуд", statusPending: "Интизорӣ", idLabel: "ID Рақам",
+                    descLabel: "Мазмуни кӯтоҳ", nameLabel: "Номи ҳуҷҷат", executorLabel: "Сохт",
+                    signBtn: "Имзо ва QR", previewLabel: "Пешнамоиш", downloadBtn: "Боргирӣ"
                 }
             };
-
             const lang = localStorage.getItem('app-lang') || 'ru';
             const t = translations[lang];
-
             document.querySelectorAll('[data-i18n]').forEach(el => {
                 const key = el.getAttribute('data-i18n');
                 if (t[key]) el.textContent = t[key];
@@ -530,11 +443,8 @@
 
         function toggleFullScreen() {
             const el = document.getElementById('previewBox');
-            if (!document.fullscreenElement) {
-                el.requestFullscreen().catch(err => alert("Error: " + err.message));
-            } else {
-                document.exitFullscreen();
-            }
+            if (!document.fullscreenElement) { el.requestFullscreen(); }
+            else { document.exitFullscreen(); }
         }
     </script>
 @endsection

@@ -1,3 +1,5 @@
+
+
 @extends('layouts.admin')
 
 @section('content')
@@ -142,17 +144,6 @@
             </div>
             <div>
                 {{-- ACTIVITY GRID --}}
-                @php
-                    use Carbon\Carbon;
-                    $year = $year ?? now()->year;
-                    $firstDayOfYear = Carbon::create($year, 1, 1);
-                    $startDate = $firstDayOfYear->copy()->startOfWeek(Carbon::MONDAY);
-                    $lastDayOfYear = Carbon::create($year, 12, 31);
-                    $endDate = $lastDayOfYear->copy()->endOfWeek(Carbon::SUNDAY);
-                    $totalDays = $startDate->diffInDays($endDate) + 1;
-                    $weeksCount = ceil($totalDays / 7);
-                @endphp
-
                 <div class="activity-card bg-white p-6 rounded-xl border border-slate-200 shadow-sm mt-8 mx-auto max-w-fit force-black-text">
                     <style>
                         .gh-wrapper { overflow-x: auto; scrollbar-width: none; position: relative; }
@@ -170,7 +161,7 @@
                     </style>
 
                     <div class="mb-4 font-bold text-sm">
-                        {{ $activityData ? array_sum($activityData) : 0 }} <span data-i18n="activitySummary">contributions in</span> {{ $year }}
+                        {{ array_sum($activityData) }} <span data-i18n="activitySummary">contributions in</span> {{ $year }}
                     </div>
 
                     <div class="gh-wrapper">
@@ -185,8 +176,8 @@
                                     <div style="grid-column: {{ $w + 1 }}; position: relative;">
                                         @if($month != $lastMonth && $dateInWeek->year == $year)
                                             <span style="position: absolute; left: 0; bottom: 0; white-space: nowrap;">
-                                            {{ $dateInWeek->translatedFormat('M') }}
-                                        </span>
+                                    {{ $dateInWeek->translatedFormat('M') }}
+                                </span>
                                             @php $lastMonth = $month; @endphp
                                         @endif
                                     </div>
@@ -195,11 +186,11 @@
 
                             <div class="gh-days select-none">
                                 <div class="gh-day-label" data-i18n="dayMon">Пн</div>
-                                <div class="gh-day-label" data-i18n="dayTue">Вт</div>
+                                <div class="gh-day-label"></div>
                                 <div class="gh-day-label" data-i18n="dayWed">Ср</div>
-                                <div class="gh-day-label" data-i18n="dayThu">Чт</div>
+                                <div class="gh-day-label"></div>
                                 <div class="gh-day-label" data-i18n="dayFri">Пт</div>
-                                <div class="gh-day-label" data-i18n="daySat">Сб</div>
+                                <div class="gh-day-label"></div>
                                 <div class="gh-day-label" data-i18n="daySun">Вс</div>
                             </div>
 
@@ -208,10 +199,16 @@
                                     @php
                                         $day = $startDate->copy()->addDays($i);
                                         $isCurrentYear = $day->year == $year;
-                                        $key = $day->format('Y-m-d');
+                                        $key = $day->toDateString(); // Гарантирует формат '2026-05-15'
                                         $count = $activityData[$key] ?? 0;
-                                        $level = $count > 10 ? 4 : ($count > 5 ? 3 : ($count > 2 ? 2 : ($count > 0 ? 1 : 0)));
-                                        $tooltipText = ($count > 0 ? $count : 'No') . ' contributions on ' . $day->translatedFormat('F j, Y');
+
+                                        $level = 0;
+                                        if ($count > 0) $level = 1;
+                                        if ($count > 2) $level = 2;
+                                        if ($count > 5) $level = 3;
+                                        if ($count > 10) $level = 4;
+
+                                        $tooltipText = ($count > 0 ? $count : 'No') . ' contributions on ' . $day->translatedFormat('j F, Y');
                                     @endphp
                                     @if($isCurrentYear)
                                         <div class="sq {{ $level ? 'l'.$level : '' }}" data-tippy-content="{{ $tooltipText }}"></div>

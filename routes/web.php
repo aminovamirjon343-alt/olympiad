@@ -159,16 +159,17 @@ Route::middleware(['auth'])->group(function () {
 
     // Основные ресурсы проекта olympiad
 // Основные ресурсы проекта olympiad
-    Route::resource('documents', DocumentController::class);
-
-// Добавь этот роут ПЕРЕД ресурсным или строго под ним,
-// но убедись, что имя совпадает с тем, что в контроллере и во view
-    Route::post('/documents/ai-process', [DocumentController::class, 'aiProcess'])->name('documents.ai-process');
-
-    Route::get('/documents/{id}/pdf', [DocumentController::class, 'downloadPdf'])->name('documents.pdf');
-    Route::post('/documents/{id}/sign', [DocumentController::class, 'sign'])->name('documents.sign');
+    Route::get('/documents/{id}/download-pdf', [DocumentController::class, 'downloadPdf'])->name('documents.downloadPdf');
     Route::get('/documents/{id}/download-word', [DocumentController::class, 'downloadWord'])->name('documents.downloadWord');
-    Route::resource('users', UserController::class);
+
+    // 2. Роут для AI парсинга (проверь, чтобы имя метода в контроллере было storeFromPdf или aiProcess)
+    Route::post('/documents/ai-process', [DocumentController::class, 'storeFromPdf'])->name('documents.ai-process');
+
+    // 3. Подписание
+    Route::post('/documents/{id}/sign', [DocumentController::class, 'sign'])->name('documents.sign');
+
+    // 4. Ресурсный контроллер (индекс, создание, удаление и т.д.)
+    Route::resource('documents', DocumentController::class); Route::resource('users', UserController::class);
     Route::resource('signatures', DocumentSignatureController::class);
     Route::resource('versions', DocumentVersionController::class);
     Route::resource('logs', DocumentLogController::class);

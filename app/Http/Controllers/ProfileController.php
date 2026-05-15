@@ -21,23 +21,31 @@ class ProfileController extends Controller
     public function show(Request $request): View
     {
         $user = $request->user();
+        $year = (int) $request->get('year', now()->year);
 
-        $startDate = now()
-            ->startOfWeek(Carbon::MONDAY)
-            ->subWeeks(52);
+        // 1. Настройка дат и расчет недель для сетки
+        $firstDayOfYear = Carbon::create($year, 1, 1);
+        $startDate = $firstDayOfYear->copy()->startOfWeek(Carbon::MONDAY);
+        $endDate = Carbon::create($year, 12, 31)->endOfWeek(Carbon::SUNDAY);
 
-        $activityData = \App\Models\Document::where('created_by', $user->id)
-            ->where('created_at', '>=', $startDate)
-            ->selectRaw('DATE(created_at) as date_only, COUNT(*) as count')
-            ->groupBy('date_only')
-            ->pluck('count', 'date_only')
+        // Вычисляем количество недель для сетки
+        $totalDays = $startDate->diffInDays($endDate) + 1;
+        $weeksCount = (int) ceil($totalDays / 7);
+
+        // 2. Получение активности (используем правильную колонку created_by)
+        $activityData = Document::where('created_by', $user->id)
+            ->whereYear('created_at', $year)
+            ->selectRaw('DATE(created_at) as date, COUNT(*) as count')
+            ->groupBy('date')
+            ->pluck('count', 'date')
             ->toArray();
 
         return view('profile.show', compact(
             'user',
             'activityData',
             'startDate',
-
+            'year',
+            'weeksCount'
         ));
     }
     public function updateGeneral(Request $request)

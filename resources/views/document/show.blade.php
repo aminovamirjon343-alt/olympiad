@@ -69,6 +69,7 @@
 
                         <div class="bg-white rounded-lg border border-slate-200 p-4 flex items-center justify-between group hover:border-blue-400 transition-all shadow-sm">
                             <div class="flex items-center gap-4">
+                                {{-- ИСПРАВЛЕНО: Динамическая иконка в зависимости от формата --}}
                                 <div class="w-10 h-10 rounded-lg flex items-center justify-center border transition-colors {{ $isWord ? 'bg-blue-50 text-blue-600 border-blue-100 group-hover:bg-blue-600' : 'bg-red-50 text-red-600 border-red-100 group-hover:bg-red-600' }} group-hover:text-white">
                                     @if($isWord)
                                         <i class="bi bi-file-earmark-word-fill text-xl"></i>
@@ -81,6 +82,7 @@
                                         {{ basename($document->file_path) }}
                                     </p>
                                     <div class="flex items-center gap-2">
+                                        {{-- ИСПРАВЛЕНО: Динамический текст формата --}}
                                         <span class="text-[9px] font-bold {{ $isWord ? 'text-blue-600' : 'text-red-600' }} uppercase">
                                             {{ $isWord ? 'WORD Asset' : 'PDF Asset' }}
                                         </span>
@@ -90,6 +92,7 @@
                                 </div>
                             </div>
 
+                            {{-- ИСПРАВЛЕНО: Для Word убран target="_blank", так как он сразу скачивается --}}
                             <a href="{{ asset('storage/' . $document->file_path) }}" @if(!$isWord) target="_blank" @endif
                             class="flex items-center gap-2 px-3 py-2 rounded-md bg-slate-100 text-black hover:bg-blue-600 hover:text-white transition-all border border-slate-200 shadow-sm">
                                 <span class="text-[10px] font-black uppercase tracking-tighter" data-i18n="viewBtn">Смотреть</span>
@@ -98,6 +101,7 @@
                         </div>
 
                         {{-- КНОПКА СКАЧИВАНИЯ --}}
+                        {{-- ИСПРАВЛЕНО: Динамический data-i18n и текст в зависимости от формата --}}
                         <a href="{{ asset('storage/' . $document->file_path) }}"
                            download="{{ $document->title }}.{{ $extension }}"
                            class="h-10 px-4 {{ $isWord ? 'bg-blue-600' : 'bg-green-600' }} text-white rounded-xl font-semibold uppercase tracking-widest text-xs flex items-center justify-center hover:scale-[1.01] active:scale-95 transition shadow-lg">
@@ -180,16 +184,29 @@
                             <div class="flex items-center justify-between">
                                 <span class="text-gray-500 uppercase text-sm font-medium" data-i18n="signature">Signature</span>
                                 @php
-                                    $signatureEntry = $document->signatures?->first();
-                                    $isSigned = $signatureEntry && !empty($signatureEntry->signature);
-                                @endphp {{-- ИСПРАВЛЕНО ЗДЕСЬ --}}
+                                    // Проверяем статус самого документа.
+                                    // Если статус 'completed' или 'approved', значит все подписи собраны.
+                                    $status = strtolower($document->status);
+                                    $isFullySigned = in_array($status, ['completed', 'approved']);
 
-                                @if($isSigned)
+                                    // Или если нужно проверить наличие хотя бы одной подписи в этом документе:
+                                    $hasAnySignature = $document->signatures->count() > 0;
+                                @endphp
+
+                                @if($isFullySigned)
+                                    {{-- Полностью подписан всеми участниками --}}
                                     <div class="px-2 py-1 rounded border border-green-600 text-green-600 flex items-center gap-1 bg-green-50">
-                                        <i class="bi bi-check-circle-fill"></i>
+                                        <i class="bi bi-check-all"></i>
                                         <span class="font-bold uppercase text-[10px]" data-i18n="signed">Signed</span>
                                     </div>
+                                @elseif($hasAnySignature)
+                                    {{-- Кто-то уже подписал, но процесс еще идет --}}
+                                    <div class="px-2 py-1 rounded border border-amber-600 text-amber-600 flex items-center gap-1 bg-amber-50">
+                                        <i class="bi bi-pen-fill"></i>
+                                        <span class="font-bold uppercase text-[10px]">Processing</span>
+                                    </div>
                                 @else
+                                    {{-- Еще никто не подписал --}}
                                     <div class="px-2 py-1 rounded border border-red-600 text-red-600 flex items-center gap-1 bg-red-50">
                                         <i class="bi bi-clock"></i>
                                         <span class="font-bold uppercase text-[10px]" data-i18n="notSigned">Not Signed</span>
@@ -229,31 +246,12 @@
                         </div>
                     </div>
 
-                    {{-- БЛОК: Защищенный штамп верификации с QR-кодом --}}
-                    <div class="bg-white/80 backdrop-blur-xl border border-slate-200 p-5 rounded-2xl shadow-xl flex items-center justify-between gap-4 transition-all hover:border-blue-300">
-                        <div class="flex-1 min-w-0">
-                            <span class="text-[9px] font-black text-blue-600 uppercase tracking-widest block mb-1" data-i18n="qrProtection">
-                                Защита документа
-                            </span>
-                            <h4 class="text-sm font-bold text-black mb-1" data-i18n="qrTitle">
-                                Штамп проверки ЭДО
-                            </h4>
-                            <p class="text-[11px] text-slate-500 leading-snug" data-i18n="qrDesc">
-                                Отсканируйте код для проверки оригинальности и цепочки подписей.
-                            </p>
-                        </div>
-                        <div class="p-2 bg-white rounded-xl border border-slate-100 shadow-sm flex items-center justify-center shrink-0">
-                            {!! $qrCodeSvg !!}
-                        </div>
-                    </div>
-
                     <div class="p-4 bg-black rounded-lg flex items-center gap-3">
                         <div class="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse"></div>
                         <span class="text-[9px] font-medium text-white uppercase tracking-[0.2em]" data-i18n="liveDoc">Live Document</span>
                     </div>
                 </div>
-
-            </div> {{-- Конец сетки --}}
+            </div>
         </div>
     </div>
 
@@ -269,9 +267,7 @@
                     signed: "Signed", notSigned: "Not Signed", status: "Status",
                     owner: "Owner", deadline: "Deadline", createdAt: "Created At",
                     lastUpdate: "Last Update", liveDoc: "Live Document",
-                    draft: "Draft", active: "Active", approved: "Approved",
-                    qrProtection: "Document Security", qrTitle: "EDO Verification Stamp",
-                    qrDesc: "Scan the QR code to verify validity and signature tracking history."
+                    draft: "Draft", active: "Active", approved: "Approved"
                 },
                 ru: {
                     back: "Назад", edit: "Редактировать", delete: "Удалить",
@@ -281,9 +277,7 @@
                     signed: "Подписан", notSigned: "Не подписан", status: "Статус",
                     owner: "Владелец", deadline: "Срок", createdAt: "Создан",
                     lastUpdate: "Обновлено", liveDoc: "Живой документ",
-                    draft: "Черновик", active: "Активен", approved: "Утвержден",
-                    qrProtection: "Защита документа", qrTitle: "Штамп проверки ЭДО",
-                    qrDesc: "Отсканируйте код для проверки оригинальности и цепочки подписей."
+                    draft: "Черновик", active: "Активен", approved: "Утвержден"
                 },
                 tj: {
                     back: "Қафо", edit: "Вироиш", delete: "Ҳазф кардан",
@@ -293,9 +287,7 @@
                     signed: "Имзошуда", notSigned: "Имзо нашудааст", status: "Ҳолат",
                     owner: "Соҳиб", deadline: "Мӯҳлат", createdAt: "Санаи эҷод",
                     lastUpdate: "Навсозӣ", liveDoc: "Ҳуҷҷати фаъол",
-                    draft: "Пешнавис", active: "Фаъол", approved: "Тасдиқшуда",
-                    qrProtection: "Муҳофизати ҳуҷҷат", qrTitle: "Муҳри тасдиқи ЭДО",
-                    qrDesc: "Кодро сканер кунед, то ҳақиқӣ будан ва таърихи имзоҳоро тафтиш кунед."
+                    draft: "Пешнавис", active: "Фаъол", approved: "Тасдиқшуда"
                 }
             };
 
@@ -334,7 +326,7 @@
         .doc-page-v2 { background-color: #f8fafc !important; }
         .doc-page-v2 .bg-white { background-color: #ffffff !important; border: 1px solid #e2e8f0 !important; }
         .content-highlight { background-color: #fef08a !important; color: #000 !important; padding: 6px 10px; border-radius: 6px; display: inline-block; }
-        .doc-page-v2 h1, .doc-page-v2 h2, .doc-page-v2 h3, .doc-page-v2 h4, .doc-page-v2 p, .doc-page-v2 span, .doc-page-v2 div, .doc-page-v2 label { color: #000 !important; }
+        .doc-page-v2 h1, .doc-page-v2 h2, .doc-page-v2 h3, .doc-page-v2 p, .doc-page-v2 span, .doc-page-v2 div, .doc-page-v2 label { color: #000 !important; }
         .font-inter { font-family: 'Inter', sans-serif; }
     </style>
 @endpush

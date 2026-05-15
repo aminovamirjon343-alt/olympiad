@@ -185,70 +185,56 @@ class DocumentController extends Controller
 
         if (!$signatureData) return back()->with('error', 'Подпись не найдена!');
 
-        $sigImage = str_replace('data:image/png;base64,', '', $signatureData);
-        $sigImage = str_replace(' ', '+', $sigImage);
-        $sigFileName = 'temp/sig_' . time() . '.png';
-        Storage::disk('public')->put($sigFileName, base64_decode($sigImage));
-        $fullPathToSig = storage_path('app/public/' . $sigFileName);
-
-        // Пути для временного и постоянного хранения QR-кода
-        $qrFileName = 'temp/qr_' . time() . '.png';
-        $fullPathToQr = storage_path('app/public/' . $qrFileName);
+        // 1. Подготовка изображений
+        $sigImage = base64_decode(preg_replace('#^data:image/\w+;base64,#i', '', $signatureData));
+        $sigPath = 'temp/sig_' . uniqid() . '.png';
+        Storage::disk('public')->put($sigPath, $sigImage);
+        $fullSigPath = storage_path('app/public/' . $sigPath);
 
         $fullPathToFile = storage_path('app/public/' . $document->file_path);
 
         try {
-            $extension = strtolower(pathinfo($fullPathToFile, PATHINFO_EXTENSION));
-
-            if ($extension === 'docx') {
+            if (pathinfo($fullPathToFile, PATHINFO_EXTENSION) === 'docx') {
+                // Для Word просто сохраняем в БД (визуально в Word вшить сложнее без спец библиотек)
                 DocumentSignature::updateOrCreate(
                     ['document_id' => $id, 'user_id' => Auth::id()],
                     ['signature' => $signatureData, 'signed_at' => now()]
                 );
-
-                if (file_exists($fullPathToSig)) unlink($fullPathToSig);
-                return redirect()->route('documents.show', $id)->with('success', 'Документ Word успешно подписан!');
+                return redirect()->route('documents.show', $id)->with('success', 'Word подписан!');
             }
 
-            // Генерируем PNG QR-код для жесткого вшивания в существующий PDF файл через FPDI
-            $verifyUrl = route('documents.show', $document->id);
-            $qrCodePng = QrCode::format('png')
-                ->size(100) // Размер QR на странице PDF
-                ->margin(1)
-                ->generate($verifyUrl);
+            // 2. Генерация QR с метаданными
+            $qrPayload = "ID: {$document->id} | Auth: " . Auth::user()->name . " | Date: " . now()->format('d.m.Y');
+            $qrCodePng = QrCode::format('png')->size(200)->margin(1)->generate($qrPayload);
+            $qrPath = 'temp/qr_' . uniqid() . '.png';
+            Storage::disk('public')->put($qrPath, $qrCodePng);
+            $fullQrPath = storage_path('app/public/' . $qrPath);
 
-            Storage::disk('public')->put($qrFileName, $qrCodePng);
-
-            // Если это PDF — вшиваем изображение визуальной подписи и QR-кода на последнюю страницу
+            // 3. Работа с PDF
             $pdf = new Fpdi();
-            $pdf->SetAutoPageBreak(false);
             $pageCount = $pdf->setSourceFile($fullPathToFile);
 
             for ($pageNo = 1; $pageNo <= $pageCount; $pageNo++) {
                 $templateId = $pdf->importPage($pageNo);
                 $size = $pdf->getTemplateSize($templateId);
-
                 $pdf->AddPage($size['orientation'], [$size['width'], $size['height']]);
                 $pdf->useTemplate($templateId);
 
-                // На последней странице размещаем штампы
                 if ($pageNo == $pageCount) {
-                    // Координаты для штампа подписи (справа внизу)
-                    $sigX = $size['width'] - 75;
-                    $sigY = $size['height'] - 45;
-                    $pdf->Image($fullPathToSig, $sigX, $sigY, 45, 20, 'PNG');
+                    // Прямоугольник-подложка (белый фон под штампы для читаемости)
+                    $pdf->SetFillColor(255, 255, 255);
 
-                    $pdf->SetFont('helvetica', 'I', 7);
-                    $pdf->SetTextColor(80, 80, 80);
-                    $pdf->Text($sigX + 2, $sigY + 22, 'Signed: ' . now()->format('d.m.Y H:i'));
+                    // Штамп подписи (Справа)
+                    $pdf->Rect($size['width'] - 70, $size['height'] - 50, 60, 30, 'F');
+                    $pdf->Image($fullSigPath, $size['width'] - 65, $size['height'] - 45, 50, 20, 'PNG');
 
-                    // Координаты для QR-кода (слева внизу, симметрично подписи)
-                    $qrX = 20;
-                    $qrY = $size['height'] - 45;
-                    $pdf->Image($fullPathToQr, $qrX, $qrY, 25, 25, 'PNG');
+                    // QR-код (Слева)
+                    $pdf->Rect(15, $size['height'] - 50, 35, 40, 'F');
+                    $pdf->Image($fullQrPath, 20, $size['height'] - 45, 25, 25, 'PNG');
 
                     $pdf->SetFont('helvetica', 'B', 6);
-                    $pdf->Text($qrX, $qrY + 27, 'Проверить подлинность');
+                    $pdf->SetTextColor(50, 50, 50);
+                    $pdf->Text(20, $size['height'] - 15, 'VERIFIED BY DOCSIGN');
                 }
             }
 
@@ -260,12 +246,20 @@ class DocumentController extends Controller
                 ['signature' => $signatureData, 'signed_at' => now()]
             );
 
+            // Логирование действия (у тебя есть модель DocumentLog)
+            DocumentLog::create([
+                'document_id' => $id,
+                'user_id' => Auth::id(),
+                'action' => 'signed',
+                'description' => 'Документ подписан и защищен QR-кодом'
+            ]);
+
         } catch (\Exception $e) {
             return back()->with('error', 'Ошибка: ' . $e->getMessage());
         } finally {
-            // Обязательно чистим за собой временные файлы изображений
-            if (file_exists($fullPathToSig)) unlink($fullPathToSig);
-            if (file_exists($fullPathToQr)) unlink($fullPathToQr);
+            // Удаляем временные файлы
+            if(isset($fullSigPath)) @unlink($fullSigPath);
+            if(isset($fullQrPath)) @unlink($fullQrQrPath);
         }
 
         return redirect()->route('documents.show', $id)->with('success', 'Документ успешно подписан!');
