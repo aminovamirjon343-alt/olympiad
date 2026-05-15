@@ -303,9 +303,24 @@
 @section('content')
     <div class="container mx-auto px-4 py-6 min-h-screen">
         @php
-            // Определяем расширение файла для логики отображения
             $extension = pathinfo($signature->document->file_path, PATHINFO_EXTENSION);
             $isWord = in_array(strtolower($extension), ['doc', 'docx']);
+
+            // Собираем текст для QR, идентичный логике страницы создания
+            $doc = $signature->document;
+            $senderName = $doc->sender->name ?? 'Система';
+            $signerName = auth()->user()->name ?? 'Пользователь';
+            $dateSent = $doc->created_at ? $doc->created_at->format('d.m.Y H:i') : date('d.m.Y H:i');
+            $dateSigned = date('d.m.Y H:i');
+
+            $qrText = "Документ: {$doc->title}\n" .
+                      "От кого: {$senderName}\n" .
+                      "Кто подписал: {$signerName}\n" .
+                      "Дата отправки: {$dateSent}\n" .
+                      "Дата подписания: {$dateSigned}";
+
+            // URL для рендеринга картинки на фронтенде
+            $qrUrl = "https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=" . urlencode($qrText);
         @endphp
 
         <style>
@@ -332,10 +347,11 @@
             .dark .form-card { background: #1e293b !important; border-color: rgba(255,255,255,0.12); }
 
             .pad-container {
-                background-color: rgba(255,255,255,0.04) !important;
+                background-color: rgba(0,0,0,0.02) !important;
                 border: 2px dashed {{ $isWord ? '#2b579a' : '#6366f1' }};
                 transition: all .3s ease;
             }
+            .dark .pad-container { background-color: rgba(255,255,255,0.02) !important; }
 
             .btn-update {
                 background: {{ $isWord ? '#2b579a' : '#6366f1' }};
@@ -356,8 +372,6 @@
                 border-radius: 1.25rem;
                 padding: 1.4rem;
             }
-
-            .dark .old-signature { filter: invert(1) brightness(2); }
 
             .format-badge {
                 padding: 2px 8px;
@@ -380,7 +394,7 @@
                     </a>
 
                     <div class="flex items-center">
-                        <h1 class="text-3xl navbar-style-text theme-heading" data-i18n="pageTitle">Изменение подписи</h1>
+                        <h1 class="text-3xl navbar-style-text theme-heading" data-i18n="pageTitle">Обновление QR-защиты</h1>
                         <span class="format-badge {{ $isWord ? 'bg-blue-600' : 'bg-red-600' }}">
                             {{ $extension }}
                         </span>
@@ -389,10 +403,14 @@
             </div>
 
             <div class="max-w-5xl grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {{-- ЛЕВАЯ КОЛОНКА (ФОРМА) --}}
                 <div class="form-card">
                     <form method="POST" action="{{ route('signatures.update', $signature->id) }}" id="signatureForm" class="p-7 space-y-7">
                         @csrf
                         @method('PUT')
+
+                        {{-- Текст штампа улетает в контроллер в эту переменную --}}
+                        <input type="hidden" name="qr_payload" id="qrPayloadInput" value="{{ $qrText }}">
 
                         <div>
                             <label class="text-[11px] font-black uppercase tracking-widest text-slate-400 block mb-2" data-i18n="labelDoc">Документ</label>
@@ -402,20 +420,15 @@
                         </div>
 
                         <div>
-                            <div class="flex items-center justify-between mb-3">
-                                <label class="text-[11px] font-black uppercase tracking-widest text-indigo-500" data-i18n="labelNewSig">Новый оттиск</label>
-                                <button type="button" id="clearBtn" class="bg-rose-500/10 text-rose-500 px-3 py-1 rounded-full text-[9px] font-black uppercase hover:bg-rose-500 hover:text-white transition" data-i18n="clearBtn">Очистить</button>
-                            </div>
+                            <label class="text-[11px] font-black uppercase tracking-widest text-indigo-500 block mb-3" data-i18n="labelNewSig">Новый QR-код Верификации</label>
 
-                            <div class="relative pad-container rounded-[1.7rem] overflow-hidden bg-white">
-                                <canvas id="signature-pad" class="w-full h-52 cursor-crosshair touch-none"></canvas>
-                                <div id="placeholder-hint" class="absolute inset-0 flex items-center justify-center pointer-events-none">
-                                    <span class="text-[10px] font-black uppercase tracking-[0.25em] text-slate-400 opacity-30" data-i18n="sigPlaceholder">Здесь ваша подпись</span>
+                            <div class="pad-container rounded-[1.7rem] p-6 flex flex-col items-center justify-center min-h-52">
+                                <div class="bg-white p-3 rounded-2xl shadow-md border border-slate-100 flex items-center justify-center">
+                                    <img src="{{ $qrUrl }}" alt="New QR Verification" class="w-[120px] h-[120px] object-contain block">
                                 </div>
+                                <span class="text-[9px] font-black uppercase tracking-[0.15em] text-slate-400 mt-3 block text-center">Verified DocSign</span>
                             </div>
                         </div>
-
-                        <input type="hidden" name="signature" id="signatureInput">
 
                         <button type="submit" class="w-full btn-update py-4 rounded-2xl text-[12px]">
                             <span data-i18n="submitBtn">Обновить документ</span> ({{ strtoupper($extension) }})
@@ -423,11 +436,19 @@
                     </form>
                 </div>
 
+                {{-- ПРАВАЯ КОЛОНКА (ИНФОРМАЦИЯ) --}}
                 <div class="space-y-6">
                     <div class="form-card p-7">
-                        <label class="text-[11px] font-black uppercase tracking-widest text-slate-400 mb-5 block text-center" data-i18n="labelCurrent">Текущий вариант</label>
-                        <div class="relative old-sig-display flex items-center justify-center">
-                            <img src="{{ $signature->signature }}" class="old-signature max-h-24 object-contain" alt="Old Signature">
+                        <label class="text-[11px] font-black uppercase tracking-widest text-slate-400 mb-5 block text-center" data-i18n="labelCurrent">Предыдущий QR Штамп</label>
+                        <div class="relative old-sig-display flex items-center justify-center bg-slate-50 dark:bg-slate-900 rounded-2xl p-4">
+                            @if($signature->signature && Storage::disk('public')->exists($signature->signature))
+                                <img src="{{ asset('storage/' . $signature->signature) }}" class="max-h-32 object-contain rounded-xl" alt="Current QR Signature">
+                            @else
+                                <div class="text-center py-4 text-slate-400 text-xs font-semibold uppercase tracking-wider">
+                                    <i class="bi bi-qr-code text-3xl block mb-1 opacity-40"></i>
+                                    Файл штампа не найден
+                                </div>
+                            @endif
                         </div>
                     </div>
 
@@ -439,8 +460,7 @@
                                 </div>
                                 <h4 class="text-[10px] font-black uppercase tracking-[0.22em] text-indigo-200" data-i18n="infoTitle">Внимание</h4>
                             </div>
-                            <p class="text-[12px] font-medium leading-relaxed opacity-90" data-i18n="{{ $isWord ? 'infoTextWord' : 'infoTextPdf' }}">
-                                <!-- Текст подставится через JS -->
+                            <p class="text-[12px] font-medium leading-relaxed opacity-90" id="infoTextContainer">
                             </p>
                         </div>
                     </div>
@@ -449,85 +469,48 @@
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.0.0/dist/signature_pad.umd.min.js"></script>
-
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             const translations = {
                 ru: {
                     backBtn: "Назад",
-                    pageTitle: "Изменение подписи",
+                    pageTitle: "Обновление QR-защиты",
                     labelDoc: "Документ",
-                    labelNewSig: "Новый оттиск",
-                    clearBtn: "Очистить",
-                    sigPlaceholder: "Здесь ваша подпись",
+                    labelNewSig: "Новый QR-код Верификации",
                     submitBtn: "Обновить документ",
-                    labelCurrent: "Текущий вариант",
+                    labelCurrent: "Предыдущий QR Штамп",
                     infoTitle: "Внимание",
-                    infoTextPdf: "При обновлении подписи система перегенерирует PDF-файл. Старый файл будет заменен.",
-                    infoTextWord: "Для Word-документа (.docx) подпись будет обновлена в структуре файла. Убедитесь, что формат поддерживается.",
-                    alertEmpty: "Пожалуйста, оставьте подпись"
+                    infoTextPdf: "При обновлении штампа система полностью перегенерирует PDF-документ. Текущий QR-код будет замещён актуальной версией, а старый файл удалён из системы для оптимизации памяти.",
+                    infoTextWord: "Для документов Word (.docx) штамп защиты перезапишется в структуре файла. Убедитесь, что формат файла корректен."
                 },
                 tj: {
                     backBtn: "Бозгашт",
-                    pageTitle: "Тағйири имзо",
+                    pageTitle: "Навсозии муҳофизати QR",
                     labelDoc: "Ҳуҷҷат",
-                    labelNewSig: "Нақши нав",
-                    clearBtn: "Тоза кардан",
-                    sigPlaceholder: "Имзои шумо дар ин ҷо",
+                    labelNewSig: "QR-коди нави тасдиқкунанда",
                     submitBtn: "Навсозии ҳуҷҷат",
-                    labelCurrent: "Нусхаи ҷорӣ",
+                    labelCurrent: "Муҳри QR-и қаблӣ",
                     infoTitle: "Диққат",
-                    infoTextPdf: "Ҳангоми навсозии имзо файли PDF аз нав сохта мешавад. Файли кӯҳна иваз мешавад.",
-                    infoTextWord: "Барои ҳуҷҷати Word (.docx) имзо дар сохтори файл нав карда мешавад.",
-                    alertEmpty: "Лутфан, имзо гузоред"
+                    infoTextPdf: "Ҳангоми навсозии муҳр система ҳуҷҷати PDF-ро комилан аз нав месозад. QR-коди ҷорӣ бо нусхаи нав иваз карда шуда, файли кӯҳна барои сарфаи хотира нест карда мешавад.",
+                    infoTextWord: "Барои ҳуҷҷатҳои Word (.docx) муҳри муҳофизатӣ дар сохтори файл аз нав навишта мешавад. Боварӣ ҳосил кунед, ки формати файл дуруст аст."
                 }
             };
 
             const lang = localStorage.getItem('app-lang') || 'ru';
             const t = translations[lang];
 
+            // Применяем переводы атрибутов data-i18n
             document.querySelectorAll('[data-i18n]').forEach(el => {
                 const key = el.getAttribute('data-i18n');
                 if (t[key]) el.textContent = t[key];
             });
 
-            const canvas = document.getElementById('signature-pad');
-            const hint = document.getElementById('placeholder-hint');
-            const signaturePad = new SignaturePad(canvas, {
-                backgroundColor: 'rgba(255,255,255,0)',
-                penColor: '#000000',
-                minWidth: 2,
-                maxWidth: 4
-            });
-
-            function resizeCanvas() {
-                const ratio = Math.max(window.devicePixelRatio || 1, 1);
-                canvas.width = canvas.offsetWidth * ratio;
-                canvas.height = canvas.offsetHeight * ratio;
-                canvas.getContext("2d").scale(ratio, ratio);
-                signaturePad.clear();
+            // Подставляем информационный текст динамически в зависимости от формата
+            const isWordDoc = "{{ $isWord }}";
+            const infoContainer = document.getElementById('infoTextContainer');
+            if (infoContainer) {
+                infoContainer.textContent = isWordDoc ? t.infoTextWord : t.infoTextPdf;
             }
-
-            window.addEventListener('resize', resizeCanvas);
-            resizeCanvas();
-
-            canvas.addEventListener('mousedown', () => hint.style.opacity = '0');
-            canvas.addEventListener('touchstart', () => hint.style.opacity = '0');
-
-            document.getElementById('clearBtn').addEventListener('click', () => {
-                signaturePad.clear();
-                hint.style.opacity = '1';
-            });
-
-            document.getElementById('signatureForm').addEventListener('submit', function (e) {
-                if (signaturePad.isEmpty()) {
-                    e.preventDefault();
-                    alert(t.alertEmpty);
-                } else {
-                    document.getElementById('signatureInput').value = signaturePad.toDataURL();
-                }
-            });
         });
     </script>
 @endsection

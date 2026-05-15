@@ -17,6 +17,8 @@ use setasign\Fpdi\Tcpdf\Fpdi;
 use PhpOffice\PhpWord\PhpWord;
 use PhpOffice\PhpWord\IOFactory;
 use PhpOffice\PhpWord\Shared\Html;
+// Импортируем фасад для QR-кодов
+use SimpleSoftwareIO\QrCode\Facades\QrCode;
 
 class DocumentController extends Controller
 {
@@ -107,7 +109,18 @@ class DocumentController extends Controller
     public function downloadPdf($id)
     {
         $document = Document::with(['createdBy', 'receiver', 'signatures'])->findOrFail($id);
-        $pdf = Pdf::loadView('pdf.document', compact('document'));
+
+        // Генерируем PNG QR-код для встраивания в генерируемый PDF (через base64)
+        $verifyUrl = route('documents.show', $document->id); // Или специальный роут верификации
+        $qrCodePng = QrCode::format('png')
+            ->size(120)
+            ->margin(1)
+            ->color(31, 41, 55)
+            ->generate($verifyUrl);
+
+        $qrCodeBase64 = 'data:image/png;base64,' . base64_encode($qrCodePng);
+
+        $pdf = Pdf::loadView('pdf.document', compact('document', 'qrCodeBase64'));
         return $pdf->download('document_' . ($document->number ?? $id) . '.pdf');
     }
 
@@ -123,7 +136,6 @@ class DocumentController extends Controller
         $fullText = '';
 
         if ($extension === 'pdf') {
-            // Используем автономный класс библиотеки, если она установлена (например, Smalot PdfParser)
             if (class_exists('\\Smalot\\PdfParser\\Parser')) {
                 $parser = new \Smalot\PdfParser\Parser();
                 $pdf = $parser->parseFile($file->path());
@@ -132,7 +144,6 @@ class DocumentController extends Controller
                 return response()->json(['status' => 'error', 'message' => 'Библиотека Smalot/PdfParser не установлена.'], 500);
             }
         } elseif ($extension === 'docx') {
-            // Прямое чтение текста из структуры XML документа Word
             $zip = new \ZipArchive();
             if ($zip->open($file->path()) === true) {
                 if (($index = $zip->locateName('word/document.xml')) !== false) {
@@ -179,12 +190,16 @@ class DocumentController extends Controller
         $sigFileName = 'temp/sig_' . time() . '.png';
         Storage::disk('public')->put($sigFileName, base64_decode($sigImage));
         $fullPathToSig = storage_path('app/public/' . $sigFileName);
+
+        // Пути для временного и постоянного хранения QR-кода
+        $qrFileName = 'temp/qr_' . time() . '.png';
+        $fullPathToQr = storage_path('app/public/' . $qrFileName);
+
         $fullPathToFile = storage_path('app/public/' . $document->file_path);
 
         try {
             $extension = strtolower(pathinfo($fullPathToFile, PATHINFO_EXTENSION));
 
-            // Если это документ Word (.docx) — сохраняем электронную подпись в БД без изменения самого файла
             if ($extension === 'docx') {
                 DocumentSignature::updateOrCreate(
                     ['document_id' => $id, 'user_id' => Auth::id()],
@@ -195,7 +210,16 @@ class DocumentController extends Controller
                 return redirect()->route('documents.show', $id)->with('success', 'Документ Word успешно подписан!');
             }
 
-            // Если это PDF — вшиваем изображение визуальной подписи на последнюю страницу
+            // Генерируем PNG QR-код для жесткого вшивания в существующий PDF файл через FPDI
+            $verifyUrl = route('documents.show', $document->id);
+            $qrCodePng = QrCode::format('png')
+                ->size(100) // Размер QR на странице PDF
+                ->margin(1)
+                ->generate($verifyUrl);
+
+            Storage::disk('public')->put($qrFileName, $qrCodePng);
+
+            // Если это PDF — вшиваем изображение визуальной подписи и QR-кода на последнюю страницу
             $pdf = new Fpdi();
             $pdf->SetAutoPageBreak(false);
             $pageCount = $pdf->setSourceFile($fullPathToFile);
@@ -207,15 +231,24 @@ class DocumentController extends Controller
                 $pdf->AddPage($size['orientation'], [$size['width'], $size['height']]);
                 $pdf->useTemplate($templateId);
 
+                // На последней странице размещаем штампы
                 if ($pageNo == $pageCount) {
-                    $x = $size['width'] - 75;
-                    $y = $size['height'] - 45;
-
-                    $pdf->Image($fullPathToSig, $x, $y, 45, 20, 'PNG');
+                    // Координаты для штампа подписи (справа внизу)
+                    $sigX = $size['width'] - 75;
+                    $sigY = $size['height'] - 45;
+                    $pdf->Image($fullPathToSig, $sigX, $sigY, 45, 20, 'PNG');
 
                     $pdf->SetFont('helvetica', 'I', 7);
                     $pdf->SetTextColor(80, 80, 80);
-                    $pdf->Text($x + 2, $y + 22, 'Signed: ' . now()->format('d.m.Y H:i'));
+                    $pdf->Text($sigX + 2, $sigY + 22, 'Signed: ' . now()->format('d.m.Y H:i'));
+
+                    // Координаты для QR-кода (слева внизу, симметрично подписи)
+                    $qrX = 20;
+                    $qrY = $size['height'] - 45;
+                    $pdf->Image($fullPathToQr, $qrX, $qrY, 25, 25, 'PNG');
+
+                    $pdf->SetFont('helvetica', 'B', 6);
+                    $pdf->Text($qrX, $qrY + 27, 'Проверить подлинность');
                 }
             }
 
@@ -230,7 +263,9 @@ class DocumentController extends Controller
         } catch (\Exception $e) {
             return back()->with('error', 'Ошибка: ' . $e->getMessage());
         } finally {
+            // Обязательно чистим за собой временные файлы изображений
             if (file_exists($fullPathToSig)) unlink($fullPathToSig);
+            if (file_exists($fullPathToQr)) unlink($fullPathToQr);
         }
 
         return redirect()->route('documents.show', $id)->with('success', 'Документ успешно подписан!');
@@ -311,7 +346,7 @@ class DocumentController extends Controller
     }
 
     /**
-     * Создание нового документа (Принимает PDF и Word)
+     * Создание нового документа
      */
     public function store(Request $request)
     {
@@ -365,7 +400,7 @@ class DocumentController extends Controller
     }
 
     /**
-     * Скачивание прикрепленного к модели файла с сохранением оригинального расширения
+     * Скачивание прикрепленного файла
      */
     public function pdf($id)
     {
@@ -391,7 +426,15 @@ class DocumentController extends Controller
 
         $comments = DocumentComment::with('user')->where('document_id', $id)->latest()->get();
 
-        return view('document.show', compact('document', 'comments'));
+        // Генерируем SVG QR-код для интерактивного Blade-интерфейса
+        $verifyUrl = route('documents.show', $document->id);
+        $qrCodeSvg = QrCode::size(130)
+            ->backgroundColor(255, 255, 255, 0) // Прозрачный фон для красивого блёр-эффекта
+            ->color(31, 41, 55)                 // Цвет под дизайн (gray-800)
+            ->margin(0)
+            ->generate($verifyUrl);
+
+        return view('document.show', compact('document', 'comments', 'qrCodeSvg'));
     }
 
     public function edit($id)

@@ -202,7 +202,6 @@
 
 @section('content')
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <!-- Добавляем иконки Bootstrap для наглядности форматов -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
 
     <style>
@@ -232,7 +231,6 @@
             letter-spacing: 0.05em !important;
             color: #64748b;
         }
-        /* Стили для лоадера при загрузке документа */
         .viewer-loading {
             position: absolute;
             top: 50%;
@@ -248,43 +246,65 @@
             {{-- ЛЕВАЯ КОЛОНКА --}}
             <div class="w-full lg:w-4/12 sticky top-4">
                 <div class="signature-card-container p-5">
-                    <h2 class="title-compact font-extrabold uppercase mb-5 text-black dark:text-white" data-i18n="signingTitle">Подписание</h2>
+                    <h2 class="title-compact font-extrabold uppercase mb-5 text-black dark:text-white" data-i18n="signingTitle">Защита и QR</h2>
 
-                    <form action="" method="POST" id="signatureForm">
+                    <form action="{{ route('signatures.store') }}" method="POST" id="signatureForm">
                         @csrf
-                        <input type="hidden" name="signature" id="signatureInput">
+                        <input type="hidden" name="qr_payload" id="qrPayloadInput">
 
                         <div class="mb-5">
                             <label class="label-micro block mb-1.5 ml-1" data-i18n="selectDocLabel">Выбор документа</label>
                             <select name="document_id" id="documentSelect" class="w-full outline-none focus:border-indigo-500 transition">
-                                <option value="" disabled {{ !isset($document) ? 'selected' : '' }} data-i18n="docPlaceholder">-- Список документов --</option>
+                                <option value="" disabled {{ (!isset($document) && !request('document_id')) ? 'selected' : '' }} data-i18n="docPlaceholder">-- Список документов --</option>
                                 @foreach($documents as $doc)
                                     @php
                                         $ext = pathinfo($doc->file_path, PATHINFO_EXTENSION);
                                         $isWord = in_array(strtolower($ext), ['doc', 'docx']);
+
+                                        // Собираем текст для QR
+                                        $senderName = $doc->sender->name ?? 'Система';
+                                        $signerName = auth()->user()->name ?? 'Пользователь';
+                                        $dateSent = $doc->created_at ? $doc->created_at->format('d.m.Y H:i') : date('d.m.Y H:i');
+                                        $dateSigned = date('d.m.Y H:i');
+
+                                        $qrText = "Документ: {$doc->title}\n" .
+                                                  "От кого: {$senderName}\n" .
+                                                  "Кто подписал: {$signerName}\n" .
+                                                  "Дата отправки: {$dateSent}\n" .
+                                                  "Дата подписания: {$dateSigned}";
+
+                                        $qrUrl = "https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=" . urlencode($qrText);
+
+                                        // Проверяем прямую переменную из контроллера ИЛИ переданный из реестра GET-параметр
+                                        $isSelected = (isset($document) && $document->id == $doc->id) || (request('document_id') == $doc->id);
                                     @endphp
                                     <option value="{{ $doc->id }}"
+                                            {{ $isSelected ? 'selected' : '' }}
                                             data-file="{{ asset('storage/' . $doc->file_path) }}"
                                             data-type="{{ $isWord ? 'word' : 'pdf' }}"
-                                        {{ (isset($document) && $document->id == $doc->id) ? 'selected' : '' }}>
+                                            data-qr-url="{{ $qrUrl }}"
+                                            data-qr-text="{{ $qrText }}">
                                         [{{ strtoupper($ext) }}] #{{ $doc->id }} — {{ $doc->title }}
                                     </option>
                                 @endforeach
                             </select>
                         </div>
 
-                        <label class="label-micro block mb-1.5 ml-1 text-indigo-500" data-i18n="yourSigLabel">Ваша подпись</label>
-                        <div class="relative bg-slate-50 border border-slate-200 rounded-xl overflow-hidden" style="height: 160px;">
-                            <canvas id="signature-pad" class="w-full h-full touch-none" style="cursor: crosshair;"></canvas>
-                            <button type="button" id="clearBtn" class="absolute top-2 right-2 bg-white text-slate-400 p-1.5 rounded-lg hover:text-red-500 transition shadow-sm border border-slate-100 z-10">
-                                <i class="bi bi-eraser-fill"></i>
-                            </button>
+                        {{-- Блок QR-кода --}}
+                        <label class="label-micro block mb-1.5 ml-1 text-indigo-500" data-i18n="qrCodeLabel">QR-код Верификации</label>
+                        <div class="relative bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl flex flex-col items-center justify-center p-4 transition-all overflow-hidden" style="height: 190px;">
+                            <div id="qrContainer" class="flex items-center justify-center w-full h-full">
+                                <div id="qrPlaceholder" class="text-center">
+                                    <i class="bi bi-qr-code text-5xl text-slate-300 block mb-2"></i>
+                                    <p class="text-[10px] text-slate-400 font-medium uppercase tracking-wider" data-i18n="qrWaiting">Ожидание выбора...</p>
+                                </div>
+                            </div>
                         </div>
 
                         <div class="mt-6">
-                            <button type="submit" class="w-full bg-indigo-600 text-white py-3 rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-indigo-700 transition shadow-lg shadow-indigo-500/20 flex items-center justify-center gap-2">
-                                <i class="bi bi-pen-fill"></i>
-                                <span data-i18n="btnSign">Вшить подпись</span>
+                            <button type="submit" id="btnSubmitForm" class="w-full bg-indigo-600 text-white py-3 rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-indigo-700 transition shadow-lg shadow-indigo-500/20 flex items-center justify-center gap-2">
+                                <i class="bi bi-shield-check"></i>
+                                <span data-i18n="btnSign">Применить штамп</span>
                             </button>
                         </div>
                     </form>
@@ -313,81 +333,76 @@
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.0.0/dist/signature_pad.umd.min.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             const translations = {
                 ru: {
-                    signingTitle: "Подписание",
+                    signingTitle: "Защита и QR",
                     selectDocLabel: "Выбор документа",
                     docPlaceholder: "-- Список документов --",
-                    yourSigLabel: "Ваша подпись",
-                    btnSign: "Вшить подпись",
+                    qrCodeLabel: "QR-код Верификации",
+                    qrWaiting: "Ожидание выбора...",
+                    btnSign: "Применить штамп",
                     previewLabel: "Предпросмотр",
                     btnFullScreen: "На весь экран",
-                    alertNoDoc: "Выберите документ!",
-                    alertNoSig: "Нарисуйте подпись!"
+                    alertNoDoc: "Выберите документ!"
                 },
                 tj: {
-                    signingTitle: "Имзогузорӣ",
+                    signingTitle: "Муҳофизат ва QR",
                     selectDocLabel: "Интихоби ҳуҷҷат",
                     docPlaceholder: "-- Рӯйхати ҳуҷҷатҳо --",
-                    yourSigLabel: "Имзои шумо",
-                    btnSign: "Гузоштани имзо",
+                    qrCodeLabel: "QR-коди тасдиқкунанда",
+                    qrWaiting: "Интихобро интизор шавед...",
+                    btnSign: "Татбиқ кардани муҳр",
                     previewLabel: "Пешнамоиш",
                     btnFullScreen: "Дар тамоми экран",
-                    alertNoDoc: "Ҳуҷҷатро интихоб кунед!",
-                    alertNoSig: "Имзоро кашед!"
+                    alertNoDoc: "Ҳуҷҷатро интихоб кунед!"
                 },
                 en: {
-                    signingTitle: "Signing",
+                    signingTitle: "Security & QR",
                     selectDocLabel: "Select Document",
                     docPlaceholder: "-- Document List --",
-                    yourSigLabel: "Your Signature",
-                    btnSign: "Apply Signature",
+                    qrCodeLabel: "Verification QR Code",
+                    qrWaiting: "Waiting for selection...",
+                    btnSign: "Apply Stamp",
                     previewLabel: "Preview",
                     btnFullScreen: "Full Screen",
-                    alertNoDoc: "Please select a document!",
-                    alertNoSig: "Please provide a signature!"
+                    alertNoDoc: "Please select a document!"
                 }
             };
 
             const lang = localStorage.getItem('app-lang') || 'ru';
             const t = translations[lang];
 
-            document.querySelectorAll('[data-i18n]').forEach(el => {
-                const key = el.getAttribute('data-i18n');
-                if (t[key]) el.textContent = t[key];
-            });
+            function applyTranslations() {
+                document.querySelectorAll('[data-i18n]').forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (t[key]) el.textContent = t[key];
+                });
+            }
+            applyTranslations();
 
-            const canvas = document.getElementById('signature-pad');
-            const signatureInput = document.getElementById('signatureInput');
             const form = document.getElementById('signatureForm');
             const select = document.getElementById('documentSelect');
             const viewer = document.getElementById('pdfViewer');
             const fullScreenBtn = document.getElementById('fullScreenBtn');
             const formatBadge = document.getElementById('formatBadge');
             const loader = document.getElementById('viewerLoader');
-
-            const signaturePad = new SignaturePad(canvas, {
-                backgroundColor: 'rgb(255, 255, 255)',
-                penColor: 'rgb(0, 0, 0)',
-                minWidth: 1.2,
-                maxWidth: 3.0
-            });
+            const qrContainer = document.getElementById('qrContainer');
+            const qrPayloadInput = document.getElementById('qrPayloadInput');
 
             function updateSelection() {
                 const selectedOption = select.options[select.selectedIndex];
                 if (selectedOption && selectedOption.value && selectedOption.value !== "") {
                     const fileUrl = selectedOption.getAttribute('data-file');
                     const type = selectedOption.getAttribute('data-type');
+                    const qrUrl = selectedOption.getAttribute('data-qr-url');
+                    const qrText = selectedOption.getAttribute('data-qr-text');
 
                     loader.style.display = 'block';
                     viewer.style.opacity = '0.5';
 
-                    // Логика отображения
                     if (type === 'word') {
-                        // Используем Office Online Viewer для Word
                         viewer.src = `https://view.officeapps.live.com/op/view.aspx?src=${encodeURIComponent(fileUrl)}`;
                         formatBadge.textContent = 'Word';
                         formatBadge.className = 'px-2 py-0.5 rounded text-[9px] font-black uppercase text-white bg-blue-600 inline-block';
@@ -405,37 +420,39 @@
                     formatBadge.classList.remove('hidden');
                     fullScreenBtn.href = fileUrl;
                     fullScreenBtn.classList.remove('hidden');
-                    form.action = `/documents/${selectedOption.value}/sign`;
+
+                    qrContainer.innerHTML = `
+                        <div class="bg-white p-3 rounded-2xl shadow-md border border-slate-100 flex items-center justify-center animate-fade-in">
+                            <img src="${qrUrl}" alt="QR Code" class="w-[120px] h-[120px] object-contain block" />
+                        </div>
+                    `;
+
+                    qrPayloadInput.value = qrText;
                 }
             }
 
-            function resizeCanvas() {
-                const ratio = Math.max(window.devicePixelRatio || 1, 1);
-                canvas.width = canvas.offsetWidth * ratio;
-                canvas.height = canvas.offsetHeight * ratio;
-                canvas.getContext("2d").scale(ratio, ratio);
-                signaturePad.clear();
-            }
+            // Таймаут гарантирует, что DOM-структура option полностью собрана и доступна для чтения атрибутов
+            setTimeout(() => {
+                if (select.value && select.value !== "") {
+                    updateSelection();
+                }
+            }, 50);
 
-            window.addEventListener("resize", resizeCanvas);
             select.addEventListener('change', updateSelection);
-            document.getElementById('clearBtn').addEventListener('click', () => signaturePad.clear());
-
-            setTimeout(resizeCanvas, 300);
-            if (select.value) updateSelection();
 
             form.addEventListener('submit', function (e) {
-                if (!select.value) {
+                const currentOption = select.options[select.selectedIndex];
+
+                if (!select.value || select.value === "") {
                     e.preventDefault();
-                    alert(t.alertNoDoc);
+                    alert(t.alertNoDoc || "Выберите документ!");
                     return;
                 }
-                if (signaturePad.isEmpty()) {
-                    e.preventDefault();
-                    alert(t.alertNoSig);
-                    return;
+
+                if (currentOption) {
+                    const dynamicQrText = currentOption.getAttribute('data-qr-text');
+                    qrPayloadInput.value = dynamicQrText;
                 }
-                signatureInput.value = signaturePad.toDataURL('image/png');
             });
         });
     </script>

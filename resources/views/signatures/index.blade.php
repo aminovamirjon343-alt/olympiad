@@ -2,6 +2,7 @@
 
 @section('content')
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
 
     @php
         $hasOverdue = $signatures->contains(fn($s) => !$s->signed_at && $s->expires_at && $s->expires_at->isPast());
@@ -34,19 +35,22 @@
                 box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.5), 0 4px 6px -1px rgba(0, 0, 0, 0.05);
             }
             .dark .card-sig { background: rgba(30, 41, 59, 1) !important; border-color: rgba(255, 255, 255, 0.2); }
-            .dark .signature-img { filter: invert(1) brightness(2); }
+
             .card-sig:hover { transform: translateY(-6px); border-color: var(--primary-color); box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); }
             .card-overdue { border: 2px solid #f43f5e !important; }
+
             .sig-area {
-                min-height: 120px;
-                background: rgba(0, 0, 0, 0.03) !important;
+                min-height: 140px;
+                background: rgba(0, 0, 0, 0.02) !important;
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                border-top: 1px solid rgba(0, 0, 0, 0.08);
-                border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+                border-top: 1px solid rgba(0, 0, 0, 0.06);
+                border-bottom: 1px solid rgba(0, 0, 0, 0.06);
                 position: relative;
             }
+            .dark .sig-area { background: rgba(255, 255, 255, 0.02) !important; }
+
             .btn-primary-custom {
                 background-color: var(--primary-color);
                 color: #fff !important;
@@ -65,7 +69,6 @@
             .action-link { font-weight: 800; text-transform: uppercase; font-size: 10px; letter-spacing: 0.1em; }
             .label-micro { font-size: 8px !important; font-weight: 900 !important; text-transform: uppercase !important; letter-spacing: 0.15em !important; opacity: 0.4; }
 
-            /* Индикатор формата */
             .format-badge {
                 position: absolute;
                 top: 8px;
@@ -76,6 +79,7 @@
                 font-weight: 900;
                 color: white;
                 text-transform: uppercase;
+                z-index: 10;
             }
         </style>
 
@@ -102,6 +106,7 @@
                         $isPast = !$s->signed_at && $s->expires_at && $s->expires_at->isPast();
                         $extension = $s->document && $s->document->file_path ? strtolower(pathinfo($s->document->file_path, PATHINFO_EXTENSION)) : null;
                         $isWord = in_array($extension, ['doc', 'docx']);
+                        $docId = $s->document->id ?? null;
                     @endphp
 
                     <div class="card-sig {{ $isPast ? 'card-overdue' : '' }}">
@@ -129,21 +134,31 @@
                             </div>
                         </div>
 
-                        <div class="sig-area">
-                            @if($extension)
-                                <div class="format-badge {{ $isWord ? 'bg-blue-600' : 'bg-red-600' }}">
-                                    {{ $extension }}
+                        {{-- Кликабельная зона, если документ ожидает подписи --}}
+                        @if($s->signature)
+                            <div class="sig-area">
+                                @if($extension)
+                                    <div class="format-badge {{ $isWord ? 'bg-blue-600' : 'bg-red-600' }}">
+                                        {{ $extension }}
+                                    </div>
+                                @endif
+                                <div class="bg-white p-2 rounded-xl shadow-sm border border-slate-100 flex items-center justify-center">
+                                    <img src="{{ asset('storage/' . $s->signature) }}" class="h-20 w-20 object-contain block" alt="QR Code Signature">
                                 </div>
-                            @endif
-
-                            @if($s->signature)
-                                <img src="{{ $s->signature }}" class="signature-img h-16 w-auto object-contain" alt="Signature">
-                            @else
-                                <div class="text-center py-4">
-                                    <span class="label-micro !opacity-30 italic" data-i18n="waitingSig">Ожидает подписи</span>
+                            </div>
+                        @else
+                            <a href="{{ route('signatures.create', ['document_id' => $docId]) }}" class="sig-area hover:bg-indigo-50/30 dark:hover:bg-indigo-950/10 transition-colors group">
+                                @if($extension)
+                                    <div class="format-badge {{ $isWord ? 'bg-blue-600' : 'bg-red-600' }}">
+                                        {{ $extension }}
+                                    </div>
+                                @endif
+                                <div class="text-center py-4 flex flex-col items-center justify-center">
+                                    <i class="bi bi-qr-code text-2xl text-slate-300 dark:text-slate-600 mb-1 block group-hover:text-indigo-500 group-hover:scale-110 transition-all"></i>
+                                    <span class="label-micro !opacity-30 italic group-hover:text-indigo-500 group-hover:!opacity-100 transition-opacity" data-i18n="waitingSig">Ожидает подписи</span>
                                 </div>
-                            @endif
-                        </div>
+                            </a>
+                        @endif
 
                         <div class="px-6 py-5 flex justify-between items-center">
                             <div class="flex items-center gap-3">

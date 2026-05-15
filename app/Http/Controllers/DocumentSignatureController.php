@@ -12,7 +12,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\File;
-use Illuminate\Support\Facades\DB; // Добавлено для транзакций
+use Illuminate\Support\Facades\DB;
 use setasign\Fpdi\Fpdi;
 
 class DocumentSignatureController extends Controller
@@ -32,21 +32,24 @@ class DocumentSignatureController extends Controller
 
     public function create(Request $request)
     {
-        // 1. Получаем ID из запроса
+        // Получаем ID из GET-параметра (если пришли из реестра карточек)
         $documentId = $request->query('document_id');
 
-        // 2. Ищем документ. Если ID нет, берем первый доступный для подписи
-        $document = Document::when($documentId, function($query) use ($documentId) {
-            return $query->where('id', $documentId);
-        })->first();
-
-        // 3. Если вообще нет документов в базе — кидаем ошибку, чтобы страница не ломалась
-        if (!$document) {
-            return redirect()->route('documents.index')->with('error', 'Нет доступных документов для подписи.');
+        // Ищем конкретный документ, только если передан ID
+        $document = null;
+        if ($documentId) {
+            $document = Document::find($documentId);
         }
 
-        // 4. Получаем список документов для селекта
-        $documents = Document::all();
+        // Получаем ВСЕ документы для выпадающего списка
+        $documents = Document::latest()->get();
+
+        // Если вообще никаких документов в системе нет — тогда отправляем создавать документы
+        if ($documents->isEmpty()) {
+            return redirect()->route('documents.index')->with('error', 'В системе ещё нет ни одного документа для подписи. Сначала загрузите документ.');
+        }
+
+        // Передаем пользователей (исполнителей), если нужно
         $users = User::all();
 
         return view('signatures.create', compact('document', 'documents', 'users'));
@@ -54,10 +57,10 @@ class DocumentSignatureController extends Controller
 
     public function store(Request $request)
     {
-        // 1. Валидация входных данных
+        // 1. Валидация входных данных под QR-код
         $request->validate([
             'document_id' => 'required|exists:documents,id',
-            'signature'   => 'required|string' // Здесь приходит Base64 от Signature Pad
+            'qr_payload'  => 'required|string'
         ]);
 
         $document = Document::findOrFail($request->document_id);
@@ -82,77 +85,166 @@ class DocumentSignatureController extends Controller
             return back()->with('error', 'Вы уже подписали этот документ.');
         }
 
-        // 4. Запуск транзакции для атомарности действий
-        return DB::transaction(function () use ($request, $document, $signer, $currentWorkflow) {
-            try {
-                // А. Сохраняем саму картинку подписи как файл (для истории)
-                $signatureData = $request->signature;
-                $signaturePath = null;
+        // 4. Запуск транзакции
+        try {
+            DB::transaction(function () use ($request, $document, $signer, $currentWorkflow) {
+                // А. Вшивание QR-кода в PDF и получение путей к файлам
+                $signingResult = $this->processPdfSigning($document, $request->qr_payload);
 
-                if (preg_match('/^data:image\/(\w+);base64,/', $signatureData, $type)) {
-                    $data = substr($signatureData, strpos($signatureData, ',') + 1);
-                    $data = base64_decode($data);
-                    $fileName = 'sig_' . $document->id . '_' . $signer->id . '_' . time() . '.png';
-                    $signaturePath = 'signatures/' . $fileName;
+                $newPdfPath = $signingResult['pdf_path'];
+                $savedQrPath = $signingResult['qr_path'];
 
-                    \Storage::disk('public')->put($signaturePath, $data);
-                }
-
-                // Б. Вшивание подписи в PDF (вызывает твой внутренний метод)
-                // Метод должен вернуть путь к НОВОМУ файлу PDF
-                $newPdfPath = $this->processPdfSigning($document, $request->signature);
-
-                // В. Обновление документа (меняем путь к PDF на подписанный)
-                // Если хочешь хранить историю версий, лучше создать отдельную таблицу под файлы
+                // Б. Обновление документа
                 $document->update([
                     'file_path' => $newPdfPath,
                     'status'    => ($currentWorkflow && $this->isLastStep($document)) ? 'completed' : $document->status
                 ]);
 
-                // Г. Создание записи о подписи
-                // В методе store используй $signaturePath (путь к файлу)
+                // В. Создание записи о подписи
                 DocumentSignature::create([
                     'document_id' => $document->id,
                     'user_id'     => $signer->id,
-                    'signature'   => $signaturePath, // ПУТЬ К ФАЙЛУ
+                    'signature'   => $savedQrPath,
                     'signed_at'   => now(),
                     'expires_at'  => $document->deadline ?? null,
                 ]);
 
-                // Д. Логирование, Уведомление и Воркфлоу
-                $this->logAction($document->id, 'signed', "Документ подписан пользователем: {$signer->name}");
+                // Г. Логирование, Уведомление и Воркфлоу
+                $this->logAction($document->id, 'signed', "Документ защищен QR-кодом пользователем: {$signer->name}");
 
                 // Уведомляем создателя документа
                 $this->sendNotification($document->created_by, $signer, $document);
 
                 // Двигаем воркфлоу на следующий шаг
                 $this->processWorkflow($document, $currentWorkflow, $signer);
+            });
 
-                return redirect()->route('signatures.index')->with('success', 'Документ успешно подписан и вшит в PDF!');
+            // Если всё прошло успешно внутри транзакции — редиректим
+            return redirect()->route('signatures.index')->with('success', 'Документ успешно подписан, QR-код вшит в файл!');
 
-            } catch (\Exception $e) {
-                // Если что-то пошло не так, удаляем созданный файл подписи, если он успел создаться
-                if (isset($signaturePath)) {
-                    \Storage::disk('public')->delete($signaturePath);
-                }
+        } catch (\Exception $e) {
+            // Если упало ГДЕ УГОДНО внутри DB::transaction, управление переходит сюда
+            \Log::error("Ошибка при подписании документа ID {$document->id}: " . $e->getMessage());
+            return back()->with('error', 'Ошибка при обработке PDF или сохранении данных: ' . $e->getMessage());
+        }
 
-                // Бросаем исключение дальше для отката транзакции или логируем
-                \Log::error("Ошибка при подписании документа ID {$document->id}: " . $e->getMessage());
-
-                return back()->with('error', 'Ошибка при обработке PDF: ' . $e->getMessage());
-            }
-        });
     }
 
     /**
-     * Вспомогательный метод для проверки, является ли этот шаг последним
+     * Вшивание сгенерированного QR-кода в документ PDF
      */
-    private function isLastStep($document)
+    protected function processPdfSigning($document, $qrPayload)
     {
-        return !DocumentWorkflow::where('document_id', $document->id)
-            ->where('status', 'pending')
-            ->exists();
+        $tempDir = storage_path('app/temp_sigs');
+        if (!File::exists($tempDir)) {
+            File::makeDirectory($tempDir, 0755, true);
+        }
+
+        // 1. Безопасное скачивание изображения QR-кода через cURL во временный файл
+        $qrApiUrl = "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=" . urlencode($qrPayload);
+        $tempImgPath = $tempDir . '/' . uniqid() . '.png';
+
+        $ch = curl_init($qrApiUrl);
+        $fp = fopen($tempImgPath, 'wb');
+        curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+        curl_setopt($ch, CURLOPT_FILE, $fp);
+        curl_setopt($ch, CURLOPT_HEADER, 0);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 15);
+        curl_exec($ch);
+        curl_close($ch);
+        fclose($fp);
+
+        // Проверяем, удалось ли успешно создать локальный файл изображения
+        if (!File::exists($tempImgPath) || File::size($tempImgPath) === 0) {
+            throw new \Exception("Не удалось сгенерировать или скачать изображение QR-кода через API сервера.");
+        }
+
+        // Путь к оригинальному PDF
+        $originalPath = storage_path('app/public/' . $document->file_path);
+
+        if (!File::exists($originalPath)) {
+            if (File::exists($tempImgPath)) File::delete($tempImgPath);
+            throw new \Exception("Исходный файл PDF не найден по пути: " . $document->file_path);
+        }
+
+        try {
+            $pdf = new \setasign\Fpdi\Fpdi();
+            $pageCount = $pdf->setSourceFile($originalPath);
+
+            // Пробегаем по всем страницам документа
+            for ($pageNo = 1; $pageNo <= $pageCount; $pageNo++) {
+                $templateId = $pdf->importPage($pageNo);
+                $size = $pdf->getTemplateSize($templateId);
+
+                $pdf->AddPage($size['orientation'], [$size['width'], $size['height']]);
+                $pdf->useTemplate($templateId);
+
+                // Накладываем штамп QR-кода только на САМУЮ ПОСЛЕДНЮЮ страницу
+                if ($pageNo === $pageCount) {
+                    // Размеры QR-кода на листе (квадрат 35х35 мм)
+                    $qrW = 35;
+                    $qrH = 35;
+
+                    // Координаты размещения (отступаем от правого нижнего угла страницы)
+                    $x = $size['width'] - $qrW - 15;
+                    $y = $size['height'] - $qrH - 20;
+
+                    // --- ШАГ 1: ОЧИСТКА ОБЛАСТИ ПОД ШТАМП (Белая подложка) ---
+                    $pdf->SetFillColor(255, 255, 255);
+                    $pdf->Rect($x - 2, $y - 2, $qrW + 4, $qrH + 10, 'F');
+
+                    // --- ШАГ 2: ВШИВАНИЕ ЛОКАЛЬНОГО QR-КОДА ---
+                    $pdf->Image($tempImgPath, $x, $y, $qrW, $qrH, 'PNG');
+
+                    // --- ШАГ 3: ПОДПИСЬ ПОД QR-КОДОМ ---
+                    $pdf->SetFont('Arial', 'I', 7);
+                    $pdf->SetTextColor(100, 100, 100);
+
+                    $dateText = "Verified DocSign";
+                    $textWidth = $pdf->GetStringWidth($dateText);
+                    $textX = $x + ($qrW / 2) - ($textWidth / 2);
+                    $textY = $y + $qrH + 4;
+
+                    $pdf->Text($textX, $textY, $dateText);
+                }
+            }
+
+            // Формируем директории для постоянного сохранения результатов, если их нет
+            if (!File::exists(storage_path('app/public/documents'))) {
+                File::makeDirectory(storage_path('app/public/documents'), 0755, true);
+            }
+            if (!File::exists(storage_path('app/public/signatures'))) {
+                File::makeDirectory(storage_path('app/public/signatures'), 0755, true);
+            }
+
+            // Генерируем пути постоянного сохранения результатов
+            $newFileName = 'documents/signed_' . time() . '.pdf';
+            $newFullPath = storage_path('app/public/' . $newFileName);
+
+            $permanentQrName = 'signatures/qr_' . $document->id . '_' . Auth::id() . '_' . time() . '.png';
+            $permanentQrPath = storage_path('app/public/' . $permanentQrName);
+
+            // Сохраняем измененный PDF файл со штампом
+            $pdf->Output($newFullPath, 'F');
+
+            // Копируем временный QR-код в постоянное хранилище для истории подписей
+            File::copy($tempImgPath, $permanentQrPath);
+
+            return [
+                'pdf_path' => $newFileName,
+                'qr_path'  => $permanentQrName
+            ];
+
+        } catch (\Exception $e) {
+            throw new \Exception("Ошибка при модификации PDF: " . $e->getMessage());
+        } finally {
+            // Обязательно чистим временную картинку с диска
+            if (File::exists($tempImgPath)) {
+                File::delete($tempImgPath);
+            }
+        }
     }
+
     public function update(Request $request, DocumentSignature $signature)
     {
         if (!Auth::user()->is_admin && $signature->user_id !== Auth::id()) {
@@ -160,8 +252,8 @@ class DocumentSignatureController extends Controller
         }
 
         $request->validate([
-            'signature' => 'required|string',
-            'title'     => 'nullable|string|max:255'
+            'qr_payload' => 'required|string',
+            'title'      => 'nullable|string|max:255'
         ]);
 
         $document = $signature->document;
@@ -172,117 +264,37 @@ class DocumentSignatureController extends Controller
             }
 
             try {
-                // Вшиваем новую подпись (создается новый файл)
-                $newFileName = $this->processPdfSigning($document, $request->signature);
+                $signingResult = $this->processPdfSigning($document, $request->qr_payload);
 
-                // Удаляем старый файл, чтобы не засорять память
+                // Чистим старые файлы
                 if ($document->file_path && Storage::disk('public')->exists($document->file_path)) {
                     Storage::disk('public')->delete($document->file_path);
                 }
+                if ($signature->signature && Storage::disk('public')->exists($signature->signature)) {
+                    Storage::disk('public')->delete($signature->signature);
+                }
 
-                // Обновляем пути в БД
-                $document->update(['file_path' => $newFileName]);
+                $document->update(['file_path' => $signingResult['pdf_path']]);
 
                 $signature->update([
-                    'signature' => $request->signature,
+                    'signature' => $signingResult['qr_path'],
                     'signed_at' => now(),
                 ]);
 
                 return redirect()->route('signatures.show', $signature->id)
-                    ->with('success', 'Подпись успешно обновлена!');
+                    ->with('success', 'QR-подпись успешно обновлена!');
 
             } catch (\Exception $e) {
                 return back()->with('error', 'Ошибка при обновлении: ' . $e->getMessage());
             }
         });
     }
-    protected function processPdfSigning($document, $base64Signature)
+
+    private function isLastStep($document)
     {
-        // 1. Подготовка временной папки и декодирование base64
-        $tempDir = storage_path('app/temp_sigs');
-        if (!File::exists($tempDir)) {
-            File::makeDirectory($tempDir, 0755, true);
-        }
-
-        $imgData = preg_replace('#^data:image/\w+;base64,#i', '', $base64Signature);
-        $imgData = str_replace(' ', '+', $imgData);
-        $tempImgPath = $tempDir . '/' . uniqid() . '.png';
-        File::put($tempImgPath, base64_decode($imgData));
-
-        $pdf = new \setasign\Fpdi\Fpdi();
-        $originalPath = storage_path('app/public/' . $document->file_path);
-
-        if (!File::exists($originalPath)) {
-            if (File::exists($tempImgPath)) File::delete($tempImgPath);
-            throw new \Exception("Файл PDF не найден по пути: " . $document->file_path);
-        }
-
-        try {
-            $pageCount = $pdf->setSourceFile($originalPath);
-
-            for ($pageNo = 1; $pageNo <= $pageCount; $pageNo++) {
-                $templateId = $pdf->importPage($pageNo);
-                $size = $pdf->getTemplateSize($templateId);
-
-                $pdf->AddPage($size['orientation'], [$size['width'], $size['height']]);
-                $pdf->useTemplate($templateId);
-
-                // Накладываем изменения только на последнюю страницу
-                if ($pageNo === $pageCount) {
-                    // Размеры области подписи
-                    $sigW = 45; // Ширина картинки
-                    $sigH = 20; // Высота картинки
-
-                    // Координаты (подняли выше, чтобы не перекрывать футер)
-                    $x = $size['width'] - $sigW - 20;
-                    $y = $size['height'] - $sigH - 40;
-
-                    // --- ШАГ 1: ОЧИСТКА СТАРОЙ ОБЛАСТИ ---
-                    // Устанавливаем белый цвет заливки (RGB)
-                    $pdf->SetFillColor(255, 255, 255);
-                    // Рисуем белый прямоугольник без рамки ('F'), который закроет старую подпись
-                    // Делаем его чуть больше самой подписи, чтобы скрыть и старую дату
-                    $pdf->Rect($x - 5, $y - 5, $sigW + 10, $sigH + 15, 'F');
-
-                    // --- ШАГ 2: ВСТАВКА НОВОЙ ПОДПИСИ ---
-                    $pdf->Image($tempImgPath, $x, $y, $sigW);
-
-                    // --- ШАГ 3: ДОБАВЛЕНИЕ НОВОЙ ДАТЫ ---
-                    $pdf->SetFont('Arial', 'I', 8);
-                    $pdf->SetTextColor(80, 80, 80); // Цвет текста чуть мягче черного
-
-                    $dateText = "Signed: " . date('d.m.Y H:i');
-
-                    // Рассчитываем центр текста относительно подписи
-                    $textWidth = $pdf->GetStringWidth($dateText);
-                    $textX = $x + ($sigW / 2) - ($textWidth / 2);
-                    $textY = $y + $sigH + 4; // 4 мм ниже картинки
-
-                    $pdf->Text($textX, $textY, $dateText);
-                }
-            }
-
-            // Сохранение нового файла
-            $newFileName = 'documents/signed_' . time() . '.pdf';
-            $newFullPath = storage_path('app/public/' . $newFileName);
-
-            // Убедимся, что директория существует
-            if (!File::exists(storage_path('app/public/documents'))) {
-                File::makeDirectory(storage_path('app/public/documents'), 0755, true);
-            }
-
-            $pdf->Output($newFullPath, 'F');
-
-            return $newFileName;
-
-        } catch (\Exception $e) {
-            throw new \Exception("Ошибка при работе с PDF: " . $e->getMessage());
-        } finally {
-            // Удаляем временное изображение подписи в любом случае
-            if (File::exists($tempImgPath)) {
-                File::delete($tempImgPath);
-            }
-        }
+        return !DocumentWorkflow::where('document_id', $document->id)
+            ->where('status', 'pending')
+            ->exists();
     }
 
     private function logAction($docId, $action, $desc) {
@@ -335,9 +347,11 @@ class DocumentSignatureController extends Controller
     public function destroy(DocumentSignature $signature) {
         if (!Auth::user()->is_admin && $signature->user_id !== Auth::id()) abort(403);
 
-        // Опционально: удаляем файл при удалении записи
         if ($signature->document->file_path) {
             Storage::disk('public')->delete($signature->document->file_path);
+        }
+        if ($signature->signature) {
+            Storage::disk('public')->delete($signature->signature);
         }
 
         $signature->delete();
