@@ -4,9 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Models\DocumentComment;
 use App\Models\Document;
+use App\Models\DocumentLog; // 🔥 Подключили модель логов
 use App\Models\Notification;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 
 class DocumentCommentController extends Controller
 {
@@ -24,12 +26,11 @@ class DocumentCommentController extends Controller
 
     public function create($documentId)
     {
-        $document = \App\Models\Document::findOrFail($documentId);
-        $users = \App\Models\User::all();
+        $document = Document::findOrFail($documentId);
+        $users = User::all();
 
         return view('comment.create', compact('document', 'users'));
     }
-
 
     public function store(Request $request)
     {
@@ -51,22 +52,26 @@ class DocumentCommentController extends Controller
 
         $document = Document::find($request->document_id);
 
+        // 🔥 ЛОГ: Записываем добавление комментария в историю документа
+        if ($document) {
+            DocumentLog::create([
+                'document_id' => $document->id,
+                'user_id'     => auth()->id(),
+                'action'      => 'навсозӣ',
+                'description' => 'Добавлен комментарий к обсуждению: "' . Str::limit($request->comment, 50) . '"'
+            ]);
+        }
+
         // 2. Исправленное создание уведомления
         if ($document && $document->created_by && $document->created_by !== auth()->id()) {
             Notification::create([
-                // Генерируем UUID вручную, так как в миграции это первичный ключ
-                'id' => (string) \Illuminate\Support\Str::uuid(),
-
+                'id' => (string) Str::uuid(),
                 'user_id' => $document->created_by,
                 'message' => 'Новый комментарий к вашему документу: "' . $document->title . '"',
                 'type' => 'comment',
                 'is_read' => false,
-
-                // ОБЯЗАТЕЛЬНЫЕ ПОЛЯ для morphs('notifiable') из твоей миграции:
-                'notifiable_type' => \App\Models\User::class, // К какому классу относится уведомление
-                'notifiable_id' => $document->created_by,     // К какому ID пользователя привязано
-
-                // Если в миграции есть поле data (текстовое), лучше передать пустой массив или null
+                'notifiable_type' => User::class,
+                'notifiable_id' => $document->created_by,
                 'data' => json_encode(['comment_id' => $comment->id]),
             ]);
         }
@@ -77,7 +82,18 @@ class DocumentCommentController extends Controller
     public function destroy($id)
     {
         $comment = DocumentComment::findOrFail($id);
+        $documentId = $comment->document_id;
+        $commentPreview = Str::limit($comment->comment, 40);
+
         $comment->delete();
+
+        // 🔥 ЛОГ: Записываем удаление комментария в историю документа
+        DocumentLog::create([
+            'document_id' => $documentId,
+            'user_id'     => auth()->id(),
+            'action'      => 'навсозӣ',
+            'description' => 'Удален комментарий из обсуждения ("' . $commentPreview . '")'
+        ]);
 
         return back()->with('success', 'Комментарий удалён');
     }

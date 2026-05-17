@@ -48,6 +48,7 @@ class ProfileController extends Controller
             'weeksCount'
         ));
     }
+
     public function updateGeneral(Request $request)
     {
         $user = auth()->user();
@@ -68,35 +69,6 @@ class ProfileController extends Controller
 
         return back()->with('success', 'Настройки успешно обновлены!');
     }
-//    public function show(Request $request): View
-//    {
-//        $user = $request->user();
-//        $month = (int) $request->get('month', Carbon::now()->month);
-//        $year = (int) $request->get('year', Carbon::now()->year);
-//        $activityData = Document::where('user_id', $user->id)
-//            ->where('created_at', '>=', now()->subYear())
-//            ->selectRaw('DATE(created_at) as date, COUNT(*) as count')
-//            ->groupBy('date')
-//            ->pluck('count', 'date');
-//        $startDate = Carbon::createFromDate($year, $month, 1)->startOfMonth();
-//        $endDate = $startDate->copy()->endOfMonth();
-//
-//        $dbData = Document::where('user_id', $user->id)
-//            ->whereDate('created_at', '>=', $startDate->toDateString())
-//            ->whereDate('created_at', '<=', $endDate->toDateString())
-//            ->select(DB::raw('DATE(created_at) as date_only'), DB::raw('count(*) as count'))
-//            ->groupBy('date_only')
-//            ->pluck('count', 'date_only')
-//            ->toArray();
-//
-//        $activityData = [];
-//        for ($day = 1; $day <= $startDate->daysInMonth; $day++) {
-//            $dateKey = $startDate->copy()->day($day)->format('Y-m-d');
-//            $activityData[$dateKey] = $dbData[$dateKey] ?? 0;
-//        }
-//
-//        return view('profile.show', compact('user', 'activityData', 'startDate', 'endDate'));
-//    }
 
     /**
      * Форма редактирования
@@ -109,30 +81,28 @@ class ProfileController extends Controller
     }
 
     /**
-     * Обновление данных профиля (Имя, Email)
-     */
-    /**
-     * Обновление данных профиля (Имя, Email, Телефон)
+     * Обновление данных профиля (Имя, Компания, Email, Телефон)
      */
     public function update(Request $request): RedirectResponse
     {
         $user = $request->user();
 
-        // 1. Добавляем 'phone' в валидацию
+        // Добавлено поле 'company' в соответствии с $fillable
         $validated = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:users,email,' . $user->id],
-            'phone' => ['nullable', 'string', 'max:20'], // Добавили проверку для телефона
+            'name'    => ['required', 'string', 'max:255'],
+            'company' => ['nullable', 'string', 'max:255'], // Валидация для названия компании
+            'email'   => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:users,email,' . $user->id],
+            'phone'   => ['nullable', 'string', 'max:20'],
         ]);
 
-        // 2. Заполняем модель валидированными данными
+        // Заполняем модель валидированными данными
         $user->fill($validated);
 
         if ($user->isDirty('email')) {
             $user->email_verified_at = null;
         }
 
-        // 3. Сохраняем (phone запишется автоматически, если он в $fillable модели User)
+        // Сохраняем в базу данных
         $user->save();
 
         return Redirect::route('profile.edit')->with('status', 'profile-updated');

@@ -1,6 +1,7 @@
 @extends('layouts.admin')
 
 @section('content')
+    {{-- Подключаем Inter для компактности и четкости --}}
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 
     <style>
@@ -212,7 +213,7 @@
                                             <span class="relative inline-flex rounded-full h-4 w-4 bg-red-600"></span>
                                         </div>
 
-                                        <h3 class="text-red-600 text-[13px] font-black uppercase tracking-[0.2em]">
+                                        <h3 class="text-red-600 text-[13px] font-black uppercase tracking-[0.2em]" data-i18n="dangerZoneTitle">
                                             Danger Zone
                                         </h3>
                                     </div>
@@ -270,6 +271,7 @@
                     btnBack: "Назад",
                     tabProfile: "Профиль",
                     tabSecurity: "Безопасность",
+                    dangerZoneTitle: "Danger Zone",
                     deleteWarning: "Удаление аккаунта сотрет все данные безвозвратно.",
                     btnDeleteAccount: "УДАЛИТЬ АККАУНТ",
                     confirmPassTitle: "Подтвердите пароль",
@@ -277,12 +279,14 @@
                     placeholderPass: "Ваш пароль",
                     btnCancel: "Отмена",
                     btnConfirmDelete: "Удалить",
-                    errorPassword: "❌ Неверный пароль. Попробуйте еще раз."
+                    errorPassword: "❌ Неверный пароль. Попробуйте еще раз.",
+                    companyName: "Название компании"
                 },
                 tj: {
                     btnBack: "Бозгашт",
                     tabProfile: "Профил",
                     tabSecurity: "Амният",
+                    dangerZoneTitle: "Минтақаи хавфнок",
                     deleteWarning: "Нест кардани аккаунт ҳамаи маълумотро ба таври ҳамешагӣ нест мекунад.",
                     btnDeleteAccount: "НЕСТ КАРДАНИ АККАУНТ",
                     confirmPassTitle: "Рамзро тасдиқ кунед",
@@ -290,12 +294,14 @@
                     placeholderPass: "Рамзи шумо",
                     btnCancel: "Бекор кардан",
                     btnConfirmDelete: "Нест кардан",
-                    errorPassword: "❌ Рамз нодуруст аст. Дубора кӯшиш кунед."
+                    errorPassword: "❌ Рамз нодуруст аст. Дубора кӯшиш кунед.",
+                    companyName: "Номи ширкат"
                 },
                 en: {
                     btnBack: "Back",
                     tabProfile: "Profile",
                     tabSecurity: "Security",
+                    dangerZoneTitle: "Danger Zone",
                     deleteWarning: "Deleting your account will erase all data permanently.",
                     btnDeleteAccount: "DELETE ACCOUNT",
                     confirmPassTitle: "Confirm Password",
@@ -303,7 +309,8 @@
                     placeholderPass: "Your password",
                     btnCancel: "Cancel",
                     btnConfirmDelete: "Delete",
-                    errorPassword: "❌ Incorrect password. Please try again."
+                    errorPassword: "❌ Incorrect password. Please try again.",
+                    companyName: "Company Name"
                 }
             };
 

@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
+use Carbon\Carbon;
 
 class UserController extends Controller
 {
@@ -29,12 +30,12 @@ class UserController extends Controller
             'email'    => 'required|email|unique:users,email',
             'password' => 'required|min:6',
             'phone'    => 'nullable|string',
+            'company'  => 'nullable|string|max:255',
             'role'     => 'required|in:admin,employee,director,user',
         ]);
 
         $user = new User($data);
         $user->password = Hash::make($request->password);
-        $user->created_by = Auth::id();
         $user->save();
 
         return redirect()->route('users.index')->with('success', 'Пользователь создан!');
@@ -42,8 +43,16 @@ class UserController extends Controller
 
     public function show(User $user)
     {
+        $year = now()->year;
+        $firstDayOfYear = Carbon::create($year, 1, 1);
+        $startDate = $firstDayOfYear->copy()->startOfWeek(Carbon::MONDAY);
+        $lastDayOfYear = Carbon::create($year, 12, 31);
+        $endDate = $lastDayOfYear->copy()->endOfWeek(Carbon::SUNDAY);
+        $totalDays = $startDate->diffInDays($endDate) + 1;
+        $weeksCount = (int)ceil($totalDays / 7);
+
         $activityData = Document::where('created_by', $user->id)
-            ->whereYear('created_at', now()->year)
+            ->whereYear('created_at', $year)
             ->select(
                 DB::raw('DATE(created_at) as date'),
                 DB::raw('count(*) as count')
@@ -52,58 +61,53 @@ class UserController extends Controller
             ->pluck('count', 'date')
             ->toArray();
 
-        return view('users.show', compact('user', 'activityData'));
+        return view('users.show', compact('user', 'activityData', 'year', 'startDate', 'weeksCount'));
     }
 
     public function edit(User $user)
     {
         $authId = (int)auth()->id();
-        $creatorId = $user->created_by;
+        $authUser = auth()->user();
 
-        // 1. Вместо abort — перенаправляем назад в профиль с ошибкой
+        // 1. Защита: роль USER неприкасаема
         if (strtolower($user->role) === 'user') {
             return redirect()->route('users.show', $user->id)
                 ->with('error', 'Роль USER неприкасаема');
         }
 
-        // 2. РАЗРЕШАЕМ РЕДАКТИРОВАНИЕ
-        if (
-            $user->id === $authId ||
-            (int)$creatorId === $authId ||
-            ($authId === 10 && is_null($creatorId))
-        ) {
+        // 2. Разрешаем редактирование (Опечатка исправлена здесь)
+        if ($user->id === $authId || $authId === 10 || ($authUser && $authUser->role === 'admin')) {
             return view('users.edit', compact('user'));
         }
 
-        // Вместо abort для всех остальных случаев
         return redirect()->route('users.show', $user->id)
-            ->with('error', "Вы не можете редактировать этого пользователя. Создатель ID: " . ($creatorId ?? 'не указан'));
+            ->with('error', 'Вы не можете редактировать этого пользователя.');
     }
 
     public function update(Request $request, User $user)
     {
         $authId = (int)Auth::id();
+        $authUser = Auth::user();
 
-        // Защита: роль 'user'
         if (strtolower($user->role) === 'user') {
             return redirect()->route('users.show', $user->id)
                 ->with('error', 'Этого пользователя нельзя изменять');
         }
 
-        $isOwner = (int)$user->created_by === $authId;
         $isSelf = $user->id === $authId;
-        $isSuperAdminFix = ($authId === 10 && is_null($user->created_by));
+        $isAdmin = ($authId === 10 || ($authUser && $authUser->role === 'admin'));
 
-        if (!$isOwner && !$isSuperAdminFix && !$isSelf) {
+        if (!$isSelf && !$isAdmin) {
             return redirect()->route('users.show', $user->id)
                 ->with('error', 'У вас нет прав на обновление этого профиля');
         }
 
         $data = $request->validate([
-            'name'  => 'required|string|max:255',
-            'email' => 'required|email|unique:users,email,' . $user->id,
-            'phone' => 'nullable|string',
-            'role'  => 'required|in:admin,employee,director,user',
+            'name'    => 'required|string|max:255',
+            'email'   => 'required|email|unique:users,email,' . $user->id,
+            'phone'   => 'nullable|string',
+            'company' => 'nullable|string|max:255',
+            'role'    => 'required|in:admin,employee,director,user',
         ]);
 
         $user->update($data);
@@ -114,6 +118,7 @@ class UserController extends Controller
     public function destroy(User $user)
     {
         $authUser = Auth::user();
+        $authId = (int)Auth::id();
 
         if ($user->id === $authUser->id) {
             return back()->with('error', 'Вы не можете удалить самого себя');
@@ -123,8 +128,8 @@ class UserController extends Controller
             return back()->with('error', 'Этого пользователя нельзя трогать, он независим');
         }
 
-        if ((int)$user->created_by !== (int)$authUser->id && (int)$authUser->id !== 10) {
-            return back()->with('error', 'Вы можете удалять только тех, кого добавили сами');
+        if ($authId !== 10 && $authUser->role !== 'admin') {
+            return back()->with('error', 'У вас нет прав на удаление сотрудников');
         }
 
         $user->delete();

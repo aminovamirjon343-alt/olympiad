@@ -3,26 +3,94 @@
 @section('content')
     <div class="notif-container">
         <div class="notif-header">
-            <div class="max-w-5xl mx-auto mb-10 flex justify-between items-end">
+            <div class="max-w-5xl mx-auto mb-10 flex justify-between items-end w-full">
 
                 <h1 class="text-xl font-bold doc-main-title tracking-tight flex items-center gap-2">
                     <span class="w-2 h-6 bg-blue-500 rounded-full shadow-[0_0_10px_rgba(59,130,246,0.5)]"></span>
                     <span data-i18n="notifTitle">Уведомления</span>
                 </h1>
+
+                <div class="header-right-actions" style="display: flex; align-items: center; gap: 15px;">
+                    @if(isset($unreadCount) && $unreadCount > 0)
+                        <form action="{{ route('notifications.readAll') }}" method="POST" style="display:inline;" data-confirm-i18n="confirmReadAll">
+                            @csrf
+                            <button type="submit" class="btn-read-all" data-i18n="btnReadAll">Прочитать все</button>
+                        </form>
+                        <span class="unread-count"><span data-i18n="newNotifs">У вас новые:</span> {{ $unreadCount }}</span>
+                    @endif
+                </div>
             </div>
-            @if(isset($unreadCount) && $unreadCount > 0)
-                <span class="unread-count"><span data-i18n="newNotifs">У вас новые:</span> {{ $unreadCount }}</span>
-            @endif
         </div>
 
         <div class="notif-list">
             @forelse($notifications as $n)
                 @php
+                    // 1. Декодируем JSON данные уведомления
                     $data = is_array($n->data) ? $n->data : json_decode($n->data, true);
                     $docId = $data['document_id'] ?? ($data['id'] ?? null);
-                    $type = $n->type ?? ($data['type'] ?? 'system');
-                    $userName = $data['user_name'] ?? ($data['user'] ?? 'Система');
-                    $docTitle = $data['document_title'] ?? ($data['document'] ?? 'Документ');
+                    $type = $data['type'] ?? ($n->type ?? 'system');
+
+                    // 2. Умный поиск реального имени отправителя по всем ключам JSON
+                    $userName = $data['user_name'] ??
+                                ($data['sender_name'] ??
+                                ($data['from_user_name'] ??
+                                ($data['user']['name'] ??
+                                ($data['user'] ??
+                                ($data['sender'] ?? null)))));
+
+                    // Ищем email в JSON, если он там вдруг есть
+                    $userEmail = $data['user_email'] ?? ($data['sender_email'] ?? null);
+
+                    // 3. Умный поиск названия документа в JSON
+                    $docTitle = $data['document_title'] ?? ($data['document'] ?? ($data['title'] ?? null));
+
+                    // ====================================================================
+                    // СУПЕР-ЗАЩИТА: Если в JSON пусто, идем напрямую в базу данных через Модели!
+                    // ====================================================================
+                    if ($docId) {
+                        // Пытаемся найти документ в БД
+                        $dbDoc = \App\Models\Document::find($docId);
+
+                        if ($dbDoc) {
+                            // Если названия документа нет в JSON — берем реальное из базы
+                            if (!$docTitle) {
+                                $docTitle = $dbDoc->title;
+                            }
+
+                            // Если имени или email нет, ищем юзера-создателя
+                            if (!$userName || !$userEmail) {
+                                $creatorUser = null;
+                                if ($dbDoc->creator) {
+                                    $creatorUser = $dbDoc->creator;
+                                } else {
+                                    $creatorUser = \App\Models\User::find($dbDoc->created_by);
+                                }
+
+                                if ($creatorUser) {
+                                    if (!$userName) {
+                                        $userName = $creatorUser->name;
+                                    }
+                                    if (!$userEmail) {
+                                        $userEmail = $creatorUser->email;
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // Если имя нашли, а email всё еще нет, попробуем найти юзера по имени
+                    if ($userName && !$userEmail && $userName !== 'Владелец') {
+                        $findUser = \App\Models\User::where('name', $userName)->first();
+                        if ($findUser) {
+                            $userEmail = $findUser->email;
+                        }
+                    }
+
+                    // Если вообще ничего не помогло, ставим дефолтные значения
+                    if (!$userName) $userName = 'Владелец';
+                    if (!$docTitle) $docTitle = 'Документ #' . ($docId ?? '');
+                    // ====================================================================
+
                     $commentText = $data['comment_preview'] ?? ($data['comment_text'] ?? null);
 
                     $actionKey = match($type) {
@@ -48,7 +116,12 @@
 
                         <div class="notif-content">
                             <div class="notif-title">
-                                <span class="user-name">{{ $userName }}</span>
+                                <span class="user-name">
+                                    {{ $userName }}
+                                    @if($userEmail)
+                                        <span class="user-email">({{ $userEmail }})</span>
+                                    @endif
+                                </span>
                                 <span data-i18n="{{ $actionKey }}"></span>
 
                                 @if($docId)
@@ -74,7 +147,6 @@
                                     @if(!$n->is_read)
                                         <form action="{{ route('notifications.read', $n->id) }}" method="POST" style="display:inline;">
                                             @csrf
-                                            @method('PATCH')
                                             <button type="submit" class="action-link mark-read" data-i18n="btnMarkRead">Прочитать</button>
                                         </form>
                                     @endif
@@ -111,20 +183,59 @@
     <style>
         :root {
             --primary-color: #4f46e5;
-            --bg-unread: #f5f7ff;
+            --bg-unread: #f8faff;
             --text-main: #1f2937;
             --text-muted: #6b7280;
-            --border-color: #f3f4f6;
+            --border-color: #cbd5e1;
+            --border-unread: rgba(79, 70, 229, 0.4);
             --danger: #ef4444;
         }
         .notif-container { max-width: 700px; margin: 20px auto; padding: 0 15px; font-family: 'Inter', sans-serif; }
         .notif-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-        .unread-count { font-size: 13px; background: var(--primary-color); color: white; padding: 4px 12px; border-radius: 20px; }
+        .unread-count { font-size: 13px; background: var(--primary-color); color: white; padding: 4px 12px; border-radius: 20px; font-weight: 600; }
         .notif-list { display: flex; flex-direction: column; gap: 12px; }
-        .notif-card { background: #ffffff; border: 1px solid var(--border-color); border-radius: 16px; transition: all 0.2s ease; position: relative; }
+
+        .btn-read-all {
+            background: transparent;
+            color: var(--primary-color);
+            border: 1.5px solid var(--primary-color);
+            padding: 4px 14px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .btn-read-all:hover {
+            background: var(--primary-color);
+            color: white;
+            box-shadow: 0 2px 8px rgba(79, 70, 229, 0.2);
+        }
+
+        .notif-card {
+            background: #ffffff;
+            border: 1.5px solid var(--border-color);
+            border-radius: 16px;
+            transition: all 0.2s ease;
+            position: relative;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.02);
+        }
+        .notif-card:hover {
+            box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06);
+            border-color: #94a3b8;
+        }
         .notif-item { display: flex; gap: 16px; padding: 16px; }
-        .notif-card.unread { background: var(--bg-unread); border-color: rgba(79, 70, 229, 0.1); }
-        .notif-icon-wrapper { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0; }
+
+        .notif-card.unread {
+            background: var(--bg-unread);
+            border-color: var(--border-unread);
+            box-shadow: 0 2px 8px rgba(79, 70, 229, 0.05);
+        }
+        .notif-card.unread:hover {
+            border-color: var(--primary-color);
+        }
+
+        .notif-icon-wrapper { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0; border: 1px solid rgba(0,0,0,0.04); }
         .type-assigned { background: #fff7ed; }
         .type-comment  { background: #f0fdf4; }
         .type-signed   { background: #eff6ff; }
@@ -132,20 +243,27 @@
         .notif-content { flex: 1; position: relative; }
         .notif-title { font-size: 15px; line-height: 1.4; color: var(--text-main); }
         .user-name { font-weight: 700; }
+        .user-email { font-weight: 400; color: var(--text-muted); font-size: 13px; margin-left: 4px; }
         .doc-link { font-weight: 700; color: var(--primary-color); text-decoration: underline; padding: 2px 4px; border-radius: 4px; background: rgba(79, 70, 229, 0.05); }
         .doc-name-no-link { color: #9ca3af; font-size: 12px; }
-        .notif-quote { margin-top: 8px; padding: 10px; background: rgba(0,0,0,0.03); border-radius: 8px; font-size: 13px; color: #4b5563; border-left: 3px solid #d1d5db; font-style: italic; }
+        .notif-quote { margin-top: 8px; padding: 10px; background: rgba(0,0,0,0.03); border-radius: 8px; font-size: 13px; color: #4b5563; border-left: 3px solid #cbd5e1; font-style: italic; border-top: 1px solid rgba(0,0,0,0.02); border-right: 1px solid rgba(0,0,0,0.02); border-bottom: 1px solid rgba(0,0,0,0.02); }
         .notif-meta { margin-top: 10px; display: flex; justify-content: space-between; align-items: center; }
         .time-tag { font-size: 12px; color: var(--text-muted); display: flex; align-items: center; gap: 4px; }
         .notif-actions { display: flex; gap: 12px; position: relative; z-index: 10; }
-        .action-link { background: none; border: none; padding: 0; font-size: 12px; font-weight: 600; cursor: pointer; }
+        .action-link { background: none; border: none; padding: 0; font-size: 12px; font-weight: 600; cursor: pointer; transition: opacity 0.2s; }
+        .action-link:hover { opacity: 0.8; text-decoration: underline; }
         .mark-read { color: var(--primary-color); }
         .delete { color: var(--text-muted); }
+        .delete:hover { color: var(--danger); }
         .unread-dot { width: 10px; height: 10px; background: var(--primary-color); border-radius: 50%; position: absolute; right: 16px; top: 20px; }
+
+        .notif-empty { text-align: center; padding: 40px; border: 1.5px dashed var(--border-color); border-radius: 16px; color: var(--text-muted); }
+        .empty-icon { font-size: 32px; margin-bottom: 10px; opacity: 0.5; }
+        .notif-pagination { margin-top: 20px; display: flex; justify-content: center; }
     </style>
 
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
+        window.applyDocLang = function() {
             const translations = {
                 ru: {
                     notifTitle: "Уведомления",
@@ -156,9 +274,11 @@
                     notifCreated: " создал документ",
                     notifDefault: " отправил уведомление",
                     btnMarkRead: "Прочитать",
+                    btnReadAll: "Прочитать все",
                     btnDelete: "Удалить",
                     noNotifs: "У вас пока нет уведомлений",
-                    confirmDelete: "Удалить?"
+                    confirmDelete: "Удалить?",
+                    confirmReadAll: "Вы уверены, что хотите отметить все уведомления как прочитанные?"
                 },
                 tj: {
                     notifTitle: "Огоҳиномаҳо",
@@ -169,9 +289,11 @@
                     notifCreated: " ҳуҷҷат сохт",
                     notifDefault: " огоҳинома фиристод",
                     btnMarkRead: "Хондан",
+                    btnReadAll: "Ҳамаро хондан",
                     btnDelete: "Нест кардан",
                     noNotifs: "Шумо огоҳинома надоред",
-                    confirmDelete: "Нест кунем?"
+                    confirmDelete: "Нест кунем?",
+                    confirmReadAll: "Шумо мутмаин ҳастед, ки мехоҳед ҳамаи огоҳиномаҳоро ҳамчун хондашуда қайд кунед?"
                 },
                 en: {
                     notifTitle: "Notifications",
@@ -182,28 +304,46 @@
                     notifCreated: " created a document",
                     notifDefault: " sent a notification",
                     btnMarkRead: "Read",
+                    btnReadAll: "Read all",
                     btnDelete: "Delete",
                     noNotifs: "No notifications",
-                    confirmDelete: "Delete?"
+                    confirmDelete: "Delete?",
+                    confirmReadAll: "Are you sure you want to mark all notifications as read?"
                 }
             };
 
             const lang = localStorage.getItem('app-lang') || 'ru';
-            const t = translations[lang];
+            const t = translations[lang] || translations['ru'];
 
             document.querySelectorAll('[data-i18n]').forEach(el => {
                 const key = el.getAttribute('data-i18n');
                 if (t[key]) el.textContent = t[key];
             });
 
+            // ИСПРАВЛЕНО: Скрипт теперь вешает онсабмит и на кнопки, и на форму «Прочитать все»
             document.querySelectorAll('[data-confirm-i18n]').forEach(el => {
                 const key = el.getAttribute('data-confirm-i18n');
                 if (t[key]) {
-                    el.closest('form').onsubmit = (e) => {
-                        if (!confirm(t[key])) e.preventDefault();
-                    };
+                    // Если дата-атрибут висит на самой форме
+                    if (el.tagName === 'FORM') {
+                        el.onsubmit = (e) => {
+                            if (!confirm(t[key])) e.preventDefault();
+                        };
+                    } else {
+                        // Если висит на кнопке внутри формы (как было на кнопке удаления)
+                        const form = el.closest('form');
+                        if(form) {
+                            form.onsubmit = (e) => {
+                                if (!confirm(t[key])) e.preventDefault();
+                            };
+                        }
+                    }
                 }
             });
+        };
+
+        document.addEventListener('DOMContentLoaded', () => {
+            window.applyDocLang();
         });
     </script>
 @endsection

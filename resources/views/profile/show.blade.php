@@ -1,5 +1,3 @@
-
-
 @extends('layouts.admin')
 
 @section('content')
@@ -63,12 +61,14 @@
         <div class="container mx-auto px-6">
 
             <div class="max-w-5xl mx-auto mb-10 flex justify-between items-end">
-
-                <h1 class="text-xl font-bold doc-main-title tracking-tight flex items-center gap-2">
-                    <span class="w-2 h-6 bg-blue-500 rounded-full shadow-[0_0_10px_rgba(59,130,246,0.5)]"></span>
-                    <span data-i18n="profileTitle">Профиль</span>
-                </h1>
+                <div>
+                    <h1 class="text-xl font-bold doc-main-title tracking-tight flex items-center gap-2">
+                        <span class="w-2 h-6 bg-blue-500 rounded-full shadow-[0_0_10px_rgba(59,130,246,0.5)]"></span>
+                        <span data-i18n="profileTitle">Профиль</span>
+                    </h1>
+                </div>
             </div>
+
             {{-- СЕТКА КАРТОЧЕК С ВЫРАВНИВАНИЕМ ВЫСОТЫ --}}
             <div class="max-w-5xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8 items-stretch">
 
@@ -114,6 +114,11 @@
                                     <label class="info-label" data-i18n="labelEmail">Email</label>
                                     <p class="info-value">{{ $user->email }}</p>
                                 </div>
+                                {{-- НАЗВАНИЕ КОМПАНИИ --}}
+                                <div>
+                                    <label class="info-label" data-i18n="labelCompany">Название компании</label>
+                                    <p class="info-value">{{ $user->company ?? '—' }}</p>
+                                </div>
                                 <div>
                                     <label class="info-label" data-i18n="labelPhone">Контактный телефон</label>
                                     <p class="info-value">{{ $user->phone ?? '+992 00 000 0000' }}</p>
@@ -142,6 +147,7 @@
                     </div>
                 </div>
             </div>
+
             <div>
                 {{-- ACTIVITY GRID --}}
                 <div class="activity-card bg-white p-6 rounded-xl border border-slate-200 shadow-sm mt-8 mx-auto max-w-fit force-black-text">
@@ -176,8 +182,8 @@
                                     <div style="grid-column: {{ $w + 1 }}; position: relative;">
                                         @if($month != $lastMonth && $dateInWeek->year == $year)
                                             <span style="position: absolute; left: 0; bottom: 0; white-space: nowrap;">
-                                    {{ $dateInWeek->translatedFormat('M') }}
-                                </span>
+                                                {{ $dateInWeek->translatedFormat('M') }}
+                                            </span>
                                             @php $lastMonth = $month; @endphp
                                         @endif
                                     </div>
@@ -199,7 +205,7 @@
                                     @php
                                         $day = $startDate->copy()->addDays($i);
                                         $isCurrentYear = $day->year == $year;
-                                        $key = $day->toDateString(); // Гарантирует формат '2026-05-15'
+                                        $key = $day->toDateString();
                                         $count = $activityData[$key] ?? 0;
 
                                         $level = 0;
@@ -250,6 +256,7 @@
                     statusActive: "Активен",
                     labelFullName: "Полное имя",
                     labelEmail: "Email адрес",
+                    labelCompany: "Название компании",
                     labelPhone: "Контактный телефон",
                     labelCreatedAt: "Дата создания",
                     labelAccess: "Уровень доступа",
@@ -267,6 +274,7 @@
                     statusActive: "Фаъол",
                     labelFullName: "Номи пурра",
                     labelEmail: "Суроғаи Email",
+                    labelCompany: "Номи ширкат",
                     labelPhone: "Телефони тамос",
                     labelCreatedAt: "Санаи эҷод",
                     labelAccess: "Сатҳи дастрасӣ",
@@ -284,6 +292,7 @@
                     statusActive: "Active",
                     labelFullName: "Full Name",
                     labelEmail: "Email Address",
+                    labelCompany: "Company Name",
                     labelPhone: "Phone Number",
                     labelCreatedAt: "Created At",
                     labelAccess: "Access Level",
@@ -298,7 +307,7 @@
             };
 
             const lang = localStorage.getItem('app-lang') || 'ru';
-            const t = translations[lang];
+            const t = translations[lang] || translations['ru'];
 
             document.querySelectorAll('[data-i18n]').forEach(el => {
                 const key = el.getAttribute('data-i18n');

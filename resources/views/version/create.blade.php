@@ -75,7 +75,6 @@
                         <span class="w-2 h-6 bg-blue-500 rounded-full shadow-[0_0_10px_rgba(59,130,246,0.5)]"></span>
                         <span data-i18n="titleRevision">РЕВИЗИЯ</span>
                     </h1>
-                    <p class="text-[9px] font-bold uppercase tracking-[0.2em] text-slate-500 mt-1" data-i18n="subtitleRevision">Version Control & Deployment</p>
                 </div>
 
                 <a href="{{ route('versions.index') }}" class="text-[10px] font-black uppercase text-slate-400 hover:text-amber-500 transition-colors flex items-center gap-1.5 pb-1">

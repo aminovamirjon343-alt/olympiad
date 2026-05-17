@@ -81,27 +81,23 @@
                                 </td>
 
                                 {{-- ACTIONS: Уменьшены отступы между кнопками --}}
-                                <td class="px-3 py-1.5 text-right space-x-2 whitespace-nowrap">
-                                    <a href="{{ route('versions.show', $v->id) }}"
-                                       class="text-indigo-600 text-[10px] font-bold uppercase hover:text-indigo-800" data-i18n="btnShow">
-                                        Show
-                                    </a>
+                                <td class="px-4 py-3 text-right whitespace-nowrap">
+                                    <div class="inline-flex items-center gap-1.5">
 
-                                    <a href="{{ route('versions.edit', $v->id) }}"
-                                       class="text-yellow-600 text-[10px] font-bold uppercase hover:text-yellow-700" data-i18n="btnEdit">
-                                        Edit
-                                    </a>
+                                        {{-- BUTTON: SHOW --}}
+                                        <a href="{{ route('versions.show', $v->id) }}"
+                                           class="action-btn-circle bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white dark:bg-blue-500/10 dark:text-blue-400 dark:hover:bg-blue-600 dark:hover:text-white"
+                                           data-tooltip-key="btnShow">
+                                            <i class="bi bi-eye-fill"></i>
+                                        </a>
 
-                                    <form action="{{ route('versions.destroy', $v->id) }}"
-                                          method="POST"
-                                          class="inline"
-                                          onsubmit="return confirm('Удалить?')">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button class="text-red-600 text-[10px] font-bold uppercase hover:text-red-800" data-i18n="btnDelete">
-                                            Del
-                                        </button>
-                                    </form>
+                                        {{-- BUTTON: EDIT --}}
+
+
+                                        {{-- BUTTON: DELETE --}}
+
+
+                                    </div>
                                 </td>
 
                             </tr>

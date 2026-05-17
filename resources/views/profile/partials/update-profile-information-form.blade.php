@@ -27,6 +27,16 @@
             <x-input-error class="mt-2 text-xs text-red-500" :messages="$errors->get('name')" />
         </div>
 
+        {{-- Название компании ( name="company" связано с бэкендом ) --}}
+        <div>
+            <label for="company" class="block text-sm font-semibold text-slate-700 mb-1" data-i18n="labelCompany">Название компании</label>
+            <input id="company" name="company" type="text"
+                   class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all outline-none"
+                   value="{{ old('company', $user->company ?? '') }}"
+                   autocomplete="organization" />
+            <x-input-error class="mt-2 text-xs text-red-500" :messages="$errors->get('company')" />
+        </div>
+
         {{-- Email --}}
         <div>
             <label for="email" class="block text-sm font-semibold text-slate-700 mb-1" data-i18n="labelEmail">Email</label>
@@ -102,6 +112,7 @@
                 profileDataTitle: "Данные профиля",
                 profileDataDesc: "Обновите информацию вашего аккаунта и адрес электронной почты.",
                 labelName: "Имя",
+                labelCompany: "Название компании",
                 labelEmail: "Email",
                 labelPhone: "Телефон",
                 emailUnverified: "Ваш адрес электронной почты не подтвержден.",
@@ -114,6 +125,7 @@
                 profileDataTitle: "Маълумоти профил",
                 profileDataDesc: "Маълумоти аккаунт ва суроғаи почтаи электронии худро навсозӣ кунед.",
                 labelName: "Ном",
+                labelCompany: "Номи ширкат",
                 labelEmail: "Email",
                 labelPhone: "Телефон",
                 emailUnverified: "Суроғаи почтаи электронии шумо тасдиқ нашудааст.",
@@ -126,6 +138,7 @@
                 profileDataTitle: "Profile Information",
                 profileDataDesc: "Update your account's profile information and email address.",
                 labelName: "Name",
+                labelCompany: "Company Name",
                 labelEmail: "Email",
                 labelPhone: "Phone",
                 emailUnverified: "Your email address is unverified.",

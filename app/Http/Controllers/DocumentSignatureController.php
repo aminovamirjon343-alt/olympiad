@@ -70,12 +70,17 @@ class DocumentSignatureController extends Controller
             return DB::transaction(function () use ($document, $signer, $currentWorkflow, $qrData) {
                 $result = $this->processPdfSigning($document, $qrData);
 
-                DocumentSignature::create([
-                    'document_id' => $document->id,
-                    'user_id'     => $signer->id,
-                    'signature'   => $result['qr_path'],
-                    'signed_at'   => now(),
-                ]);
+                // 🔥 ИСПРАВЛЕНО: Вместо create() используем updateOrCreate(), чтобы обновить существующую пустую запись подписи
+                DocumentSignature::updateOrCreate(
+                    [
+                        'document_id' => $document->id,
+                        'user_id'     => $signer->id,
+                    ],
+                    [
+                        'signature'   => $result['qr_path'],
+                        'signed_at'   => now(),
+                    ]
+                );
 
                 $document->update([
                     'file_path' => $result['pdf_path'],
@@ -172,7 +177,7 @@ class DocumentSignatureController extends Controller
 
             // Штамп на последнюю страницу
             if ($pageNo === $pageCount) {
-                $qrSize = 28; // Меньший размер
+                $qrSize = 28;
                 $margin = 15;
                 $x = $size['width'] - $qrSize - $margin;
                 $y = $size['height'] - $qrSize - $margin - 5;
@@ -220,8 +225,12 @@ class DocumentSignatureController extends Controller
         if ($currentWorkflow) {
             $currentWorkflow->update(['status' => 'approved']);
             $next = DocumentWorkflow::where('document_id', $document->id)->where('step_order', '>', $currentWorkflow->step_order)->orderBy('step_order')->first();
-            if ($next) $next->update(['status' => 'pending']);
-            else $document->update(['status' => 'approved']);
+            if ($next) {
+                $next->update(['status' => 'pending']);
+            } else {
+                // 🔥 ИСПРАВЛЕНО: Меняем статус документа на completed, когда все шаги пройдены
+                $document->update(['status' => 'completed']);
+            }
         }
     }
 }

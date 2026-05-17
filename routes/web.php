@@ -98,6 +98,8 @@
 //require __DIR__.'/auth.php';
 //Route::resource('/workflow',DocumentWorkflowController::class);
 
+
+
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DocumentCommentController;
 use App\Http\Controllers\DocumentController;
@@ -110,11 +112,17 @@ use App\Http\Controllers\SearchController;
 use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\AnalysisController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
-// 1. ПЕРЕАДРЕСАЦИЯ ГЛАВНОЙ
+// ==========================================
+// 1. ПУБЛИЧНЫЕ РОУТЫ (ДОСТУПНЫ ВСЕМ БЕЗ ЛОГИНА)
+// ==========================================
+
+// Главная страница сайта (открывается сразу)
 Route::get('/', function () {
     return view('layouts.site');
 })->name('site.home');
@@ -123,7 +131,12 @@ Route::get('/site', function () {
     return view('layouts.site');
 })->name('site.main');
 
-// 2. ЛОКАЛЬНЫЙ ВХОД
+
+// ==========================================
+// 2. АВТОРИЗАЦИЯ И ЛОКАЛЬНЫЙ ВХОД
+// ==========================================
+require __DIR__ . '/auth.php';
+
 if (app()->environment('local')) {
     Route::post('/login-as', function (Request $request) {
         Auth::loginUsingId($request->user_id);
@@ -131,50 +144,50 @@ if (app()->environment('local')) {
     })->name('login.as');
 }
 
-// 3. АВТОРИЗАЦИЯ
-require __DIR__ . '/auth.php';
 
-// 4. ГРУППА ЗАЩИЩЕННЫХ РОУТОВ (AUTH)
+// ==========================================
+// 3. ЗАКРЫТАЯ АДМИНКА (ТОЛЬКО ПОСЛЕ ЛОГИНА)
+// ==========================================
 Route::middleware(['auth'])->group(function () {
-    // Главная страница уведомлений
-    Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
 
-    // Пометка прочитанным (используем patch)
-    Route::patch('/notifications/{id}/read', [NotificationController::class, 'markAsRead'])->name('notifications.read');
-
-    // Удаление
-    Route::delete('/notifications/{id}', [NotificationController::class, 'destroy'])->name('notifications.destroy');
-
-    // Сохранение комментария и рассылка уведомлений
-    Route::post('/comments/store', [NotificationController::class, 'store'])->name('comments.store');
-
-    // Дашборд
+    // Главная панель (Админка)
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/analysis', [AnalysisController::class, 'index'])->name('analysis.index');
 
-    // Профиль
+    // Профиль пользователя
     Route::get('/profile', [ProfileController::class, 'show'])->name('profile.show');
     Route::get('/profile/edit', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
-    // Основные ресурсы проекта olympiad
-// Основные ресурсы проекта olympiad
+    // Настройки
+    Route::get('/setting', function () {
+        return view('settings.index');
+    })->name('settings');
+    Route::post('/settings/signature', [ProfileController::class, 'updateSignature'])->name('settings.signature.update');
+    Route::post('/settings/general', [ProfileController::class, 'updateGeneral'])->name('settings.general.update');
+    Route::put('/settings/edi', [SettingsController::class, 'update'])->name('settings.update');
+
+    // Документы и AI
     Route::get('/documents/{id}/download-pdf', [DocumentController::class, 'downloadPdf'])->name('documents.downloadPdf');
     Route::get('/documents/{id}/download-word', [DocumentController::class, 'downloadWord'])->name('documents.downloadWord');
-
-    // 2. Роут для AI парсинга (проверь, чтобы имя метода в контроллере было storeFromPdf или aiProcess)
     Route::post('/documents/ai-process', [DocumentController::class, 'storeFromPdf'])->name('documents.ai-process');
-
-    // 3. Подписание
     Route::post('/documents/{id}/sign', [DocumentController::class, 'sign'])->name('documents.sign');
+    Route::post('/documents/{document}/sign', [DocumentSignatureController::class, 'store'])->name('documents.sign_signature');
 
-    // 4. Ресурсный контроллер (индекс, создание, удаление и т.д.)
-    Route::resource('documents', DocumentController::class); Route::resource('users', UserController::class);
+    // Ресурсные контроллеры
+    Route::resource('documents', DocumentController::class);
+    Route::resource('users', UserController::class);
     Route::resource('signatures', DocumentSignatureController::class);
     Route::resource('versions', DocumentVersionController::class);
     Route::resource('logs', DocumentLogController::class);
+    Route::resource('workflow', DocumentWorkflowController::class);
 
-    // ПОИСК ЮЗЕРА ДЛЯ ФОРМЫ (то, что мы добавили для проверки email)
+    // Очистка логов (теперь она защищена авторизацией!)
+    Route::post('/logs/clear', [DocumentLogController::class, 'clear'])->name('logs.clear');
+
+    // Поиск
+    Route::get('/search', [SearchController::class, 'index'])->name('search');
     Route::get('/api/users/search', function (Request $request) {
         $user = \App\Models\User::where('email', $request->email)->first();
         return response()->json([
@@ -183,59 +196,50 @@ Route::middleware(['auth'])->group(function () {
         ]);
     })->name('users.search_api');
 
-    // Поиск общий
-    Route::get('/search', [SearchController::class, 'index'])->name('search');
-
-    // Подписание документов
-    Route::post('/documents/{document}/sign', [DocumentSignatureController::class, 'store'])->name('documents.sign');
-
-    // Уведомления
-    Route::prefix('notifications')->name('notifications.')->group(function () {
-        Route::get('/', [NotificationController::class, 'index'])->name('index');
-        Route::get('/create', [NotificationController::class, 'create'])->name('create');
-        Route::post('/{id}/read', [NotificationController::class, 'read'])->name('read');
-
-        // Массовое прочтение через DB (как у тебя было)
-        Route::get('/read-all', function () {
-            \DB::table('notifications')
-                ->where('user_id', auth()->id())
-                ->update(['is_read' => true]);
-            return redirect()->route('notifications.index');
-        })->name('read_all');
-
-        Route::delete('/clear-all', [NotificationController::class, 'clearAll'])->name('clearAll');
-    });
-
     // Комментарии
     Route::post('/comments', [DocumentCommentController::class, 'store'])->name('comments.store');
     Route::get('/documents/{documentId}/comments', [DocumentCommentController::class, 'index'])->name('comments.index');
     Route::delete('/comments/{comment}', [DocumentCommentController::class, 'destroy'])->name('comments.destroy');
-// Маршрут для страницы анализа
-    Route::get('/analysis', [App\Http\Controllers\AnalysisController::class, 'index'])->name('analysis.index');
-    // Воркфлоу
-    Route::resource('workflow', DocumentWorkflowController::class);
-});
-Route::middleware(['auth'])->group(function () {
 
-    // Страница настроек
-    Route::get('/setting', function () {
-        return view('settings.index');
-    })->name('settings');
+    // Уведомления
 
-    // Обновление подписи
-    Route::post('/settings/signature', [ProfileController::class, 'updateSignature'])
-        ->name('settings.signature.update');
 
-    // Обновление общих настроек
-    Route::post('/settings/general', [ProfileController::class, 'updateGeneral'])
-        ->name('settings.general.update');
+    Route::prefix('notifications')->name('notifications.')->group(function () {
+        Route::get('/', [NotificationController::class, 'index'])->name('index');
+        Route::get('/create', [NotificationController::class, 'create'])->name('create');
+        Route::post('/{id}/read', [NotificationController::class, 'read'])->name('read');
+        Route::delete('/clear-all', [NotificationController::class, 'clearAll'])->name('clearAll');
 
-    // 🔥 НОВЫЙ: Обновление настроек ЭДО
-    Route::put('/settings/edi', [SettingsController::class, 'update'])
-        ->name('settings.update');
-    Route::get('/', [App\Http\Controllers\AnalysisController::class, 'index'])->name('site.home');
+        Route::get('/read-all', function () {
+            DB::table('notifications')
+                ->where('user_id', auth()->id())
+                ->update(['is_read' => true]);
+            return redirect()->route('notifications.index');
+        })->name('read_all');
+    });
 
-    Route::get('/site', [App\Http\Controllers\AnalysisController::class, 'index'])->name('site.main');
 });
 
+// ========================================================
+// УВЕДОМЛЕНИЯ (Полностью исправленный и чистый блок)
+// ========================================================
 
+// Универсальный роут для чтения (принимает GET, POST, PATCH)
+Route::any('/notifications/{id}/read', [NotificationController::class, 'read'])->name('notifications.read');
+Route::delete('/notifications/{id}', [NotificationController::class, 'destroy'])->name('notifications.destroy');
+
+// Вспомогательные роуты
+Route::patch('/notifications/{id}/mark-as-read', [NotificationController::class, 'markAsRead'])->name('notifications.read_patch');
+Route::post('/comments/store_notification', [NotificationController::class, 'store'])->name('comments.store_notification');
+
+// Группа для списков и создания (БЕЗ конфликтующего роута /read)
+Route::prefix('notifications')->name('notifications.')->group(function () {
+    Route::get('/', [NotificationController::class, 'index'])->name('index');
+    Route::get('/create', [NotificationController::class, 'create'])->name('create');
+    Route::delete('/clear-all', [NotificationController::class, 'clearAll'])->name('clearAll');
+
+    // ИСПРАВЛЕНО: Правильный POST-роут внутри группы.
+    // Теперь его URL будет: /notifications/read-all
+    // А его системное имя будет строго: notifications.readAll
+    Route::post('/read-all', [App\Http\Controllers\NotificationController::class, 'readAll'])->name('readAll');
+});

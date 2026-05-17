@@ -89,15 +89,11 @@
                     <h1 class="text-3xl font-black tracking-tighter text-slate-900 dark:text-white" data-i18n="pageTitle">Реестр подписей</h1>
                     <div class="flex items-center gap-2 mt-1">
                         <span class="w-2 h-2 rounded-full {{ $hasOverdue ? 'bg-rose-500 animate-pulse' : ($allSigned ? 'bg-emerald-500' : 'bg-slate-400') }}"></span>
-                        <p class="label-micro !opacity-60 dark:text-slate-400" data-i18n="{{ $hasOverdue ? 'sysUrgent' : ($allSigned ? 'sysComplete' : 'sysActive') }}">
+                        <p class="text-sm font-bold tracking-tight text-slate-700 dark:text-slate-300" data-i18n="{{ $hasOverdue ? 'sysUrgent' : ($allSigned ? 'sysComplete' : 'sysActive') }}">
                             {{ $hasOverdue ? 'Требуется срочное внимание' : ($allSigned ? 'Все документы оформлены' : 'Система мониторинга активна') }}
                         </p>
                     </div>
                 </div>
-                <a href="{{ route('signatures.create') }}" class="btn-primary-custom px-7 py-3.5 text-xs flex items-center gap-2 shadow-xl shadow-indigo-500/20 hover:scale-105 active:scale-95">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3"><path d="M12 4v16m8-8H4"/></svg>
-                    <span data-i18n="btnNew">Новая запись</span>
-                </a>
             </header>
 
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -110,25 +106,25 @@
                     @endphp
 
                     <div class="card-sig {{ $isPast ? 'card-overdue' : '' }}">
-                        <div class="px-6 py-4 flex justify-between items-center">
-                            <span class="label-micro !opacity-100 {{ $isPast ? 'text-rose-500' : 'text-indigo-500' }}">
+                        <div class="px-6 pt-5 pb-2 flex justify-between items-center text-black">
+                            <span class="text-xs uppercase tracking-wider font-black !opacity-100">
                                 @if($isPast)
-                                    <span data-i18n="overdueLabel">❗ СРОК ИСТЕК</span>
+                                    <span data-i18n="overdueLabel" class="text-rose-600">❗ СРОК ИСТЕК</span>
                                 @else
                                     <span data-i18n="docLabel">Документ</span> #{{ ($signatures->currentPage() - 1) * $signatures->perPage() + $index + 1 }}
                                 @endif
                             </span>
-                            <span class="label-micro">ID-{{ $s->id }}</span>
+                            <span class="text-xs uppercase tracking-wider font-black !opacity-100">ID-{{ $s->id }}</span>
                         </div>
 
-                        <div class="px-6 pb-5">
-                            <div class="flex items-center gap-2 mb-1">
+                        <div class="px-6 pb-5 pt-1">
+                            <div class="flex items-center gap-2">
                                 @if($isWord)
-                                    <i class="bi bi-file-earmark-word-fill text-blue-500 text-sm"></i>
+                                    <i class="bi bi-file-earmark-word-fill text-blue-500 text-base"></i>
                                 @elseif($extension == 'pdf')
-                                    <i class="bi bi-file-earmark-pdf-fill text-red-500 text-sm"></i>
+                                    <i class="bi bi-file-earmark-pdf-fill text-red-500 text-base"></i>
                                 @endif
-                                <h3 class="text-xl font-bold leading-tight truncate text-slate-800 dark:text-slate-100 tracking-tight">
+                                <h3 class="text-2xl font-black leading-tight truncate text-slate-900 dark:text-slate-100 tracking-tight">
                                     {{ $s->document->title ?? 'Без названия' }}
                                 </h3>
                             </div>

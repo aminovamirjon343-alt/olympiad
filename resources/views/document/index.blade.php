@@ -13,12 +13,20 @@
                         <span data-i18n="documents">DOCUMENTS</span>
                     </h1>
                 </div>
-
+                <style>
+                    .btn-primary-custom,
+                    .btn-primary-custom [data-i18n="newDocument"] {
+                        color: #ffffff !important;
+                    }
+                </style>
                 <form action="{{ route('documents.index') }}" method="GET" class="flex items-center gap-2">
 
 
-                    <a href="{{route('documents.create')}}" class="btn-primary-custom" onclick="showPage('documents', null)">
-                        <i class="bi bi-plus-lg me-1"></i>
+                    <a href="{{route('documents.create')}}"
+                       class="btn-primary-custom"
+                       style="color: #ffffff !important;"
+                       onclick="showPage('documents', null)">
+                        <i class="bi bi-plus-lg me-1" style="color: #ffffff !important;"></i>
                         <span data-i18n="newDocument">New Document</span>
                     </a>
                 </form>
@@ -47,7 +55,7 @@
                                         <span class="text-[11px] font-medium text-black uppercase tracking-wider">
                                             {{ Str::limit($doc->title, 45) }}
                                         </span>
-                                        <span class="text-[10px] font-bold text-blue-600 italic">
+                                        <span class="text-[10px] font-bold text-blue-600 ">
                                             {{ $doc->number ?? $doc->id }}
                                         </span>
                                     </div>

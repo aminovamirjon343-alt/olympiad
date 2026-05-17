@@ -2,6 +2,34 @@
 
 @section('content')
     {{-- Главный контейнер с принудительным светлым фоном --}}
+    {{-- Уведомление об ошибке --}}
+    @if(session('error') || $errors->any())
+        <div x-data="{ show: true }"
+             x-init="setTimeout(() => show = false, 4000)"
+             x-show="show"
+             x-transition:enter="transition ease-out duration-300"
+             x-transition:enter-start="opacity-0 transform -translate-y-2"
+             x-transition:leave="transition ease-in duration-300"
+             x-transition:leave-end="opacity-0 transform -translate-y-2"
+             class="fixed top-20 left-1/2 -translate-x-[70%] z-[9999] w-full max-w-md px-4">
+
+            <div class="bg-white border-l-4 border-red-500 shadow-2xl rounded-xl p-4 flex items-center gap-4">
+                <div class="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0">
+                    <i class="bi bi-exclamation-octagon-fill text-red-600 text-xl"></i>
+                </div>
+                <div class="flex-1">
+                    <h4 class="text-[10px] font-black uppercase tracking-widest text-red-600 mb-1" data-i18n="errorTitle">Ошибка доступа</h4>
+                    <p class="text-[12px] font-bold text-black leading-tight" id="session-error-text" data-error-raw="{{ session('error') ?? $errors->first() }}">
+                        {{ session('error') ?? $errors->first() }}
+                    </p>
+                </div>
+                <button @click="show = false" class="text-slate-400 hover:text-black transition-colors">
+                    <i class="bi bi-x-lg text-xs"></i>
+                </button>
+            </div>
+        </div>
+    @endif
+
     <div class="doc-page-v2 bg-[#f8fafc] min-h-[calc(100vh-64px)] py-6 px-4 md:px-8 relative font-inter">
         <div class="max-w-5xl mx-auto">
 
@@ -13,22 +41,67 @@
                         <i class="bi bi-arrow-left text-sm"></i>
                     </a>
                     <h2 class="text-[12px] font-bold uppercase tracking-[0.2em] doc-title-adaptive" data-i18n="back">
-                        Back
+                        Назад
                     </h2>
                 </div>
 
-                <div class="flex gap-2">
-                    <a href="{{ route('documents.edit', $document->id) }}"
-                       class="px-3 py-1 rounded bg-black text-white text-[9px] font-bold uppercase tracking-widest hover:bg-blue-600 transition-all flex items-center justify-center" data-i18n="edit">
-                        Edit
-                    </a>
-
-                    <form action="{{ route('documents.destroy', $document->id) }}" method="POST" onsubmit="return confirm('Delete this document?')">
-                        @csrf @method('DELETE')
-                        <button class="px-3 py-1 rounded bg-[#dc2626] text-white text-[9px] font-bold uppercase tracking-widest hover:bg-red-700 transition-all border-none flex items-center justify-center" data-i18n="delete">
-                            Delete
+                <div class="flex gap-2 items-center">
+                    {{-- МОДАЛЬНОЕ ОКНО С ТРЕМЯ ЯЗЫКАМИ --}}
+                    <div x-data="{ open: false }" class="relative inline-block">
+                        <button @click="open = true" type="button" class="p-1.5 rounded bg-red-700 text-white text-[11px] border border-red-900 flex items-center justify-center transition-all hover:bg-red-800 shadow-sm">
+                            <i class="bi bi-trash3"></i>
                         </button>
-                    </form>
+
+                        <div x-show="open"
+                             class="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+                             x-transition:enter="transition ease-out duration-200"
+                             x-transition:enter-start="opacity-0"
+                             x-transition:leave="transition ease-in duration-150"
+                             x-transition:leave-end="opacity-0"
+                             x-cloak>
+
+                            <div @click.away="open = false"
+                                 class="bg-white border border-gray-200 rounded-xl p-5 max-w-sm w-full shadow-2xl text-left"
+                                 x-transition:enter="transition ease-out duration-300 transform"
+                                 x-transition:enter-start="opacity-0 scale-95"
+                                 x-transition:leave="transition ease-in duration-200 transform"
+                                 x-transition:leave-end="opacity-0 scale-95">
+
+                                <h3 class="text-black font-bold text-[16px] mb-2 flex items-center gap-2">
+                                    <i class="bi bi-exclamation-triangle-fill text-red-600"></i>
+                                    <span data-i18n="delete_confirm_title">Удалить ?</span>
+                                </h3>
+
+                                <p class="text-gray-600 text-[13px] mb-5 leading-relaxed" data-i18n="delete_confirm_desc">
+                                    Вы уверены, что хотите удалить этот документ? Это действие невозможно будет отменить.
+                                </p>
+
+                                <div class="flex justify-end gap-2">
+                                    <button @click="open = false" type="button"
+                                            class="px-4 py-2 text-[12px] font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors border border-gray-300"
+                                            data-i18n="cancel">
+                                        Отмена
+                                    </button>
+
+                                    <form action="{{ route('documents.destroy', $document->id) }}" method="POST" class="m-0">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit"
+                                                class="px-4 py-2 text-[12px] font-semibold text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors border border-red-700 flex items-center justify-center"
+                                                data-i18n="delete_btn">
+                                            Удалить
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <a href="{{ route('documents.edit', $document->id) }}"
+                       class="p-1.5 rounded bg-black text-white text-[11px] border border-stone-900 flex items-center justify-center hover:bg-blue-600 hover:border-blue-700 transition-all shadow-sm"
+                       title="Edit">
+                        <i class="bi bi-pencil-square"></i>
+                    </a>
                 </div>
             </div>
 
@@ -38,15 +111,27 @@
                 <div class="lg:col-span-2 space-y-6">
                     <div class="bg-white rounded-lg border border-slate-200 p-6 md:p-8 shadow-sm">
                         <div class="flex items-center gap-3 mb-6">
-                            <span class="text-[9px] font-medium bg-blue-600 px-2.5 py-1 rounded text-white uppercase tracking-wider">
-                                {{ $document->type ?? 'General' }}
-                            </span>
+                            @if($document->type)
+                                <span class="text-[9px] font-medium bg-blue-600 px-2.5 py-1 rounded text-white uppercase tracking-wider">
+                                    {{ $document->type }}
+                                </span>
+                            @else
+                                <span class="text-[9px] font-medium bg-blue-600 px-2.5 py-1 rounded text-white uppercase tracking-wider" data-i18n="general">
+                                    General
+                                </span>
+                            @endif
                             <span class="text-[9px] font-[1000] bg-black text-white px-2.5 py-1 rounded uppercase tracking-[0.2em] !bg-black !text-white inline-block">
                                 #{{ $document->id }}
                             </span>
-                            <span class="text-[9px] font-black bg-blue-50 text-blue-700 px-2.5 py-1 rounded border border-blue-100 uppercase tracking-widest">
-                                 {{ $document->number ?? 'Б/Н' }}
-                            </span>
+                            @if($document->number)
+                                <span class="text-[9px] font-black bg-blue-50 text-blue-700 px-2.5 py-1 rounded border border-blue-100 uppercase tracking-widest">
+                                     {{ $document->number }}
+                                </span>
+                            @else
+                                <span class="text-[9px] font-black bg-blue-50 text-blue-700 px-2.5 py-1 rounded border border-blue-100 uppercase tracking-widest" data-i18n="noNumber">
+                                     Б/Н
+                                </span>
+                            @endif
                         </div>
 
                         <h1 class="text-xl font-medium text-black mb-6 leading-tight uppercase tracking-tight">
@@ -69,7 +154,6 @@
 
                         <div class="bg-white rounded-lg border border-slate-200 p-4 flex items-center justify-between group hover:border-blue-400 transition-all shadow-sm">
                             <div class="flex items-center gap-4">
-                                {{-- ИСПРАВЛЕНО: Динамическая иконка в зависимости от формата --}}
                                 <div class="w-10 h-10 rounded-lg flex items-center justify-center border transition-colors {{ $isWord ? 'bg-blue-50 text-blue-600 border-blue-100 group-hover:bg-blue-600' : 'bg-red-50 text-red-600 border-red-100 group-hover:bg-red-600' }} group-hover:text-white">
                                     @if($isWord)
                                         <i class="bi bi-file-earmark-word-fill text-xl"></i>
@@ -82,8 +166,7 @@
                                         {{ basename($document->file_path) }}
                                     </p>
                                     <div class="flex items-center gap-2">
-                                        {{-- ИСПРАВЛЕНО: Динамический текст формата --}}
-                                        <span class="text-[9px] font-bold {{ $isWord ? 'text-blue-600' : 'text-red-600' }} uppercase">
+                                        <span class="text-[9px] font-bold {{ $isWord ? 'text-blue-600' : 'text-red-600' }} uppercase" data-i18n="{{ $isWord ? 'wordAsset' : 'pdfAsset' }}">
                                             {{ $isWord ? 'WORD Asset' : 'PDF Asset' }}
                                         </span>
                                         <span class="w-1 h-1 rounded-full bg-slate-300"></span>
@@ -92,7 +175,6 @@
                                 </div>
                             </div>
 
-                            {{-- ИСПРАВЛЕНО: Для Word убран target="_blank", так как он сразу скачивается --}}
                             <a href="{{ asset('storage/' . $document->file_path) }}" @if(!$isWord) target="_blank" @endif
                             class="flex items-center gap-2 px-3 py-2 rounded-md bg-slate-100 text-black hover:bg-blue-600 hover:text-white transition-all border border-slate-200 shadow-sm">
                                 <span class="text-[10px] font-black uppercase tracking-tighter" data-i18n="viewBtn">Смотреть</span>
@@ -101,7 +183,6 @@
                         </div>
 
                         {{-- КНОПКА СКАЧИВАНИЯ --}}
-                        {{-- ИСПРАВЛЕНО: Динамический data-i18n и текст в зависимости от формата --}}
                         <a href="{{ asset('storage/' . $document->file_path) }}"
                            download="{{ $document->title }}.{{ $extension }}"
                            class="h-10 px-4 {{ $isWord ? 'bg-blue-600' : 'bg-green-600' }} text-white rounded-xl font-semibold uppercase tracking-widest text-xs flex items-center justify-center hover:scale-[1.01] active:scale-95 transition shadow-lg">
@@ -154,12 +235,12 @@
 
                                     @if(auth()->id() === $document->user_id)
                                         <div class="flex justify-end mt-3 pt-2">
-                                            <form action="{{ route('comments.destroy', $comment->id) }}" method="POST" onsubmit="return confirm('Удалить этот комментарий?')">
+                                            <form action="{{ route('comments.destroy', $comment->id) }}" method="POST">
                                                 @csrf
                                                 @method('DELETE')
                                                 <button type="submit" class="flex items-center gap-1 text-[10px] text-white/80 hover:text-red-200 transition-colors font-bold uppercase tracking-tighter">
                                                     <i class="bi bi-trash3"></i>
-                                                    <span>Удалить</span>
+                                                    <span data-i18n="delete">Удалить</span>
                                                 </button>
                                             </form>
                                         </div>
@@ -184,32 +265,28 @@
                             <div class="flex items-center justify-between">
                                 <span class="text-gray-500 uppercase text-sm font-medium" data-i18n="signature">Signature</span>
                                 @php
-                                    // Проверяем статус самого документа.
-                                    // Если статус 'completed' или 'approved', значит все подписи собраны.
                                     $status = strtolower($document->status);
                                     $isFullySigned = in_array($status, ['completed', 'approved']);
-
-                                    // Или если нужно проверить наличие хотя бы одной подписи в этом документе:
                                     $hasAnySignature = $document->signatures->count() > 0;
                                 @endphp
 
                                 @if($isFullySigned)
-                                    {{-- Полностью подписан всеми участниками --}}
-                                    <div class="px-2 py-1 rounded border border-green-600 text-green-600 flex items-center gap-1 bg-green-50">
-                                        <i class="bi bi-check-all"></i>
-                                        <span class="font-bold uppercase text-[10px]" data-i18n="signed">Signed</span>
+                                    <div class="px-2 py-1 rounded border border-green-600/50 flex items-center gap-1 bg-green-50/50 shadow-sm">
+                                        {{-- Добавлен жесткий !text-black и инлайн стиль для 100% перебивания цвета --}}
+                                        <i class="bi bi-check-all !text-black text-sm font-bold" style="color: #000000 !important;"></i>
+                                        <span class="font-bold uppercase text-[10px] !text-black tracking-wide" style="color: #000000 !important;" data-i18n="signed">Signed</span>
                                     </div>
                                 @elseif($hasAnySignature)
-                                    {{-- Кто-то уже подписал, но процесс еще идет --}}
-                                    <div class="px-2 py-1 rounded border border-amber-600 text-amber-600 flex items-center gap-1 bg-amber-50">
-                                        <i class="bi bi-pen-fill"></i>
-                                        <span class="font-bold uppercase text-[10px]">Processing</span>
+                                    <div class="px-2 py-1 rounded border border-amber-600/60 flex items-center gap-1 bg-amber-50/50 shadow-sm">
+                                        {{-- Добавлен жесткий !text-black и инлайн стиль для 100% перебивания цвета --}}
+                                        <i class="bi bi-pen-fill !text-black text-[10px]" style="color: #000000 !important;"></i>
+                                        <span class="font-bold uppercase text-[10px] !text-black tracking-wide" style="color: #000000 !important;" data-i18n="processing">Processing</span>
                                     </div>
                                 @else
-                                    {{-- Еще никто не подписал --}}
-                                    <div class="px-2 py-1 rounded border border-red-600 text-red-600 flex items-center gap-1 bg-red-50">
-                                        <i class="bi bi-clock"></i>
-                                        <span class="font-bold uppercase text-[10px]" data-i18n="notSigned">Not Signed</span>
+                                    <div class="px-2 py-1 rounded border border-red-600/50 flex items-center gap-1 bg-red-50/50 shadow-sm">
+                                        {{-- Добавлен жесткий !text-black и инлайн стиль для 100% перебивания цвета --}}
+                                        <i class="bi bi-clock !text-black text-[10px]" style="color: #000000 !important;"></i>
+                                        <span class="font-bold uppercase text-[10px] !text-black tracking-wide" style="color: #000000 !important;" data-i18n="notSigned">Not Signed</span>
                                     </div>
                                 @endif
                             </div>
@@ -255,39 +332,72 @@
         </div>
     </div>
 
+    {{-- Подключение библиотеки Alpine.js --}}
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
     {{-- SCRIPTS --}}
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const translations = {
                 en: {
+                    errorTitle: "Access Error",
                     back: "Back", edit: "Edit", delete: "Delete",
                     readyView: "Ready to View", viewBtn: "View", downloadPdf: "DOWNLOAD PDF", downloadWord: "DOWNLOAD WORD",
                     systemNotes: "SYSTEM NOTES", commentPlaceholder: "Leave a comment...",
                     noNotes: "No notes yet", details: "Details", signature: "Signature",
-                    signed: "Signed", notSigned: "Not Signed", status: "Status",
+                    signed: "Signed", notSigned: "Not Signed", processing: "Processing", status: "Status",
                     owner: "Owner", deadline: "Deadline", createdAt: "Created At",
                     lastUpdate: "Last Update", liveDoc: "Live Document",
-                    draft: "Draft", active: "Active", approved: "Approved"
+                    draft: "Draft", active: "Active", approved: "Approved", completed: "Completed",
+                    delete_confirm_title: "Delete ?",
+                    delete_confirm_desc: "Are you sure you want to delete this document? This action cannot be undone.",
+                    cancel: "Cancel",
+                    delete_btn: "Delete",
+                    general: "General",
+                    noNumber: "W/N",
+                    wordAsset: "WORD Asset",
+                    pdfAsset: "PDF Asset",
+                    "У вас нет прав на удаление этого документа": "You do not have permission to delete this document."
                 },
                 ru: {
+                    errorTitle: "Ошибка доступа",
                     back: "Назад", edit: "Редактировать", delete: "Удалить",
                     readyView: "Готов к просмотру", viewBtn: "Смотреть", downloadPdf: "СКАЧАТЬ PDF", downloadWord: "СКАЧАТЬ WORD",
                     systemNotes: "СИСТЕМНЫЕ ЗАМЕТКИ", commentPlaceholder: "Оставьте комментарий...",
                     noNotes: "Заметок пока нет", details: "Детали", signature: "Подпись",
-                    signed: "Подписан", notSigned: "Не подписан", status: "Статус",
+                    signed: "Подписан", notSigned: "Не подписан", processing: "В обработке", status: "Статус",
                     owner: "Владелец", deadline: "Срок", createdAt: "Создан",
                     lastUpdate: "Обновлено", liveDoc: "Живой документ",
-                    draft: "Черновик", active: "Активен", approved: "Утвержден"
+                    draft: "Черновик", active: "Активен", approved: "Утвержден", completed: "Завершен",
+                    delete_confirm_title: "Удалить ?",
+                    delete_confirm_desc: "Вы уверены, что хотите удалить этот документ? Это действие невозможно будет отменить.",
+                    cancel: "Отмена",
+                    delete_btn: "Удалить",
+                    general: "Общий",
+                    noNumber: "Б/Н",
+                    wordAsset: "WORD Документ",
+                    pdfAsset: "PDF Документ",
+                    "У вас нет прав на удаление этого документа": "У вас нет прав на удаление этого документа"
                 },
                 tj: {
+                    errorTitle: "Хатои дастрасӣ",
                     back: "Қафо", edit: "Вироиш", delete: "Ҳазф кардан",
                     readyView: "Барои тамошо омода", viewBtn: "Дидан", downloadPdf: "БОРГИРИИ PDF", downloadWord: "БОРГИРИИ WORD",
                     systemNotes: "ҚАЙДҲОИ СИСТЕМА", commentPlaceholder: "Фикр гузоред...",
                     noNotes: "Қайдҳо нестанд", details: "Тафсилот", signature: "Имзо",
-                    signed: "Имзошуда", notSigned: "Имзо нашудааст", status: "Ҳолат",
+                    signed: "Имзошуда", notSigned: "Имзо нашудааст", processing: "Дар баррасӣ", status: "Ҳолат",
                     owner: "Соҳиб", deadline: "Мӯҳлат", createdAt: "Санаи эҷод",
                     lastUpdate: "Навсозӣ", liveDoc: "Ҳуҷҷати фаъол",
-                    draft: "Пешнавис", active: "Фаъол", approved: "Тасдиқшуда"
+                    draft: "Пешнавис", active: "Фаъол", approved: "Тасдиқшуда", completed: "Иҷрошуда",
+                    delete_confirm_title: "Нест кардан ?",
+                    delete_confirm_desc: "Шумо мутмаин ҳастед, ки ин ҳуҷҷатро нест кардан мехоҳед? Ин амалро бекор кардан ғайриимкон аст.",
+                    cancel: "Лағв",
+                    delete_btn: "Нест кардан",
+                    general: "Умумӣ",
+                    noNumber: "Б/Р",
+                    wordAsset: "WORD Ҳуҷҷат",
+                    pdfAsset: "PDF Ҳуҷҷат",
+                    "У вас нет прав на удаление этого документа": "Шумо барои нест кардани ин ҳуҷҷат ҳуқуқ надоред."
                 }
             };
 
@@ -298,7 +408,10 @@
 
                 document.querySelectorAll('[data-i18n]').forEach(el => {
                     const key = el.getAttribute('data-i18n');
-                    if (t[key]) el.textContent = t[key];
+                    // Дополнительная проверка, чтобы перевод i18n не перекрашивал текст обратно в бледный цвет
+                    if (t[key]) {
+                        el.textContent = t[key];
+                    }
                 });
 
                 document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
@@ -310,6 +423,16 @@
                     const statusKey = el.getAttribute('data-status');
                     if (t[statusKey]) el.textContent = t[statusKey];
                 });
+
+                const errorTextEl = document.getElementById('session-error-text');
+                if (errorTextEl) {
+                    const rawError = errorTextEl.getAttribute('data-error-raw');
+                    if (rawError && t[rawError]) {
+                        errorTextEl.textContent = t[rawError];
+                    } else if (rawError) {
+                        errorTextEl.textContent = rawError;
+                    }
+                }
             }
 
             applyShowTranslations();
@@ -321,6 +444,7 @@
 @push('styles')
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
     <style>
+        [x-cloak] { display: none !important; }
         .doc-page-v2 a.bg-slate-100 { color: #000000 !important; }
         .doc-page-v2 a.bg-slate-100:hover { color: #ffffff !important; background-color: #2563eb !important; }
         .doc-page-v2 { background-color: #f8fafc !important; }

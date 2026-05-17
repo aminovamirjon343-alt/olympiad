@@ -263,6 +263,7 @@
 </head>
 
 <body>
+<div id="pjax-container">
 {{-- resources/views/layouts/admin.blade.php --}}
 {{--<div id="edo-loader">--}}
 {{--    <div class="loader-wrapper">--}}
@@ -553,10 +554,10 @@
         <div class="collapse ps-4 mt-1 space-y-1" id="documentsMenu">
             <div class="my-1 border-t border-slate-100 mx-2"></div>
 
-            {{-- Все документы --}}
+
             <a href="{{ route('documents.index') }}" class="nav-link" onclick="showPage('documents', this)">
                 <i class="bi bi-file-earmark-text"></i>
-                <span data-i18n="allDocs" class="tracking-widest uppercase text-[10px] font-bold">All Docs</span>
+                <span data-i18n="allDocs" class="tracking-widest uppercase text-[10px] font-bold">All</span>
             </a>
 
             <div class="my-1 border-t border-slate-100 mx-2"></div>
@@ -625,13 +626,46 @@
     <a href="/profile" class="nav-link" data-page="profile" onclick="showPage('profile', this)">
         <i class="bi bi-person-circle"></i> <span data-i18n="profile">Profile</span>
     </a>
-    <a href="/setting" class="nav-link" data-page="profile-edit" onclick="showPage('profile-edit', this)">
-        <i class="bi bi-gear"></i> <span data-i18n="settings">Settings</span>
-    </a>
-    </a>
-    <a href="#" class="nav-link" onclick="event.preventDefault(); handleLogout()">
+    {{-- КРАСИВОЕ МОДАЛЬНОЕ ОКНО ВЫХОДА --}}
+    <a href="#" class="nav-link" onclick="event.preventDefault(); openLogoutModal()">
         <i class="bi bi-box-arrow-left"></i> <span data-i18n="logout">Logout</span>
     </a>
+
+    {{-- КРАСИВОЕ МОДАЛЬНОЕ ОКНО ВЫХОДА --}}
+    <div id="logoutModal" class="fixed inset-0 z-50 flex items-center justify-center hidden px-4 antialiased font-inter">
+        {{-- Темный полупрозрачный задний фон --}}
+        <div class="absolute inset-0 bg-slate-950/60 backdrop-blur-xs"></div>
+
+        {{-- Контент модалки --}}
+        {{-- Контент модалки с принудительно черным текстом --}}
+        <div class="relative bg-white border border-slate-200 rounded-2xl max-w-sm w-full p-6 shadow-2xl transform scale-95 opacity-0 transition-all duration-300 ease-out" id="logoutModalCard">
+            <div class="flex flex-col items-center text-center">
+                {{-- Иконка предупреждения --}}
+                <div class="w-12 h-12 rounded-full bg-red-50 text-red-500 flex items-center justify-center mb-4 shadow-xs">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                    </svg>
+                </div>
+
+                {{-- Заголовок - строго черный --}}
+                <h3 class="text-base font-bold text-black mb-2" style="color: #000000 !important;" data-i18n="logoutModalTitle">Выход из системы</h3>
+
+                {{-- Описание - строго глубокий темный --}}
+                <p class="text-xs text-slate-800 leading-relaxed mb-6" style="color: #1e293b !important;" id="logoutModalText">Вы уверены, что хотите выйти из системы?</p>
+
+                {{-- Кнопки управления --}}
+                <div class="flex items-center gap-3 w-full">
+                    {{-- Кнопка Отмена - фон светло-серый, текст строго черный --}}
+                    <button type="button" onclick="closeLogoutModal()" class="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-black font-bold text-xs uppercase tracking-wider rounded-xl transition border border-slate-300" style="color: #000000 !important;" data-i18n="logoutModalCancel">
+                        Отмена
+                    </button>
+                    {{-- Кнопка Выйти --}}
+                    <button type="button" onclick="confirmLogoutAction()" class="flex-1 py-2.5 bg-red-600 hover:bg-red-500 text-white font-bold text-xs uppercase tracking-wider rounded-xl transition shadow-lg shadow-red-600/20" data-i18n="logoutModalConfirm">
+                        Выйти
+                    </button>
+                </div>
+            </div>
+        </div> </div>
 </aside>
 
 <!-- Topbar -->
@@ -708,7 +742,7 @@
                     id="searchInput"
                     value="{{ request('query') }}"
                     class="form-control form-control-sm search-input-custom"
-                    placeholder="Поиск по сайту..."
+                    placeholder="..."
                     autocomplete="off"
                 >
 
@@ -907,24 +941,72 @@
         <div class="position-relative">
 
             {{-- 🔔 BUTTON --}}
-            <div class="position-relative">
+            <div class="position-relative" id="pjax-bell">
 
-                <button class="btn-action-circle position-relative hover-scale"
-                        onclick="toggleNotifications()"
-                        style="width:38px; height:38px; border-radius: 50%; display:flex; align-items:center; justify-content:center; border:1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.05); padding:0; color: inherit;">
+                {{-- 🔔 BUTTON --}}
+                <div class="position-relative">
 
-                    <i class="bi bi-bell" style="font-size: 1.1rem;"></i>
+                    <button class="btn-action-circle position-relative hover-scale {{ $unreadCount > 0 ? 'bell-shaking' : '' }}"
+                            onclick="toggleNotifications()"
+                            style="width:38px; height:38px; border-radius: 50%; display:flex; align-items:center; justify-content:center; border:1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.05); padding:0; color: inherit; transition: all 0.3s ease;">
 
-                    {{-- 🔴 REAL COUNT --}}
-                    @if($unreadCount > 0)
-                        <span class="position-absolute badge rounded-pill bg-danger border border-dark"
-                              style="top: -2px; right: -2px; font-size: 9px; padding: 3px 5px; min-width: 18px;">
+                        <i class="bi bi-bell" style="font-size: 1.1rem; display: inline-block;"></i>
+
+                        {{-- 🔴 REAL COUNT С АНИМАЦИЕЙ --}}
+                        @if($unreadCount > 0)
+                            {{-- Размытая пульсирующая волна на фоне --}}
+                            <span class="position-absolute rounded-pill bg-danger"
+                                  style="top: -2px; right: -2px; font-size: 9px; padding: 3px 5px; min-width: 18px; height: 15px; animation: notification-ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite; opacity: 0.65; z-index: 1;">
+                </span>
+
+                            {{-- Основной красный кружок с цифрой --}}
+                            <span class="position-absolute badge rounded-pill bg-danger border border-dark"
+                                  style="top: -2px; right: -2px; font-size: 9px; padding: 3px 5px; min-width: 18px; z-index: 2; box-shadow: 0 0 10px rgba(220, 53, 69, 0.8);">
                     {{ $unreadCount }}
                 </span>
-                    @endif
+                        @endif
 
-                </button>
+                    </button>
+                </div>
             </div>
+
+            {{-- 🎨 СТИЛИ ДЛЯ ВАУ-ЭФФЕКТА (Вставь прямо сюда или в свой CSS файл) --}}
+            <style>
+                /* 1. Эффект расходящейся волны (Пульс) */
+                @keyframes notification-ping {
+                    0% {
+                        transform: scale(1);
+                        opacity: 1;
+                    }
+                    70%, 100% {
+                        transform: scale(2);
+                        opacity: 0;
+                    }
+                }
+
+                /* 2. Эффект живого покачивания колокольчика */
+                .bell-shaking i {
+                    animation: bell-wobble 3.5s ease-in-out infinite;
+                }
+
+                @keyframes bell-wobble {
+                    0%, 80%, 100% { transform: rotate(0deg); }
+                    82% { transform: rotate(20deg); }
+                    84% { transform: rotate(-18deg); }
+                    86% { transform: rotate(14deg); }
+                    88% { transform: rotate(-12deg); }
+                    90% { transform: rotate(8deg); }
+                    92% { transform: rotate(-4deg); }
+                    94% { transform: rotate(0deg); }
+                }
+
+                /* Красивый блик при наведении на саму кнопку */
+                .btn-action-circle:hover {
+                    background: rgba(255, 255, 255, 0.12) !important;
+                    border-color: rgba(255, 255, 255, 0.25) !important;
+                    box-shadow: 0 0 12px rgba(255, 255, 255, 0.15);
+                }
+            </style>
 
             {{-- 📩 DROPDOWN --}}
             <div class="notification-dropdown" id="notifDropdown">
@@ -1134,371 +1216,359 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-<script>
-    const translations = {
-        en: {
-            systemName: "Document System", mainMenu: "Main", dashboard: "Dashboard", documents: "Documents",
-            search: "Search", management: "Management", workflow: "Workflow", signatures: "Signatures",
-            versions: "Versions", logs: "Logs", admin: "Admin", users: "Users", notifications: "Notifications",
-            account: "Account", profile: "Profile", settings: "Settings", logout: "Logout",
-            welcomeBack: "Welcdome back {{ strtok(auth()->user()->name, ' ') }} !", dashSubtitle: "Here's what's happening with your documents today.",
-            newDocument: "New Document", totalDocs: "Total Documents", pendingReview: "Pending Review",
-            signed: "Signed", activeUsers: "Active Users", recentDocuments: "Recent Documents", viewAll: "View All",
-            document: "Document", author: "Author", status: "Status", date: "Date", actions: "Actions",
-            approved: "Approved", pending: "Pending", draft: "Draft", rejected: "Rejected",
-            quickActions: "Quick Actions", createDocument: "Create Document", reviewWorkflow: "Review analysis",
-            manageSignatures: "Manage Signatures", checkNotifications: "Check Notifications",
-            activityLog: "Activity Log", workflowSubtitle: "Document approval workflow",
-            newWorkflow: "New Workflow", wfCreated: "Created", wfReviewed: "Reviewed by Manager",
-            wfApproval: "Approval", wfSigned: "Signed", approve: "Approve", reject: "Reject",
-            signer: "Signer", addUser: "Add User", name: "Name", role: "Role",
-            roleAdmin: "Administrator", personalInfo: "Personal Information", fullName: "Full Name",
-            phone: "Phone", department: "Department", bio: "Bio", saveChanges: "Save Changes",
-            cancel: "Cancel", changePassword: "Change Password", currentPassword: "Current Password",
-            newPassword: "New Password", confirmPassword: "Confirm Password", updatePassword: "Update Password",
-            dangerZone: "Danger Zone", deleteAccount: "Delete Account", editProfile: "Edit Profile",
-            activity: "Activity", docsCreated: "Docs Created", docsSigned: "Docs Signed", comments: "Comments",
-            searchPlaceholder: "Search documents, users, comments...", documentsSubtitle: "Manage all your documents",
-            category: "Category", user: "User", action: "Action", ip: "IP",
-            notifDocApproved: "Document #1042 approved", notifSignReq: "Signature requested",
-            notifNewUser: "New user registered", newNotification: "New Notification",
-            markRead: "Mark Read", clearAll: "Clear All", myProfile: "My Profile",
-            searchHint: "Type to search across documents, users, and comments",
-            sign: "Sign", profileSaved: "Profile saved successfully!", profileDeleted: "Account deleted!",
-            loggedOut: "Logged out successfully!",
-            allDocs: "All Docs",
-            incoming: "Incoming",
-            outgoing: "Outgoing",
-            waiting: "Waiting",
-            signed: "Signed",
-            drafts: "Drafts",
-            analysis: "Analysis",
-            profile: "My Profile",
-            logout: "Logout",
-        },
-        ru: {
-            systemName: "Система Документов", mainMenu: "Главное", dashboard: "Панель", documents: "Документы",
-            search: "Поиск", management: "Управление", workflow: "Процессы", signatures: "Подписи",
-            versions: "Версии", logs: "Журналы", admin: "Админ", users: "Пользователи", notifications: "Уведомления",
-            account: "Аккаунт", profile: "Профиль", settings: "Настройки", logout: "Выйти",
-            welcomeBack: "Добро пожаловать, {{ strtok(auth()->user()->name, ' ') }} ! ", dashSubtitle: "Вот что происходит с вашими документами сегодня.",
-            newDocument: "Новый документ", totalDocs: "Всего документов", pendingReview: "На рассмотрении",
-            signed: "Подписано", activeUsers: "Активных пользователей", recentDocuments: "Последние документы", viewAll: "Все",
-            document: "Документ", author: "Автор", status: "Статус", date: "Дата", actions: "Действия",
-            approved: "Утверждён", pending: "Ожидает", draft: "Черновик", rejected: "Отклонён",
-            quickActions: "Быстрые действия", createDocument: "Создать документ", reviewWorkflow: "Проверить анализы",
-            manageSignatures: "Управление подписями", checkNotifications: "Проверить уведомления",
-            activityLog: "Журнал активности", workflowSubtitle: "Процесс утверждения документов",
-            newWorkflow: "Новый процесс", wfCreated: "Создан", wfReviewed: "Проверен менеджером",
-            wfApproval: "Утверждение", wfSigned: "Подписан", approve: "Утвердить", reject: "Отклонить",
-            signer: "Подписант", addUser: "Добавить пользователя", name: "Имя", role: "Роль",
-            roleAdmin: "Администратор", personalInfo: "Личная информация", fullName: "Полное имя",
-            phone: "Телефон", department: "Отдел", bio: "О себе", saveChanges: "Сохранить",
-            cancel: "Отмена", changePassword: "Изменить пароль", currentPassword: "Текущий пароль",
-            newPassword: "Новый пароль", confirmPassword: "Подтвердить пароль", updatePassword: "Обновить пароль",
-            dangerZone: "Опасная зона", deleteAccount: "Удалить аккаунт", editProfile: "Редактировать профиль",
-            activity: "Активность", docsCreated: "Создано документов", docsSigned: "Подписано документов", comments: "Комментарии",
-            searchPlaceholder: "Поиск документов, пользователей, комментариев...", documentsSubtitle: "Управляйте всеми документами",
-            category: "Категория", user: "Пользователь", action: "Действие", ip: "IP",
-            notifDocApproved: "Документ #1042 утверждён", notifSignReq: "Запрошена подпись",
-            notifNewUser: "Новый пользователь зарегистрирован", newNotification: "Новое уведомление",
-            markRead: "Отметить прочитанным", clearAll: "Очистить все", myProfile: "Мой профиль",
-            searchHint: "Введите текст для поиска по документам, пользователям и комментариям",
-            sign: "Подписать", profileSaved: "Профиль сохранён!", profileDeleted: "Аккаунт удалён!",
-            loggedOut: "Вы вышли из системы!",
-            allDocs: "Все документы",
-            incoming: "Входящие",
-            outgoing: "Исходящие",
-            waiting: "Ожидают",
-            signed: "Подписаны",
-            drafts: "Черновики",
-            analysis: "Аналитика",
-            profile: "Профиль",
-            logout: "Выйти",
-        },
-        tj: {
-            systemName: "Системаи Ҳуҷҷатҳо", mainMenu: "Асосӣ", dashboard: "Панел", documents: "Ҳуҷҷатҳо",
-            search: "Ҷустуҷӯ", management: "Идоракунӣ", workflow: "Равандҳо", signatures: "Имзоҳо",
-            versions: "Версияҳо", logs: "Журналҳо", admin: "Админ", users: "Корбарон", notifications: "Огоҳиҳо",
-            account: "Аккаунт", profile: "Профил", settings: "Танзимот", logout: "Баромадан",
-            welcomeBack: "Хуш омадед, {{ strtok(auth()->user()->name, ' ') }} ! ", dashSubtitle: "Инҷо вазъи ҳуҷҷатҳои шумо имрӯз.",
-            newDocument: "Ҳуҷҷати нав", totalDocs: "Ҳамаи ҳуҷҷатҳо", pendingReview: "Дар интизорӣ",
-            signed: "Имзошуда", activeUsers: "Корбарони фаъол", recentDocuments: "Ҳуҷҷатҳои охирин", viewAll: "Ҳама",
-            document: "Ҳуҷҷат", author: "Муаллиф", status: "Ҳолат", date: "Сана", actions: "Амалҳо",
-            approved: "Тасдиқшуда", pending: "Дар интизорӣ", draft: "Пешнавис", rejected: "Радшуда",
-            quickActions: "Амалҳои зуд", createDocument: "Сохтани ҳуҷҷат", reviewWorkflow: "Таҳлил",
-            manageSignatures: "Идоракунии имзоҳо", checkNotifications: "Санҷиши огоҳиҳо",
-            activityLog: "Журнали фаъолият", workflowSubtitle: "Раванди тасдиқи ҳуҷҷатҳо",
-            newWorkflow: "Раванди нав", wfCreated: "Сохта шуд", wfReviewed: "Аз ҷониби менеҷер баррасӣ шуд",
-            wfApproval: "Тасдиқ", wfSigned: "Имзо шуд", approve: "Тасдиқ кардан", reject: "Рад кардан",
-            signer: "Имзокунанда", addUser: "Иловаи корбар", name: "Ном", role: "Нақш",
-            roleAdmin: "Администратор", personalInfo: "Маълумоти шахсӣ", fullName: "Номи пурра",
-            phone: "Телефон", department: "Шӯъба", bio: "Дар бораи худ", saveChanges: "Захира кардан",
-            cancel: "Бекор кардан", changePassword: "Тағйири парол", currentPassword: "Пароли ҷорӣ",
-            newPassword: "Пароли нав", confirmPassword: "Тасдиқи парол", updatePassword: "Навсозии парол",
-            dangerZone: "Минтақаи хатарнок", deleteAccount: "Нест кардани аккаунт", editProfile: "Таҳрири профил",
-            activity: "Фаъолият", docsCreated: "Ҳуҷҷатҳои сохташуда", docsSigned: "Ҳуҷҷатҳои имзошуда", comments: "Шарҳҳо",
-            searchPlaceholder: "Ҷустуҷӯи ҳуҷҷатҳо, корбарон, шарҳҳо...", documentsSubtitle: "Ҳамаи ҳуҷҷатҳоро идора кунед",
-            category: "Категория", user: "Корбар", action: "Амал", ip: "IP",
-            notifDocApproved: "Ҳуҷҷати #1042 тасдиқ шуд", notifSignReq: "Имзо дархост шуд",
-            notifNewUser: "Корбари нав ба қайд гирифта шуд", newNotification: "Огоҳии нав",
-            markRead: "Хондашуда ишора кардан", clearAll: "Тоза кардани ҳама", myProfile: "Профили ман",
-            searchHint: "Барои ҷустуҷӯ дар ҳуҷҷатҳо, корбарон ва шарҳҳо нависед",
-            sign: "Имзо кардан", profileSaved: "Профил захира шуд!", profileDeleted: "Аккаунт нест карда шуд!",
-            loggedOut: "Шумо аз система баромадед!",
-            allDocs: "Ҳамаи ҳуҷҷатҳо",
-            incoming: "Воридотӣ",
-            outgoing: "Содиротӣ",
-            waiting: "Дар интизорӣ",
-            signed: "Имзошуда",
-            drafts: "Пешнавсҳо",
-            analysis: "Таҳлил",
-            profile: "Профил",
-            logout: "Баромадан",
-        },
+    <script>
+        // Единый объект переводов (все дубликаты объединены)
+        const translations = {
+            en: {
+                systemName: "Document System", mainMenu: "Main", dashboard: "Dashboard", documents: "Documents",
+                search: "Search", management: "Management", workflow: "Workflow", signatures: "Signatures",
+                versions: "Versions", logs: "Logs", admin: "Admin", users: "Users", notifications: "Notifications",
+                account: "Account", profile: "Profile", settings: "Settings", logout: "Logout",
+                welcomeBack: "Welcdome back {{ strtok(auth()->user()->name, ' ') }} !", dashSubtitle: "Here's what's happening with your documents today.",
+                newDocument: "New Document", totalDocs: "Total Documents", pendingReview: "Pending Review",
+                signed: "Signed", activeUsers: "Active Users", recentDocuments: "Recent Documents", viewAll: "View All",
+                document: "Document", author: "Author", status: "Status", date: "Date", actions: "Actions",
+                approved: "Approved", pending: "Pending", draft: "Draft", rejected: "Rejected",
+                quickActions: "Quick Actions", createDocument: "Create Document", reviewWorkflow: "Review analysis",
+                manageSignatures: "Manage Signatures", checkNotifications: "Check Notifications",
+                activityLog: "Activity Log", workflowSubtitle: "Document approval workflow",
+                newWorkflow: "New Workflow", wfCreated: "Created", wfReviewed: "Reviewed by Manager",
+                wfApproval: "Approval", wfSigned: "Signed", approve: "Approve", reject: "Reject",
+                signer: "Signer", addUser: "Add User", name: "Name", role: "Role",
+                roleAdmin: "Administrator", personalInfo: "Personal Information", fullName: "Full Name",
+                phone: "Phone", department: "Department", bio: "Bio", saveChanges: "Save Changes",
+                cancel: "Cancel", changePassword: "Change Password", currentPassword: "Current Password",
+                newPassword: "New Password", confirmPassword: "Confirm Password", updatePassword: "Update Password",
+                dangerZone: "Danger Zone", deleteAccount: "Delete Account", editProfile: "Edit Profile",
+                activity: "Activity", docsCreated: "Docs Created", docsSigned: "Docs Signed", comments: "Comments",
+                category: "Category", user: "User", action: "Action", ip: "IP",
+                notifDocApproved: "Document #1042 approved", notifSignReq: "Signature requested",
+                notifNewUser: "New user registered", newNotification: "New Notification",
+                markRead: "Mark Read", clearAll: "Clear All", myProfile: "My Profile",
+                searchHint: "Type to search across documents, users, and comments",
+                sign: "Sign", profileSaved: "Profile saved successfully!", profileDeleted: "Account deleted!",
+                loggedOut: "Logged out successfully!",
+                allDocs: "All", incoming: "Incoming", outgoing: "Outgoing", waiting: "Waiting",
+                drafts: "Drafts", analysis: "Analysis", searchPlaceholder: "Search on site...",
+                // Ключи для красивой модалки выхода:
+                logoutModalTitle: "Sign Out",
+                logoutModalCancel: "Cancel",
+                logoutModalConfirm: "Logout",
+                confirmLogout: "Are you sure you want to log out?"
+            },
+            ru: {
+                systemName: "Система Документов", mainMenu: "Главное", dashboard: "Панель", documents: "Документы",
+                search: "Поиск", management: "Управление", workflow: "Процессы", signatures: "Подписи",
+                versions: "Версии", logs: "Журналы", admin: "Админ", users: "Пользователи", notifications: "Уведомления",
+                account: "Аккаунт", profile: "Профиль", settings: "Настройки", logout: "Выйти",
+                welcomeBack: "Добро пожаловать, {{ strtok(auth()->user()->name, ' ') }} ! ", dashSubtitle: "Вот что происходит с вашими документами сегодня.",
+                newDocument: "Новый документ", totalDocs: "Всего документов", pendingReview: "На рассмотрении",
+                signed: "Подписано", activeUsers: "Активных пользователей", recentDocuments: "Последние документы", viewAll: "Все",
+                document: "Документ", author: "Автор", status: "Статус", date: "Дата", actions: "Действия",
+                approved: "Утвержён", pending: "Ожидает", draft: "Черновик", rejected: "Отклонён",
+                quickActions: "Быстрые действия", createDocument: "Создать документ", reviewWorkflow: "Проверить анализы",
+                manageSignatures: "Управление подписями", checkNotifications: "Проверить уведомления",
+                activityLog: "Журнал активности", workflowSubtitle: "Процесс утверждения документов",
+                newWorkflow: "Новый процесс", wfCreated: "Создан", wfReviewed: "Проверен менеджером",
+                wfApproval: "Утверждение", wfSigned: "Подписан", approve: "Утвердить", reject: "Отклонить",
+                signer: "Подписант", addUser: "Добавить пользователя", name: "Имя", role: "Роль",
+                roleAdmin: "Администратор", personalInfo: "Личная информация", fullName: "Полное имя",
+                phone: "Телефон", department: "Отдел", bio: "О себе", saveChanges: "Сохранить",
+                cancel: "Отмена", changePassword: "Изменить пароль", currentPassword: "Текущий пароль",
+                newPassword: "Новый пароль", confirmPassword: "Подтвердить пароль", updatePassword: "Обновить пароль",
+                dangerZone: "Опасная зона", deleteAccount: "Удалить аккаунт", editProfile: "Редактировать профиль",
+                activity: "Активность", docsCreated: "Создано документов", docsSigned: "Подписано документов", comments: "Комментарии",
+                category: "Категория", user: "Пользователь", action: "Действие", ip: "IP",
+                notifDocApproved: "Документ #1042 утверждён", notifSignReq: "Запрошена подпись",
+                notifNewUser: "Новый пользователь зарегистрирован", newNotification: "Новое уведомление",
+                markRead: "Отметить прочитанным", clearAll: "Очистить все", myProfile: "Мой профиль",
+                searchHint: "Введите текст для поиска по документам, пользователям и комментариям",
+                sign: "Подписать", profileSaved: "Профиль сохранён!", profileDeleted: "Аккаунт удалён!",
+                loggedOut: "Вы вышли из системы!",
+                allDocs: "Все ", incoming: "Входящие", outgoing: "Исходящие", waiting: "Ожидают",
+                drafts: "Черновики", analysis: "Аналитика", searchPlaceholder: "Поиск по сайту...",
+                // Ключи для красивой модалки выхода:
+                logoutModalTitle: "Выход из системы",
+                logoutModalCancel: "Отмена",
+                logoutModalConfirm: "Выйти",
+                confirmLogout: "Вы уверены, что хотите выйти из системы?"
+            },
+            tj: {
+                systemName: "Системаи Ҳуҷҷатҳо", mainMenu: "Асосӣ", dashboard: "Панел", documents: "Ҳуҷҷатҳо",
+                search: "Ҷустуҷӯ", management: "Идоракунӣ", workflow: "Равандҳо", signatures: "Имзоҳо",
+                versions: "Версияҳо", logs: "Журналҳо", admin: "Админ", users: "Корбарон", notifications: "Огоҳиҳо",
+                account: "Аккаунт", profile: "Профил", settings: "Танзимот", logout: "Баромадан",
+                welcomeBack: "Хуш омадед, {{ strtok(auth()->user()->name, ' ') }} ! ", dashSubtitle: "Инҷо вазъи ҳуҷҷатҳои шумо имрӯз.",
+                newDocument: "Ҳуҷҷати нав", totalDocs: "Ҳамаи ҳуҷҷатҳо", pendingReview: "Дар интизорӣ",
+                signed: "Имзошуда", activeUsers: "Корбарони фаъол", recentDocuments: "Ҳуҷҷатҳои охирин", viewAll: "Ҳама",
+                document: "Ҳуҷҷат", author: "Муаллиф", status: "Ҳолат", date: "Сана", actions: "Амалҳо",
+                approved: "Тасдиқшуда", pending: "Дар интизорӣ", draft: "Пешнавис", rejected: "Радшуда",
+                quickActions: "Амалҳои зуд", createDocument: "Сохтани ҳуҷҷат", reviewWorkflow: "Таҳлил",
+                manageSignatures: "Идоракунии имзоҳо", checkNotifications: "Санҷиши огоҳиҳо",
+                activityLog: "Журнали фаъолият", workflowSubtitle: "Раванди тасдиқи ҳуҷҷатҳо",
+                newWorkflow: "Раванди нав", wfCreated: "Сохта шуд", wfReviewed: "Аз ҷониби менеҷер баррасӣ шуд",
+                wfApproval: "Тасдиқ", wfSigned: "Имзо шуд", approve: "Тасдиқ кардан", reject: "Рад кардан",
+                signer: "Имзокунанда", addUser: "Иловаи корбар", name: "Ном", role: "Нақш",
+                roleAdmin: "Администратор", personalInfo: "Маълумоти шахсӣ", fullName: "Номи пурра",
+                phone: "Телефон", department: "Шӯъба", bio: "Дар бораи худ", saveChanges: "Захира кардан",
+                cancel: "Бекор кардан", changePassword: "Тағйири парол", currentPassword: "Пароли ҷорӣ",
+                newPassword: "Пароли нав", confirmPassword: "Тасдиқи парол", updatePassword: "Навсозии парол",
+                dangerZone: "Минтақаи хатарнок", deleteAccount: "Нест кардани аккаунт", editProfile: "Таҳрири профил",
+                activity: "Фаъолият", docsCreated: "Ҳуҷҷатҳои сохташуда", docsSigned: "Ҳуҷҷатҳои имзошуда", comments: "Шарҳҳо",
+                searchPlaceholder: "Ҷустуҷӯи ҳуҷҷатҳо, корбарон, шарҳҳо...", documentsSubtitle: "Ҳамаи ҳуҷҷатҳоро идора кунед",
+                category: "Категория", user: "Корбар", action: "Амал", ip: "IP",
+                notifDocApproved: "Ҳуҷҷати #1042 тасдиқ шуд", notifSignReq: "Имзо дархост шуд",
+                notifNewUser: "Корбари нав ба қайд гирифта шуд", newNotification: "Огоҳии нав",
+                markRead: "Хондашуда ишора кардан", clearAll: "Тоза кардани ҳама", myProfile: "Профили ман",
+                searchHint: "Барои ҷустуҷӯ дар ҳуҷҷатҳо, корбарон ва шарҳҳо нависед",
+                sign: "Имзо кардан", profileSaved: "Профил захира шуд!", profileDeleted: "Аккаунт нест карда шуд!",
+                loggedOut: "Шумо аз система баромадед!",
+                allDocs: "Ҳама", incoming: "Воридотӣ", outgoing: "Содиротӣ", waiting: "Дар интизорӣ",
+                signed: "Имзошуда", drafts: "Пешнавсҳо", analysis: "Таҳлил", searchPlaceholder: "Ҷустуҷӯ дар сайт...",
+                // Ключи для красивой модалки выхода:
+                logoutModalTitle: "Баромад аз система",
+                logoutModalCancel: "Илғо",
+                logoutModalConfirm: "Баромад",
+                confirmLogout: "Шумо боварӣ доред, ки аз система мебароед?"
+            }
+        };
 
+        let currentLang = localStorage.getItem('app-lang') || 'ru';
 
+        function setLang(lang, btn) {
+            currentLang = lang;
+            localStorage.setItem('app-lang', lang);
 
+            document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
+            if (btn) btn.classList.add('active');
 
+            const t = translations[lang];
+            if (!t) return;
 
-    };
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if (t[key]) el.textContent = t[key];
+            });
 
-    // 1. Инициализация языка: берем из памяти или ставим 'ru' по умолчанию
-    let currentLang = localStorage.getItem('app-lang') || 'ru';
+            document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+                const key = el.getAttribute('data-i18n-placeholder');
+                if (t[key]) el.placeholder = t[key];
+            });
 
-    function setLang(lang, btn) {
-        currentLang = lang;
-        // Сохраняем выбор пользователя
-        localStorage.setItem('app-lang', lang);
+            document.documentElement.lang = lang;
 
-        document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
-        if (btn) btn.classList.add('active');
-
-        const t = translations[lang];
-        if (!t) return;
-
-        // Перевод текста
-        document.querySelectorAll('[data-i18n]').forEach(el => {
-            const key = el.getAttribute('data-i18n');
-            if (t[key]) el.textContent = t[key];
-        });
-
-        // Перевод плейсхолдеров
-        document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
-            const key = el.getAttribute('data-i18n-placeholder');
-            if (t[key]) el.placeholder = t[key];
-        });
-
-        document.documentElement.lang = lang;
-
-        // Обновляем флаг в селекторе (если он есть на странице)
-        const currentFlagImg = document.getElementById('current-flag');
-        if (currentFlagImg) {
-            const flagMap = {
-                'en': 'https://flagcdn.com/w20/us.png',
-                'ru': 'https://flagcdn.com/w20/ru.png',
-                'tj': 'https://flagcdn.com/w20/tj.png'
-            };
-            currentFlagImg.src = flagMap[lang];
-        }
-    }
-
-    // 2. Функция для селектора (которую ты вызываешь из HTML)
-    function changeLangUI(lang, flagUrl, element) {
-        setLang(lang, element);
-        document.getElementById('lang-options').classList.add('hidden');
-    }
-
-    // 3. Запуск при загрузке страницы
-    document.addEventListener('DOMContentLoaded', () => {
-        // Устанавливаем язык, который был сохранен
-        setLang(currentLang);
-
-        // Инициализация темы и цветов (твой существующий код...)
-        initThemeAndColors();
-    });
-
-    // --- Остальные твои функции без изменений (showPage, toggleTheme и т.д.) ---
-
-    function initThemeAndColors() {
-        // Тема
-        const savedTheme = localStorage.getItem('color-theme');
-        if (savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-            document.documentElement.classList.add('dark');
-            if(document.getElementById('themeIcon')) document.getElementById('themeIcon').className = 'bi bi-sun';
+            const currentFlagImg = document.getElementById('current-flag');
+            if (currentFlagImg) {
+                const flagMap = {
+                    'en': 'https://flagcdn.com/w20/us.png',
+                    'ru': 'https://flagcdn.com/w20/ru.png',
+                    'tj': 'https://flagcdn.com/w20/tj.png'
+                };
+                currentFlagImg.src = flagMap[lang];
+            }
         }
 
-        // Цвета
-        const savedPrimary = localStorage.getItem('theme-primary');
-        if (savedPrimary) {
-            document.documentElement.style.setProperty('--primary', savedPrimary);
-            document.documentElement.style.setProperty('--primary-dark', localStorage.getItem('theme-primary-dark'));
-            document.documentElement.style.setProperty('--accent', localStorage.getItem('theme-accent'));
-        }
-    }
-    function showPage(pageId, clickedLink) {
-        document.querySelectorAll('.page-section').forEach(s => s.classList.remove('active'));
-        const target = document.getElementById('page-' + pageId);
-        if (target) target.classList.add('active');
-
-        if (clickedLink) {
-            document.querySelectorAll('.sidebar .nav-link').forEach(l => l.classList.remove('active'));
-            clickedLink.classList.add('active');
-        }
-        if (window.innerWidth <= 768) {
-            document.getElementById('sidebar').classList.remove('show');
-            document.getElementById('overlay').classList.remove('show');
-        }
-    }
-
-    function toggleSidebar() {
-        document.getElementById('sidebar').classList.toggle('show');
-        document.getElementById('overlay').classList.toggle('show');
-    }
-
-    function toggleNotifications() {
-        document.getElementById('notifDropdown').classList.toggle('show');
-    }
-
-    function clearNotifications() {
-        document.getElementById('notifDropdown').classList.remove('show');
-        showToast(translations[currentLang].profileSaved);
-    }
-
-    function markRead(btn) {
-        const item = btn.closest('.notification-item');
-        if (item) item.classList.remove('unread');
-        showToast(translations[currentLang].profileSaved);
-    }
-
-    function saveProfile() {
-        showToast(translations[currentLang].profileSaved);
-    }
-
-    function deleteProfile() {
-        if (confirm(currentLang === 'tj' ? 'Шумо мутмаин ҳастед?' : currentLang === 'ru' ? 'Вы уверены?' : 'Are you sure?')) {
-            showToast(translations[currentLang].profileDeleted);
-        }
-    }
-
-    function handleLogout() {
-        showToast(translations[currentLang].loggedOut);
-        setTimeout(() => window.location.href = '/', 1000);
-    }
-
-    function showToast(msg) {
-        document.getElementById('toastMsg').textContent = msg;
-        const toast = new bootstrap.Toast(document.getElementById('toastSuccess'));
-        toast.show();
-    }
-
-    // Theme Toggle
-    function toggleTheme() {
-        document.documentElement.classList.toggle('dark');
-        const icon = document.getElementById('themeIcon');
-        if (document.documentElement.classList.contains('dark')) {
-            icon.className = 'bi bi-sun';
-            localStorage.setItem('color-theme', 'dark');
-        } else {
-            icon.className = 'bi bi-moon-stars';
-            localStorage.setItem('color-theme', 'light');
-        }
-    }
-
-    // Init theme
-    (function() {
-        const saved = localStorage.getItem('color-theme');
-        if (saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-            document.documentElement.classList.add('dark');
-            document.getElementById('themeIcon').className = 'bi bi-sun';
-        } else {
-            document.getElementById('themeIcon').className = 'bi bi-moon-stars';
-        }
-    })();
-
-    // Palette
-    function togglePalette() {
-        document.getElementById('paletteDropdown').classList.toggle('show');
-    }
-
-    function setColor(primary, primaryDark, accent, el) {
-        document.documentElement.style.setProperty('--primary', primary);
-        document.documentElement.style.setProperty('--primary-dark', primaryDark);
-        document.documentElement.style.setProperty('--accent', accent);
-        document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('active'));
-        el.classList.add('active');
-        localStorage.setItem('theme-primary', primary);
-        localStorage.setItem('theme-primary-dark', primaryDark);
-        localStorage.setItem('theme-accent', accent);
-    }
-
-    // Load saved color
-    (function() {
-        const savedPrimary = localStorage.getItem('theme-primary');
-        if (savedPrimary) {
-            document.documentElement.style.setProperty('--primary', savedPrimary);
-            document.documentElement.style.setProperty('--primary-dark', localStorage.getItem('theme-primary-dark'));
-            document.documentElement.style.setProperty('--accent', localStorage.getItem('theme-accent'));
-        }
-    })();
-
-    // Close dropdowns on outside click
-    document.addEventListener('click', function(e) {
-        const dd = document.getElementById('notifDropdown');
-        if (dd && dd.classList.contains('show') && !e.target.closest('.position-relative') && !e.target.closest('.hover-scale')) {
-            dd.classList.remove('show');
-        }
-        const pd = document.getElementById('paletteDropdown');
-        if (pd && pd.classList.contains('show') && !e.target.closest('.position-relative') && !e.target.closest('.palette-btn')) {
-            pd.classList.remove('show');
-        }
-        const langSel = document.getElementById('custom-lang-selector');
-        if (langSel && !langSel.contains(e.target)) {
-            document.getElementById('lang-options').classList.add('hidden');
-        }
-    });
-
-    // Language selector
-    function changeLangUI(lang, flagUrl, element) {
-        document.getElementById('current-flag').src = flagUrl;
-        if (typeof setLang === "function") {
+        function changeLangUI(lang, flagUrl, element) {
             setLang(lang, element);
+            const options = document.getElementById('lang-options');
+            if(options) options.classList.add('hidden');
         }
-        document.getElementById('lang-options').classList.add('hidden');
-    }
-    // Добавь это в docLangKeys внутри <script>
-    const docLangKeys = {
-        ru: {
-            // ... другие ключи
-            searchPlaceholder: "Поиск документов...",
-        },
-        en: {
-            searchPlaceholder: "Search documents...",
-        },
-        tj: {
-            searchPlaceholder: "Ҷустуҷӯи ҳуҷҷатҳо...",
+
+        // --- ФУНКЦИИ КРАСИВОЙ МОДАЛКИ ВЫХОДА ---
+        function openLogoutModal() {
+            const modal = document.getElementById('logoutModal');
+            const card = document.getElementById('logoutModalCard');
+            const textEl = document.getElementById('logoutModalText');
+
+            const t = translations[currentLang] || translations['ru'];
+            if (t && t.confirmLogout) {
+                textEl.textContent = t.confirmLogout;
+            }
+
+            modal.classList.remove('hidden');
+
+            setTimeout(() => {
+                card.classList.remove('scale-95', 'opacity-0');
+                card.classList.add('scale-100', 'opacity-100');
+            }, 20);
         }
-    };
 
-    // И обнови функцию applyDocLang, чтобы она переводила placeholder
-    function applyDocLang() {
-        const lang = document.documentElement.lang || 'ru';
-        const t = window.translations[lang] || window.translations['ru'];
+        function closeLogoutModal() {
+            const modal = document.getElementById('logoutModal');
+            const card = document.getElementById('logoutModalCard');
 
-        document.querySelectorAll('[data-i18n]').forEach(el => {
-            const key = el.getAttribute('data-i18n');
-            if (t[key]) el.textContent = t[key];
+            card.classList.remove('scale-100', 'opacity-100');
+            card.classList.add('scale-95', 'opacity-0');
+
+            setTimeout(() => {
+                modal.classList.add('hidden');
+            }, 300);
+        }
+
+        function confirmLogoutAction() {
+            closeLogoutModal();
+            if (typeof handleLogout === 'function') {
+                handleLogout();
+            } else {
+                const logoutForm = document.getElementById('logout-form');
+                if (logoutForm) logoutForm.submit();
+            }
+        }
+
+        // --- ОСТАЛЬНЫЕ СИСТЕМНЫЕ ФУНКЦИИ ---
+        document.addEventListener('DOMContentLoaded', () => {
+            setLang(currentLang);
+            initThemeAndColors();
         });
 
-        // ПЕРЕВОД ПЛЕЙСХОЛДЕРА
-        document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
-            const key = el.getAttribute('data-i18n-placeholder');
-            if (t[key]) el.setAttribute('placeholder', t[key]);
+        function initThemeAndColors() {
+            const savedTheme = localStorage.getItem('color-theme');
+            if (savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                document.documentElement.classList.add('dark');
+                if(document.getElementById('themeIcon')) document.getElementById('themeIcon').className = 'bi bi-sun';
+            }
+
+            const savedPrimary = localStorage.getItem('theme-primary');
+            if (savedPrimary) {
+                document.documentElement.style.setProperty('--primary', savedPrimary);
+                document.documentElement.style.setProperty('--primary-dark', localStorage.getItem('theme-primary-dark'));
+                document.documentElement.style.setProperty('--accent', localStorage.getItem('theme-accent'));
+            }
+        }
+
+        function showPage(pageId, clickedLink) {
+            document.querySelectorAll('.page-section').forEach(s => s.classList.remove('active'));
+            const target = document.getElementById('page-' + pageId);
+            if (target) target.classList.add('active');
+
+            if (clickedLink) {
+                document.querySelectorAll('.sidebar .nav-link').forEach(l => l.classList.remove('active'));
+                clickedLink.classList.add('active');
+            }
+            if (window.innerWidth <= 768) {
+                document.getElementById('sidebar').classList.remove('show');
+                document.getElementById('overlay').classList.remove('show');
+            }
+        }
+
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('show');
+            document.getElementById('overlay').classList.toggle('show');
+        }
+
+        function toggleNotifications() {
+            document.getElementById('notifDropdown').classList.toggle('show');
+        }
+
+        function clearNotifications() {
+            document.getElementById('notifDropdown').classList.remove('show');
+            showToast(translations[currentLang].profileSaved);
+        }
+
+        function markRead(btn) {
+            const item = btn.closest('.notification-item');
+            if (item) item.classList.remove('unread');
+            showToast(translations[currentLang].profileSaved);
+        }
+
+        function saveProfile() {
+            showToast(translations[currentLang].profileSaved);
+        }
+
+        function deleteProfile() {
+            const t = translations[currentLang] || translations['ru'];
+            // Тут по желанию тоже можно будет сделать красивую модалку, пока оставил фикс текста
+            if (confirm(t.confirmLogout || 'Вы уверены?')) {
+                showToast(t.profileDeleted);
+            }
+        }
+
+        function handleLogout() {
+            showToast(translations[currentLang].loggedOut);
+            setTimeout(() => window.location.href = '/', 1000);
+        }
+
+        function showToast(msg) {
+            const toastBox = document.getElementById('toastMsg');
+            if(toastBox) toastBox.textContent = msg;
+            const toastEl = document.getElementById('toastSuccess');
+            if (toastEl && typeof bootstrap !== 'undefined') {
+                const toast = new bootstrap.Toast(toastEl);
+                toast.show();
+            }
+        }
+
+        function toggleTheme() {
+            document.documentElement.classList.toggle('dark');
+            const icon = document.getElementById('themeIcon');
+            if (icon) {
+                if (document.documentElement.classList.contains('dark')) {
+                    icon.className = 'bi bi-sun';
+                    localStorage.setItem('color-theme', 'dark');
+                } else {
+                    icon.className = 'bi bi-moon-stars';
+                    localStorage.setItem('color-theme', 'light');
+                }
+            }
+        }
+
+        function togglePalette() {
+            document.getElementById('paletteDropdown').classList.toggle('show');
+        }
+
+        document.addEventListener('click', function(e) {
+            const dd = document.getElementById('notifDropdown');
+            if (dd && dd.classList.contains('show') && !e.target.closest('.position-relative') && !e.target.closest('.hover-scale')) {
+                dd.classList.remove('show');
+            }
+            const pd = document.getElementById('paletteDropdown');
+            if (pd && pd.classList.contains('show') && !e.target.closest('.position-relative') && !e.target.closest('.palette-btn')) {
+                pd.classList.remove('show');
+            }
+            const langSel = document.getElementById('custom-lang-selector');
+            if (langSel && !langSel.contains(e.target)) {
+                const options = document.getElementById('lang-options');
+                if(options) options.classList.add('hidden');
+            }
         });
-    }
+    </script>
+    <script>
+        setInterval(function() {
+            const currentUrl = window.location.href;
 
-</script>
+            // 1. Стоп на страницах создания и редактирования (чтобы не мешать заполнению форм)
+            if (currentUrl.includes('/create') || currentUrl.includes('/edit')) {
+                return;
+            }
 
+            // 2. Бесшумная проверка ТОЛЬКО колокольчика уведомлений
+            fetch(window.location.href)
+                .then(response => {
+                    if (!response.ok) throw new Error('Сеть не отвечает');
+                    return response.text();
+                })
+                .then(html => {
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(html, 'text/html');
+
+                    const newBell = doc.getElementById('pjax-bell');
+                    const oldBell = document.getElementById('pjax-bell');
+
+                    // Если нашли колокольчик на текущей странице и в скачанном ответе
+                    if (newBell && oldBell) {
+                        // Проверяем, изменилось ли количество уведомлений
+                        if (oldBell.innerHTML.trim() !== newBell.innerHTML.trim()) {
+                            // Точечно меняем только колокольчик и цифру (включаются новые анимации!)
+                            oldBell.innerHTML = newBell.innerHTML;
+                            console.log('Колокольчик уведомлений обновлен! Пришли новые данные 🔔');
+                        }
+                    }
+                })
+                .catch(error => console.error('Ошибка проверки уведомлений:', error));
+
+        }, 5000); // Строго каждые 5 секунд
+    </script>
+</div>
 </body>
 </html>
 

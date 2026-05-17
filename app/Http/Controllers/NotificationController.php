@@ -12,8 +12,19 @@ use Illuminate\Support\Facades\Auth;
 
 class NotificationController extends Controller
 {
+    public function readAll()
+    {
+        Notification::where('user_id', auth()->id())
+            ->where('is_read', false)
+            ->update([
+                'is_read' => true,
+                'read_at' => now()
+            ]);
+
+        return back()->with('success', 'Все уведомления прочитаны');
+    }
     public function index() {
-        $notifications = Notification::where('user_id', auth()->id())->latest()->paginate(5);
+        $notifications = Notification::where('user_id', auth()->id())->latest()->paginate(25);
         $unreadCount = Notification::where('user_id', auth()->id())->where('is_read', false)->count();
         return view('notifications.index', compact('notifications', 'unreadCount'));
     }
@@ -73,7 +84,6 @@ class NotificationController extends Controller
             Notification::create([
                 'user_id'         => $userId,
                 'type'            => 'comment',
-                // Если получатель — автор документа, пишем одно, если просто участник — другое
                 'message'         => ($userId == $document->created_by)
                     ? 'Новый ответ в вашем документе'
                     : 'Новый комментарий в обсуждении, где вы участвуете',
@@ -81,15 +91,20 @@ class NotificationController extends Controller
                 'notifiable_type' => User::class,
                 'notifiable_id'   => $userId,
                 'data' => [
-                    'document_id'    => $document->id,
-                    'type'           => 'comment',
-                    'user_name'      => $currentUser->name,
-                    'document_title' => $document->title,
+                    'document_id'     => $document->id,
+                    'type'            => 'comment',
+                    'user_name'       => auth()->user()->name, // Оставили один, чистый ключ
+                    'document_title'  => $document->title,
                     'comment_preview' => Str::limit($request->comment, 50),
                 ],
             ]);
         }
 
         return back()->with('success', 'Комментарий добавлен, участники уведомлены!');
+    }
+    public function read($id)
+    {
+        // Используем твою рабочую логику, которая обновляет поле is_read в базе
+        return $this->markAsRead($id);
     }
 }

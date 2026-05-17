@@ -286,98 +286,352 @@
 
     <div class="container mx-auto px-4 py-6 min-h-screen">
         @php
-            $filePath = $signature->document->file_path ?? '';
+            $doc = $signature->document ?? (object)[];
+            $filePath = $doc->file_path ?? '';
             $extension = pathinfo($filePath, PATHINFO_EXTENSION);
             $isWord = in_array(strtolower($extension), ['doc', 'docx']);
             $isPdf = strtolower($extension) === 'pdf';
             $previewUrl = $isWord
                 ? 'https://docs.google.com/gview?url=' . asset('storage/' . $filePath) . '&embedded=true'
                 : asset('storage/' . $filePath);
+
+            // Форматирование размера файла
+            $fileSize = $doc->file_size ?? 0;
+            $formattedSize = $fileSize > 1048576
+                ? round($fileSize / 1048576, 2) . ' МБ'
+                : ($fileSize > 1024 ? round($fileSize / 1024, 1) . ' КБ' : $fileSize . ' Б');
+
+            // Статус документа
+            $docStatus = $doc->status ?? 'draft';
+            $statusColors = [
+                'draft' => 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300',
+                'sent' => 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300',
+                'review' => 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300',
+                'signed' => 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300',
+                'rejected' => 'bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300',
+            ];
+            $statusLabels = [
+                'draft' => 'Черновик', 'sent' => 'Отправлен', 'review' => 'На проверке',
+                'signed' => 'Подписан', 'rejected' => 'Отклонён'
+            ];
         @endphp
 
         <style>
-            .view-sig-page { --primary-color: #6366f1; font-family: 'Inter', sans-serif !important; }
-            .form-card { background: #ffffff !important; border-radius: 1.5rem; border: 1px solid rgba(0, 0, 0, 0.08); box-shadow: 0 4px 20px rgba(0,0,0,0.03); }
-            .dark .form-card { background: #1e293b !important; border-color: rgba(255,255,255,0.1); }
-            .label-micro { font-size: 10px !important; font-weight: 800 !important; text-transform: uppercase !important; letter-spacing: 0.1em !important; color: #94a3b8; }
-            .data-text { font-size: 15px !important; font-weight: 700; color: #1e293b; }
-            .dark .data-text { color: #f8fafc; }
-            .badge-status { font-size: 10px; font-weight: 900; padding: 4px 12px; border-radius: 8px; text-transform: uppercase; }
-            .preview-container { height: 800px; border-radius: 1.5rem; overflow: hidden; border: 1px solid rgba(0,0,0,0.1); background: #f1f5f9; position: relative; }
-            .format-indicator { padding: 4px 10px; border-radius: 6px; color: white; font-size: 10px; font-weight: 900; }
+            .view-sig-page { --primary: #6366f1; --success: #10b981; --warning: #f59e0b; --danger: #ef4444; font-family: 'Inter', sans-serif !important; }
+
+            /* Карточка с эффектом "живого" свечения */
+            .form-card {
+                background: #ffffff !important;
+                border-radius: 1.5rem !important;
+                border: 1px solid rgba(99, 102, 241, 0.15) !important;
+                box-shadow: 0 4px 20px rgba(99, 102, 241, 0.08) !important;
+                transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+                position: relative;
+                overflow: hidden;
+            }
+            .form-card::before {
+                content: '';
+                position: absolute;
+                top: 0; left: -100%;
+                width: 100%; height: 100%;
+                background: linear-gradient(90deg, transparent, rgba(99,102,241,0.08), transparent);
+                transition: left 0.6s ease;
+                pointer-events: none;
+            }
+            .form-card:hover::before { left: 100%; }
+            .form-card:hover {
+                transform: translateY(-2px) !important;
+                box-shadow: 0 8px 30px rgba(99, 102, 241, 0.15) !important;
+                border-color: rgba(99, 102, 241, 0.3) !important;
+            }
+            .dark .form-card {
+                background: #1e293b !important;
+                border-color: rgba(99, 102, 241, 0.25) !important;
+                box-shadow: 0 4px 20px rgba(0,0,0,0.3) !important;
+            }
+
+            /* Типографика (Увеличенные размеры) */
+            .label-micro {
+                font-size: 12px !important; /* Увеличено с 10px */
+                font-weight: 800 !important;
+                text-transform: uppercase !important;
+                letter-spacing: 0.12em !important;
+                color: #64748b !important;
+                display: flex;
+                align-items: center;
+                gap: 6px;
+            }
+            .label-micro svg { opacity: 0.8; width: 14px; height: 14px; }
+            .dark .label-micro { color: #94a3b8 !important; }
+
+            .data-text {
+                font-size: 17px !important; /* Увеличено с 15px */
+                font-weight: 700;
+                color: #0f172a !important;
+                transition: color 0.2s;
+            }
+            .data-text:hover { color: #4f46e5 !important; }
+            .dark .data-text { color: #f8fafc !important; }
+            .dark .data-text:hover { color: #818cf8 !important; }
+
+            /* Бейджи с анимацией */
+            .badge-status {
+                font-size: 12px; /* Увеличено с 10px */
+                font-weight: 900;
+                padding: 6px 16px; /* Чуть увеличены отступы */
+                border-radius: 999px;
+                text-transform: uppercase;
+                letter-spacing: 0.05em;
+                display: inline-flex;
+                align-items: center;
+                gap: 6px;
+                animation: badgePulse 2.5s infinite;
+            }
+            @keyframes badgePulse {
+                0%, 100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); }
+                50% { box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
+            }
+            .badge-status.pending {
+                background: rgba(244, 63, 94, 0.12) !important;
+                color: #dc2626 !important;
+                animation-name: badgePulseRed;
+            }
+            @keyframes badgePulseRed {
+                0%, 100% { box-shadow: 0 0 0 0 rgba(244, 63, 94, 0.3); }
+                50% { box-shadow: 0 0 0 6px rgba(244, 63, 94, 0); }
+            }
+
+            /* Контейнер предпросмотра */
+            .preview-container {
+                height: 800px;
+                border-radius: 1.5rem;
+                overflow: hidden;
+                border: 1px solid rgba(148, 163, 184, 0.25);
+                background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+                position: relative;
+                transition: all 0.3s ease;
+            }
+            .preview-container:hover { border-color: rgba(99, 102, 241, 0.4); }
+            .dark .preview-container {
+                background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+                border-color: rgba(148, 163, 184, 0.15);
+            }
+
+            /* Индикатор формата */
+            .format-indicator {
+                padding: 6px 14px; /* Чуть увеличен */
+                border-radius: 8px;
+                color: white;
+                font-size: 12px; /* Увеличено с 10px */
+                font-weight: 900;
+                letter-spacing: 0.05em;
+                text-transform: uppercase;
+                background: linear-gradient(135deg, #6366f1, #8b5cf6);
+                box-shadow: 0 4px 12px rgba(99, 102, 241, 0.35);
+                animation: float 3s ease-in-out infinite;
+            }
+            @keyframes float {
+                0%, 100% { transform: translateY(0); }
+                50% { transform: translateY(-2px); }
+            }
+
+            /* Кнопки с микро-анимацией */
+            .btn-action {
+                transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+                position: relative;
+                overflow: hidden;
+            }
+            .btn-action::after {
+                content: '';
+                position: absolute;
+                inset: 0;
+                background: radial-gradient(circle at center, rgba(255,255,255,0.25) 0%, transparent 70%);
+                opacity: 0;
+                transition: opacity 0.2s;
+            }
+            .btn-action:hover::after { opacity: 1; }
+            .btn-action:hover { transform: translateY(-1px); }
+            .btn-action:active { transform: translateY(0); }
+
+            /* Подпись с эффектом */
+            .signature-stamp {
+                position: relative;
+                overflow: hidden;
+            }
+            .signature-stamp::after {
+                content: '';
+                position: absolute;
+                inset: 0;
+                background: linear-gradient(45deg, transparent 40%, rgba(255,255,255,0.4) 50%, transparent 60%);
+                transform: translateX(-100%);
+                animation: shimmer 2s infinite;
+            }
+            @keyframes shimmer {
+                100% { transform: translateX(100%); }
+            }
+
+            /* Разделитель */
+            .divider {
+                height: 1px;
+                background: linear-gradient(90deg, transparent, rgba(148, 163, 184, 0.3), transparent);
+                margin: 14px 0;
+            }
+
+            /* Иконки с эффектом при наведении */
+            .icon-hover {
+                transition: all 0.2s ease;
+            }
+            .icon-hover:hover {
+                transform: scale(1.1);
+                color: #6366f1 !important;
+            }
+
+            /* Анимация появления */
+            @keyframes fadeInUp {
+                from { opacity: 0; transform: translateY(12px); }
+                to { opacity: 1; transform: translateY(0); }
+            }
+            .animate-in { animation: fadeInUp 0.4s ease forwards; }
+            .animate-in.delay-1 { animation-delay: 0.1s; }
+            .animate-in.delay-2 { animation-delay: 0.2s; }
+            .animate-in.delay-3 { animation-delay: 0.3s; }
+
+            /* Скроллбар для iframe */
+            iframe::-webkit-scrollbar { width: 6px; }
+            iframe::-webkit-scrollbar-track { background: transparent; }
+            iframe::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+            .dark iframe::-webkit-scrollbar-thumb { background: #475569; }
         </style>
 
         <div class="view-sig-page">
             {{-- Шапка --}}
-            <div class="mb-6 flex items-center justify-between">
+            <div class="mb-6 flex items-center justify-between animate-in">
                 <div>
-                    <a href="{{ route('signatures.index') }}" class="label-micro text-indigo-500 flex items-center gap-2 mb-2 hover:text-indigo-700 transition-all">
-                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="4"><path d="M15 19l-7-7 7-7"/></svg>
-                        <span data-i18n="backToList">Реестр документов</span>
+                    <a href="{{ route('signatures.index') }}" class="label-micro text-indigo-500 flex items-center gap-2 mb-3 hover:text-indigo-700 transition-all group">
+                        <svg class="w-4 h-4 transition-transform group-hover:-translate-x-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3"><path d="M15 19l-7-7 7-7"/></svg>
+                        <span data-i18n="backToList" class="font-semibold text-[13px]">Реестр документов</span>
                     </a>
                     <div class="flex items-center gap-4">
-                        <h1 class="text-3xl font-black tracking-tight text-slate-900 dark:text-white" data-i18n="cardTitle">Карточка документа</h1>
-                        <span class="format-indicator {{ $isWord ? 'bg-blue-600' : 'bg-red-600' }}">
-                            {{ strtoupper($extension ?: 'N/A') }}
-                        </span>
+                        <h1 class="text-4xl font-black tracking-tight text-slate-900 dark:text-white" data-i18n="cardTitle">Карточка документа</h1>
+                        <span class="format-indicator">{{ strtoupper($extension ?: 'N/A') }}</span>
                     </div>
                 </div>
             </div>
 
             <div class="flex flex-col gap-6">
                 {{-- ИНФОРМАЦИОННАЯ КАРТОЧКА --}}
-                <div class="form-card p-8">
-                    <div class="grid grid-cols-1 md:grid-cols-4 gap-12">
-                        {{-- Статус --}}
-                        <div class="space-y-6">
-                            <div class="flex items-center justify-between border-b pb-4 border-slate-50 dark:border-slate-800">
-                                <span class="label-micro" data-i18n="statusLabel">Статус</span>
+                <div class="form-card p-8 animate-in delay-1">
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-10">
+                        {{-- Статус + Мета --}}
+                        <div class="space-y-5">
+                            <div class="flex items-center justify-between border-b pb-4 border-slate-100 dark:border-slate-800">
+                                <span class="label-micro">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                    <span data-i18n="statusLabel">Статус</span>
+                                </span>
                                 @if($signature->signed_at)
-                                    <span class="badge-status bg-emerald-500/10 text-emerald-600" data-i18n="statusSigned">Подписано</span>
+                                    <span class="badge-status bg-emerald-500/10 text-emerald-600">
+                                        <span class="w-2 h-2 rounded-full bg-current animate-pulse"></span>
+                                        <span data-i18n="statusSigned">Подписано</span>
+                                    </span>
                                 @else
-                                    <span class="badge-status bg-rose-500/10 text-rose-600" data-i18n="statusPending">Ожидание</span>
+                                    <span class="badge-status pending">
+                                        <span class="w-2 h-2 rounded-full bg-current animate-pulse"></span>
+                                        <span data-i18n="statusPending">Ожидание</span>
+                                    </span>
                                 @endif
                             </div>
+
                             <div>
-                                <label class="label-micro block mb-1" data-i18n="idLabel">ID Номер</label>
-                                <div class="data-text text-xl">#{{ str_pad($signature->id, 6, '0', STR_PAD_LEFT) }}</div>
+                                <label class="label-micro block mb-1.5">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14"/></svg>
+                                    <span data-i18n="idLabel">ID</span>
+                                </label>
+                                <div class="data-text text-2xl font-mono">#{{ str_pad($signature->id, 6, '0', STR_PAD_LEFT) }}</div>
+                            </div>
+
+                            <div>
+                                <label class="label-micro block mb-1.5">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>
+                                    <span data-i18n="numberLabel">№ Документа</span>
+                                </label>
+                                <div class="data-text text-lg">{{ $doc->number ?? '—' }}</div>
                             </div>
                         </div>
 
-                        {{-- Описание --}}
+                        {{-- Название + Содержание --}}
                         <div class="md:col-span-2 space-y-4">
                             <div>
-                                <label class="label-micro block mb-1" data-i18n="nameLabel">Название документа</label>
-                                <div class="data-text truncate">{{ $signature->document->title ?? '—' }}</div>
+                                <label class="label-micro block mb-1.5">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                                    <span data-i18n="nameLabel">Название</span>
+                                </label>
+                                <div class="data-text text-xl break-words">{{ $doc->title ?? '—' }}</div>
                             </div>
+
+                            <div class="divider"></div>
+
                             <div>
-                                <label class="label-micro block mb-1" data-i18n="descLabel">Краткое содержание</label>
-                                <div class="text-sm font-medium text-slate-500 leading-relaxed">
-                                    {{ $signature->document->content ?? 'Описание отсутствует' }}
+                                <label class="label-micro block mb-1.5">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7"/></svg>
+                                    <span data-i18n="descLabel">Содержание</span>
+                                </label>
+                                <div class="text-[15px] font-medium text-slate-600 dark:text-slate-300 leading-relaxed max-h-24 overflow-y-auto pr-2">
+                                    {{ $doc->content ?? 'Описание отсутствует' }}
                                 </div>
                             </div>
+
+                            <div class="divider"></div>
                         </div>
 
-                        {{-- Исполнитель и Кнопка --}}
+                        {{-- Исполнитель + Действия --}}
                         <div class="flex flex-col justify-between">
-                            <div class="text-right">
-                                <label class="label-micro block mb-1" data-i18n="executorLabel">Создал</label>
-                                <div class="data-text">{{ $signature->user->name ?? 'Система' }}</div>
-                                <div class="text-[11px] text-slate-400 font-bold">{{ $signature->created_at->format('d.m.Y H:i') }}</div>
+                            <div class="text-right space-y-3">
+                                <div>
+                                    <label class="label-micro block mb-1.5 justify-end">
+                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+                                        <span data-i18n="executorLabel">Создал</span>
+                                    </label>
+                                    <div class="data-text">{{ $signature->user->name ?? $doc->created_by ?? 'Система' }}</div>
+                                    <div class="text-[12px] text-slate-400 font-semibold">{{ $signature->created_at?->format('d.m.Y H:i') ?? '—' }}</div>
+                                </div>
+
+                                <div class="divider"></div>
+
+                                {{-- Получатель --}}
+                                <div>
+                                    <label class="label-micro block mb-1.5 justify-end">
+                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                                        <span data-i18n="receiverLabel">Получатель</span>
+                                    </label>
+                                    <div class="data-text">#{{ $doc->receiver_id ? $doc->receiver_id : '—' }}</div>
+                                </div>
+
+                                {{-- Дедлайн --}}
+                                @if($doc->deadline)
+                                    <div>
+                                        <label class="label-micro block mb-1.5 justify-end">
+                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                                            <span data-i18n="deadlineLabel">Дедлайн</span>
+                                        </label>
+                                        <div class="data-text text-lg {{ $doc->deadline < now() && !$signature->signed_at ? 'text-rose-600' : '' }}">
+                                            {{ \Carbon\Carbon::parse($doc->deadline)->format('d.m.Y') }}
+                                        </div>
+                                    </div>
+                                @endif
                             </div>
+
                             <div class="mt-4">
                                 @if(!$signature->signed_at)
-                                    {{-- Переход на страницу создания подписи с ID текущего документа --}}
                                     <a href="{{ route('signatures.create', ['document_id' => $signature->document_id]) }}"
-                                       class="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-3 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-all shadow-lg shadow-indigo-500/20">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                                        <span data-i18n="signBtn">Подписать и наложить QR</span>
+                                       class="btn-action w-full bg-indigo-600 hover:bg-indigo-700 text-white py-3 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 shadow-lg shadow-indigo-500/25">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+                                        <span data-i18n="signBtn">Подписать + QR</span>
                                     </a>
                                 @else
-                                    {{-- Вывод штампа подписи --}}
-                                    <div class="bg-slate-50 dark:bg-slate-800/50 p-2 rounded-xl border border-dashed border-slate-200 dark:border-slate-700 flex flex-col items-center">
-                                        <img src="{{ asset('storage/' . $signature->signature) }}" class="max-h-12 object-contain" alt="QR-Stamp">
-                                        <span class="text-[8px] font-bold text-emerald-500 mt-1 uppercase tracking-tighter">Verified Digital Signature</span>
+                                    <div class="signature-stamp bg-gradient-to-br from-emerald-50 to-emerald-100/60 dark:from-emerald-900/20 dark:to-emerald-800/10 p-2.5 rounded-xl border border-emerald-200/60 dark:border-emerald-700/40 flex flex-col items-center">
+                                        <img src="{{ asset('storage/' . $signature->signature) }}" class="max-h-10 object-contain mb-1" alt="✓">
+                                        <span class="text-[9px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-tight">✓ Verified</span>
                                     </div>
                                 @endif
                             </div>
@@ -386,19 +640,27 @@
                 </div>
 
                 {{-- ПРЕДПРОСМОТР --}}
-                <div class="form-card p-6">
-                    <div class="flex items-center justify-between mb-6">
+                <div class="form-card p-6 animate-in delay-2">
+                    <div class="flex items-center justify-between mb-5">
                         <div class="flex items-center gap-3">
-                            <span class="label-micro" data-i18n="previewLabel">Предпросмотр</span>
-                            @if($isWord) <span class="text-[9px] bg-blue-100 text-blue-700 px-2 py-0.5 rounded font-bold uppercase">Cloud Viewer</span> @endif
+                            <span class="label-micro">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                                <span data-i18n="previewLabel">Предпросмотр</span>
+                            </span>
+                            @if($isWord) <span class="text-[11px] bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 px-3 py-1 rounded-full font-bold uppercase">Docs</span> @endif
+                            @if($isPdf) <span class="text-[11px] bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300 px-3 py-1 rounded-full font-bold uppercase">PDF</span> @endif
+                            <span class="text-[12px] text-slate-400 font-medium">• {{ $formattedSize }}</span>
                         </div>
-                        <div class="flex gap-3">
+                        <div class="flex items-center gap-2">
                             @if($filePath)
-                                <button onclick="toggleFullScreen()" class="bg-slate-100 text-slate-600 p-2 rounded-lg hover:bg-indigo-600 hover:text-white transition-all">
-                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg>
+                                {{-- Кнопка "Полный экран" — аккуратная, контрастная, идеально совпадает по высоте --}}
+                                <button onclick="toggleFullScreen()" class="icon-hover bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 p-2.5 rounded-xl border border-slate-200/80 dark:border-slate-700/80 hover:bg-indigo-600 hover:text-white hover:border-transparent transition-all shadow-sm" title="Полный экран">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg>
                                 </button>
-                                <a href="{{ asset('storage/' . $filePath) }}" download class="bg-slate-900 text-white px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-indigo-600 transition-all flex items-center gap-2">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+
+                                {{-- Кнопка "Скачать" — точная копия из твоего макета (фиолетовый градиент, жирный белый текст) --}}
+                                <a href="{{ asset('storage/' . $filePath) }}" download class="btn-action bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-600 text-white px-5 py-2.5 rounded-xl text-[11px] font-black uppercase tracking-wider flex items-center gap-2 shadow-lg shadow-indigo-600/20 active:scale-[0.98] transition-all">
+                                    <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.8"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
                                     <span data-i18n="downloadBtn">Скачать</span>
                                 </a>
                             @endif
@@ -407,9 +669,14 @@
 
                     <div class="preview-container" id="previewBox">
                         @if($filePath)
-                            <iframe src="{{ $previewUrl }}{{ $isPdf ? '#toolbar=0' : '' }}" class="w-full h-full" frameborder="0"></iframe>
+                            <iframe src="{{ $previewUrl }}{{ $isPdf ? '#toolbar=0' : '' }}" class="w-full h-full border-0" loading="lazy" title="Document Preview"></iframe>
                         @else
-                            <div class="flex items-center justify-center h-full text-slate-300 label-micro">Файл не загружен</div>
+                            <div class="absolute inset-0 flex flex-col items-center justify-center text-slate-400">
+                                <svg class="w-16 h-16 mb-3 opacity-50 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                </svg>
+                                <span class="label-micro text-base" data-i18n="noFile">Файл не загружен</span>
+                            </div>
                         @endif
                     </div>
                 </div>
@@ -419,32 +686,106 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', function () {
+            // Полные переводы на 3 языка
             const translations = {
                 ru: {
-                    backToList: "Реестр документов", cardTitle: "Карточка документа", statusLabel: "Статус",
-                    statusSigned: "Подписано", statusPending: "Ожидание", idLabel: "ID Номер",
-                    descLabel: "Краткое содержание", nameLabel: "Название документа", executorLabel: "Создал",
-                    signBtn: "Подписать и наложить QR", previewLabel: "Предпросмотр", downloadBtn: "Скачать"
+                    backToList: "Реестр документов",
+                    cardTitle: "Карточка документа",
+                    statusLabel: "Статус",
+                    statusSigned: "Подписано",
+                    statusPending: "Ожидание",
+                    idLabel: "ID",
+                    numberLabel: "№ Документа",
+                    nameLabel: "Название",
+                    descLabel: "Содержание",
+                    typeLabel: "Тип",
+                    executorLabel: "Создал",
+                    receiverLabel: "Получатель",
+                    deadlineLabel: "Дедлайн",
+                    signBtn: "Подписать + QR",
+                    previewLabel: "Предпросмотр",
+                    downloadBtn: "Скачать",
+                    noFile: "Файл не загружен"
                 },
                 tj: {
-                    backToList: "Феҳристи ҳуҷҷатҳо", cardTitle: "Корти ҳуҷҷат", statusLabel: "Статус",
-                    statusSigned: "Имзо шуд", statusPending: "Интизорӣ", idLabel: "ID Рақам",
-                    descLabel: "Мазмуни кӯтоҳ", nameLabel: "Номи ҳуҷҷат", executorLabel: "Сохт",
-                    signBtn: "Имзо ва QR", previewLabel: "Пешнамоиш", downloadBtn: "Боргирӣ"
+                    backToList: "Феҳристи ҳуҷҷатҳо",
+                    cardTitle: "Корти ҳуҷҷат",
+                    statusLabel: "Статус",
+                    statusSigned: "Имзо шуд",
+                    statusPending: "Интизорӣ",
+                    idLabel: "ID",
+                    numberLabel: "Рақами ҳуҷҷат",
+                    nameLabel: "Ном",
+                    descLabel: "Мазмун",
+                    typeLabel: "Намуд",
+                    executorLabel: "Сохт",
+                    receiverLabel: "Гиранда",
+                    deadlineLabel: "Муҳлат",
+                    signBtn: "Имзо + QR",
+                    previewLabel: "Пешнамоиш",
+                    downloadBtn: "Боргирӣ",
+                    noFile: "Файл нест"
+                },
+                en: {
+                    backToList: "Document Registry",
+                    cardTitle: "Document Card",
+                    statusLabel: "Status",
+                    statusSigned: "Signed",
+                    statusPending: "Pending",
+                    idLabel: "ID",
+                    numberLabel: "Document No.",
+                    nameLabel: "Title",
+                    descLabel: "Content",
+                    typeLabel: "Type",
+                    executorLabel: "Created By",
+                    receiverLabel: "Receiver",
+                    deadlineLabel: "Deadline",
+                    signBtn: "Sign + QR",
+                    previewLabel: "Preview",
+                    downloadBtn: "Download",
+                    noFile: "No file uploaded"
                 }
             };
+
             const lang = localStorage.getItem('app-lang') || 'ru';
-            const t = translations[lang];
+            const t = translations[lang] || translations.ru;
+
+            // Применяем переводы
             document.querySelectorAll('[data-i18n]').forEach(el => {
                 const key = el.getAttribute('data-i18n');
-                if (t[key]) el.textContent = t[key];
+                if (t[key]) {
+                    const icon = el.querySelector('svg');
+                    el.textContent = t[key];
+                    if (icon) el.insertBefore(icon, el.firstChild);
+                }
+            });
+
+            // Анимация появления элементов при загрузке
+            document.querySelectorAll('.animate-in').forEach((el, i) => {
+                el.style.opacity = '0';
+                el.style.transform = 'translateY(12px)';
+                setTimeout(() => {
+                    el.style.transition = 'opacity 0.4s ease, transform 0.4s ease';
+                    el.style.opacity = '1';
+                    el.style.transform = 'translateY(0)';
+                }, 100 + (i * 100));
             });
         });
 
         function toggleFullScreen() {
             const el = document.getElementById('previewBox');
-            if (!document.fullscreenElement) { el.requestFullscreen(); }
-            else { document.exitFullscreen(); }
+            if (!document.fullscreenElement) {
+                el.requestFullscreen?.() || el.webkitRequestFullscreen?.() || el.msRequestFullscreen?.();
+            } else {
+                document.exitFullscreen?.() || document.webkitExitFullscreen?.() || document.msExitFullscreen?.();
+            }
         }
+
+        // Поддержка клавиши Esc для выхода из полноэкранного режима
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && document.fullscreenElement) {
+                document.exitFullscreen?.();
+            }
+        });
     </script>
 @endsection
