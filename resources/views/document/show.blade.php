@@ -145,29 +145,53 @@
                         </div>
                     </div>
 
-                    {{-- Файл --}}
+                    {{-- Файл (Обработка всех 4-х форматов) --}}
                     @if($document->file_path)
                         @php
                             $extension = strtolower(pathinfo($document->file_path, PATHINFO_EXTENSION));
-                            $isWord = $extension === 'docx' || $extension === 'doc';
+
+                            // Определяем стили, иконки и переводы под каждый из 4-х форматов
+                            if ($extension === 'docx' || $extension === 'doc') {
+                                $themeClass = 'bg-blue-50 text-blue-600 border-blue-100 group-hover:bg-blue-600';
+                                $btnClass = 'bg-blue-600';
+                                $iconClass = 'bi bi-file-earmark-word-fill';
+                                $i18nAssetKey = 'wordAsset';
+                                $i18nDownloadKey = 'downloadWord';
+                            } elseif ($extension === 'xlsx' || $extension === 'xls') {
+                                $themeClass = 'bg-emerald-50 text-emerald-600 border-emerald-100 group-hover:bg-emerald-600';
+                                $btnClass = 'bg-emerald-600';
+                                $iconClass = 'bi bi-file-earmark-excel-fill';
+                                $i18nAssetKey = 'excelAsset';
+                                $i18nDownloadKey = 'downloadExcel';
+                            } elseif ($extension === 'rtf') {
+                                $themeClass = 'bg-purple-50 text-purple-600 border-purple-100 group-hover:bg-purple-600';
+                                $btnClass = 'bg-purple-600';
+                                $iconClass = 'bi bi-file-earmark-richtext-fill';
+                                $i18nAssetKey = 'rtfAsset';
+                                $i18nDownloadKey = 'downloadRtf';
+                            } else { // pdf
+                                $themeClass = 'bg-red-50 text-red-600 border-red-100 group-hover:bg-red-600';
+                                $btnClass = 'bg-green-600';
+                                $iconClass = 'bi bi-file-earmark-pdf-fill';
+                                $i18nAssetKey = 'pdfAsset';
+                                $i18nDownloadKey = 'downloadPdf';
+                            }
+
+                            $isPdf = $extension === 'pdf';
                         @endphp
 
                         <div class="bg-white rounded-lg border border-slate-200 p-4 flex items-center justify-between group hover:border-blue-400 transition-all shadow-sm">
                             <div class="flex items-center gap-4">
-                                <div class="w-10 h-10 rounded-lg flex items-center justify-center border transition-colors {{ $isWord ? 'bg-blue-50 text-blue-600 border-blue-100 group-hover:bg-blue-600' : 'bg-red-50 text-red-600 border-red-100 group-hover:bg-red-600' }} group-hover:text-white">
-                                    @if($isWord)
-                                        <i class="bi bi-file-earmark-word-fill text-xl"></i>
-                                    @else
-                                        <i class="bi bi-file-earmark-pdf-fill text-xl"></i>
-                                    @endif
+                                <div class="w-10 h-10 rounded-lg flex items-center justify-center border transition-colors {{ $themeClass }} group-hover:text-white">
+                                    <i class="{{ $iconClass }} text-xl"></i>
                                 </div>
                                 <div class="overflow-hidden">
                                     <p class="text-[11px] font-bold text-black uppercase tracking-wide truncate max-w-[200px] md:max-w-xs">
                                         {{ basename($document->file_path) }}
                                     </p>
                                     <div class="flex items-center gap-2">
-                                        <span class="text-[9px] font-bold {{ $isWord ? 'text-blue-600' : 'text-red-600' }} uppercase" data-i18n="{{ $isWord ? 'wordAsset' : 'pdfAsset' }}">
-                                            {{ $isWord ? 'WORD Asset' : 'PDF Asset' }}
+                                        <span class="text-[9px] font-bold uppercase" data-i18n="{{ $i18nAssetKey }}">
+                                            {{ strtoupper($extension) }} Asset
                                         </span>
                                         <span class="w-1 h-1 rounded-full bg-slate-300"></span>
                                         <span class="text-[9px] text-black opacity-60 uppercase font-medium" data-i18n="readyView">Ready to View</span>
@@ -175,7 +199,7 @@
                                 </div>
                             </div>
 
-                            <a href="{{ asset('storage/' . $document->file_path) }}" @if(!$isWord) target="_blank" @endif
+                            <a href="{{ asset('storage/' . $document->file_path) }}" @if($isPdf) target="_blank" @endif
                             class="flex items-center gap-2 px-3 py-2 rounded-md bg-slate-100 text-black hover:bg-blue-600 hover:text-white transition-all border border-slate-200 shadow-sm">
                                 <span class="text-[10px] font-black uppercase tracking-tighter" data-i18n="viewBtn">Смотреть</span>
                                 <i class="bi bi-eye-fill text-sm"></i>
@@ -185,15 +209,11 @@
                         {{-- КНОПКА СКАЧИВАНИЯ --}}
                         <a href="{{ asset('storage/' . $document->file_path) }}"
                            download="{{ $document->title }}.{{ $extension }}"
-                           class="h-10 px-4 {{ $isWord ? 'bg-blue-600' : 'bg-green-600' }} text-white rounded-xl font-semibold uppercase tracking-widest text-xs flex items-center justify-center hover:scale-[1.01] active:scale-95 transition shadow-lg">
+                           class="h-10 px-4 {{ $btnClass }} text-white rounded-xl font-semibold uppercase tracking-widest text-xs flex items-center justify-center hover:scale-[1.01] active:scale-95 transition shadow-lg">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                             </svg>
-                            @if($isWord)
-                                <span data-i18n="downloadWord">СКАЧАТЬ WORD</span>
-                            @else
-                                <span data-i18n="downloadPdf">СКАЧАТЬ PDF</span>
-                            @endif
+                            <span data-i18n="{{ $i18nDownloadKey }}">СКАЧАТЬ {{ strtoupper($extension) }}</span>
                         </a>
                     @endif
 
@@ -272,19 +292,16 @@
 
                                 @if($isFullySigned)
                                     <div class="px-2 py-1 rounded border border-green-600/50 flex items-center gap-1 bg-green-50/50 shadow-sm">
-                                        {{-- Добавлен жесткий !text-black и инлайн стиль для 100% перебивания цвета --}}
                                         <i class="bi bi-check-all !text-black text-sm font-bold" style="color: #000000 !important;"></i>
                                         <span class="font-bold uppercase text-[10px] !text-black tracking-wide" style="color: #000000 !important;" data-i18n="signed">Signed</span>
                                     </div>
                                 @elseif($hasAnySignature)
                                     <div class="px-2 py-1 rounded border border-amber-600/60 flex items-center gap-1 bg-amber-50/50 shadow-sm">
-                                        {{-- Добавлен жесткий !text-black и инлайн стиль для 100% перебивания цвета --}}
                                         <i class="bi bi-pen-fill !text-black text-[10px]" style="color: #000000 !important;"></i>
                                         <span class="font-bold uppercase text-[10px] !text-black tracking-wide" style="color: #000000 !important;" data-i18n="processing">Processing</span>
                                     </div>
                                 @else
                                     <div class="px-2 py-1 rounded border border-red-600/50 flex items-center gap-1 bg-red-50/50 shadow-sm">
-                                        {{-- Добавлен жесткий !text-black и инлайн стиль для 100% перебивания цвета --}}
                                         <i class="bi bi-clock !text-black text-[10px]" style="color: #000000 !important;"></i>
                                         <span class="font-bold uppercase text-[10px] !text-black tracking-wide" style="color: #000000 !important;" data-i18n="notSigned">Not Signed</span>
                                     </div>
@@ -342,7 +359,8 @@
                 en: {
                     errorTitle: "Access Error",
                     back: "Back", edit: "Edit", delete: "Delete",
-                    readyView: "Ready to View", viewBtn: "View", downloadPdf: "DOWNLOAD PDF", downloadWord: "DOWNLOAD WORD",
+                    readyView: "Ready to View", viewBtn: "View",
+                    downloadPdf: "DOWNLOAD PDF", downloadWord: "DOWNLOAD WORD", downloadExcel: "DOWNLOAD EXCEL", downloadRtf: "DOWNLOAD RTF",
                     systemNotes: "SYSTEM NOTES", commentPlaceholder: "Leave a comment...",
                     noNotes: "No notes yet", details: "Details", signature: "Signature",
                     signed: "Signed", notSigned: "Not Signed", processing: "Processing", status: "Status",
@@ -357,12 +375,15 @@
                     noNumber: "W/N",
                     wordAsset: "WORD Asset",
                     pdfAsset: "PDF Asset",
+                    excelAsset: "EXCEL Asset",
+                    rtfAsset: "RTF Asset",
                     "У вас нет прав на удаление этого документа": "You do not have permission to delete this document."
                 },
                 ru: {
                     errorTitle: "Ошибка доступа",
                     back: "Назад", edit: "Редактировать", delete: "Удалить",
-                    readyView: "Готов к просмотру", viewBtn: "Смотреть", downloadPdf: "СКАЧАТЬ PDF", downloadWord: "СКАЧАТЬ WORD",
+                    readyView: "Готов к просмотру", viewBtn: "Смотреть",
+                    downloadPdf: "СКАЧАТЬ PDF", downloadWord: "СКАЧАТЬ WORD", downloadExcel: "СКАЧАТЬ EXCEL", downloadRtf: "СКАЧАТЬ RTF",
                     systemNotes: "СИСТЕМНЫЕ ЗАМЕТКИ", commentPlaceholder: "Оставьте комментарий...",
                     noNotes: "Заметок пока нет", details: "Детали", signature: "Подпись",
                     signed: "Подписан", notSigned: "Не подписан", processing: "В обработке", status: "Статус",
@@ -377,12 +398,15 @@
                     noNumber: "Б/Н",
                     wordAsset: "WORD Документ",
                     pdfAsset: "PDF Документ",
+                    excelAsset: "EXCEL Документ",
+                    rtfAsset: "RTF Документ",
                     "У вас нет прав на удаление этого документа": "У вас нет прав на удаление этого документа"
                 },
                 tj: {
                     errorTitle: "Хатои дастрасӣ",
                     back: "Қафо", edit: "Вироиш", delete: "Ҳазф кардан",
-                    readyView: "Барои тамошо омода", viewBtn: "Дидан", downloadPdf: "БОРГИРИИ PDF", downloadWord: "БОРГИРИИ WORD",
+                    readyView: "Барои тамошо омода", viewBtn: "Дидан",
+                    downloadPdf: "БОРГИРИИ PDF", downloadWord: "БОРГИРИИ WORD", downloadExcel: "БОРГИРИИ EXCEL", downloadRtf: "БОРГИРИИ RTF",
                     systemNotes: "ҚАЙДҲОИ СИСТЕМА", commentPlaceholder: "Фикр гузоред...",
                     noNotes: "Қайдҳо нестанд", details: "Тафсилот", signature: "Имзо",
                     signed: "Имзошуда", notSigned: "Имзо нашудааст", processing: "Дар баррасӣ", status: "Ҳолат",
@@ -397,6 +421,8 @@
                     noNumber: "Б/Р",
                     wordAsset: "WORD Ҳуҷҷат",
                     pdfAsset: "PDF Ҳуҷҷат",
+                    excelAsset: "EXCEL Ҳуҷҷат",
+                    rtfAsset: "RTF Ҳуҷҷат",
                     "У вас нет прав на удаление этого документа": "Шумо барои нест кардани ин ҳуҷҷат ҳуқуқ надоред."
                 }
             };
@@ -408,7 +434,6 @@
 
                 document.querySelectorAll('[data-i18n]').forEach(el => {
                     const key = el.getAttribute('data-i18n');
-                    // Дополнительная проверка, чтобы перевод i18n не перекрашивал текст обратно в бледный цвет
                     if (t[key]) {
                         el.textContent = t[key];
                     }

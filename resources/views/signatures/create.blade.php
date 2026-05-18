@@ -1,8 +1,12 @@
 @extends('layouts.admin')
 
 @section('content')
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght=400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+
+    <!-- Подключаем библиотеки для рендеринга Word (.docx) на клиенте -->
+    <script src="https://unpkg.com/jszip/dist/jszip.min.js"></script>
+    <script src="https://unpkg.com/docx-preview/dist/docx-preview.min.js"></script>
 
     <style>
         .sig-container { font-family: 'Inter', sans-serif !important; }
@@ -37,51 +41,137 @@
             left: 50%;
             transform: translate(-50%, -50%);
             display: none;
+            z-index: 40;
         }
+
+        .document-wrapper {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        /* Слои для предотвращения лагов при dragging */
+        .drag-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 30;
+        }
+
+        /* Штамп DocSign */
+        #draggable-qr-stamp {
+            position: absolute;
+            width: 95px;
+            height: 95px;
+            background: #ffffff !important;
+            border: 1.5px solid #000000;
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+            cursor: move;
+            pointer-events: auto;
+            display: none;
+            touch-action: none;
+            padding: 4px;
+            left: 50px;
+            top: 50px;
+            box-sizing: border-box;
+            text-align: center;
+            z-index: 35;
+        }
+        #dynamic-qr-img {
+            width: 100%;
+            height: 65px;
+            object-fit: contain;
+        }
+        .stamp-text-footer {
+            font-size: 5.5px !important;
+            font-weight: 800 !important;
+            color: #000000 !important;
+            line-height: 1.1;
+            text-transform: uppercase;
+            margin-top: 2px;
+            font-family: monospace;
+        }
+
+        /* Заглушка для Excel/локальных ограничений */
+        .local-warning-box {
+            display: none;
+            position: absolute;
+            inset: 0;
+            background: #1e293b;
+            color: #f1f5f9;
+            z-index: 25;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            text-align: center;
+        }
+
+        .dragging-active iframe, .dragging-active #word-preview {
+            pointer-events: none !important;
+        }
+
+        /* Оформление области превью Word */
+        #word-preview {
+            width: 100%;
+            height: 100%;
+            overflow-y: auto;
+            background-color: #ffffff;
+        }
+        .docx-wrapper { background: transparent !important; padding: 14px !important; }
+        .docx { box-shadow: 0 4px 12px rgba(0,0,0,0.08) !important; padding: 20px !important; }
     </style>
 
     <div class="container mx-auto px-2 py-4 sig-container">
-        <div class="flex flex-col lg:flex-row gap-6 items-start">
+        <form action="{{ route('signatures.store') }}" method="POST" id="signatureForm">
+            @csrf
+            <input type="hidden" name="qr_payload" id="qrPayloadInput">
+            <input type="hidden" name="qr_x" id="qr_x" value="0">
+            <input type="hidden" name="qr_y" id="qr_y" value="0">
+            <input type="hidden" name="target_page" id="target_page" value="1">
 
-            {{-- ЛЕВАЯ КОЛОНКА --}}
-            <div class="w-full lg:w-4/12 sticky top-4">
-                <div class="signature-card-container p-5">
-                    <h2 class="title-compact font-extrabold uppercase mb-5 text-black dark:text-white" data-i18n="signingTitle">Защита и QR</h2>
+            <div class="flex flex-col lg:flex-row gap-6 items-start">
 
-                    <form action="{{ route('signatures.store') }}" method="POST" id="signatureForm">
-                        @csrf
-                        <input type="hidden" name="qr_payload" id="qrPayloadInput">
+                {{-- ЛЕВАЯ ПАНЕЛЬ --}}
+                <div class="w-full lg:w-4/12 sticky top-4">
+                    <div class="signature-card-container p-5">
+                        <h2 class="title-compact font-extrabold uppercase mb-5 text-black dark:text-white" data-i18n="signingTitle">Защита и QR</h2>
 
-                        <div class="mb-5">
+                        <div class="mb-2">
                             <label class="label-micro block mb-1.5 ml-1" data-i18n="selectDocLabel">Выбор документа</label>
                             <select name="document_id" id="documentSelect" class="w-full outline-none focus:border-indigo-500 transition">
                                 <option value="" disabled {{ (!isset($document) && !request('document_id')) ? 'selected' : '' }} data-i18n="docPlaceholder">-- Список документов --</option>
                                 @foreach($documents as $doc)
                                     @php
-                                        $ext = pathinfo($doc->file_path, PATHINFO_EXTENSION);
-                                        $isWord = in_array(strtolower($ext), ['doc', 'docx']);
+                                        $ext = strtolower(pathinfo($doc->file_path, PATHINFO_EXTENSION));
 
-                                        // Собираем текст для QR
+                                        if (in_array($ext, ['doc', 'docx'])) {
+                                            $formatType = 'word';
+                                        } elseif (in_array($ext, ['xls', 'xlsx'])) {
+                                            $formatType = 'excel';
+                                        } elseif ($ext === 'rtf') {
+                                            $formatType = 'rtf';
+                                        } else {
+                                            $formatType = 'pdf';
+                                        }
+
                                         $senderName = $doc->sender->name ?? 'Система';
                                         $signerName = auth()->user()->name ?? 'Пользователь';
                                         $dateSent = $doc->created_at ? $doc->created_at->format('d.m.Y H:i') : date('d.m.Y H:i');
-                                        $dateSigned = date('d.m.Y H:i');
 
-                                        $qrText = "Документ: {$doc->title}\n" .
-                                                  "От кого: {$senderName}\n" .
-                                                  "Кто подписал: {$signerName}\n" .
-                                                  "Дата отправки: {$dateSent}\n" .
-                                                  "Дата подписания: {$dateSigned}";
-
+                                        $qrText = "DocSign | DOC: {$doc->title} | SENDER: {$senderName} | SIGNED BY: {$signerName} | SENT AT: {$dateSent}";
                                         $qrUrl = "https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=" . urlencode($qrText);
-
-                                        // Проверяем прямую переменную из контроллера ИЛИ переданный из реестра GET-параметр
                                         $isSelected = (isset($document) && $document->id == $doc->id) || (request('document_id') == $doc->id);
                                     @endphp
                                     <option value="{{ $doc->id }}"
                                             {{ $isSelected ? 'selected' : '' }}
                                             data-file="{{ asset('storage/' . $doc->file_path) }}"
-                                            data-type="{{ $isWord ? 'word' : 'pdf' }}"
+                                            data-type="{{ $formatType }}"
+                                            data-ext="{{ $ext }}"
                                             data-qr-url="{{ $qrUrl }}"
                                             data-qr-text="{{ $qrText }}">
                                         [{{ strtoupper($ext) }}] #{{ $doc->id }} — {{ $doc->title }}
@@ -89,49 +179,69 @@
                                 @endforeach
                             </select>
                         </div>
+                    </div>
+                </div>
 
-                        {{-- Блок QR-кода --}}
-                        <label class="label-micro block mb-1.5 ml-1 text-indigo-500" data-i18n="qrCodeLabel">QR-код Верификации</label>
-                        <div class="relative bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl flex flex-col items-center justify-center p-4 transition-all overflow-hidden" style="height: 190px;">
-                            <div id="qrContainer" class="flex items-center justify-center w-full h-full">
-                                <div id="qrPlaceholder" class="text-center">
-                                    <i class="bi bi-qr-code text-5xl text-slate-300 block mb-2"></i>
-                                    <p class="text-[10px] text-slate-400 font-medium uppercase tracking-wider" data-i18n="qrWaiting">Ожидание выбора...</p>
+                {{-- ПРАВАЯ ПАНЕЛЬ --}}
+                <div class="w-full lg:w-8/12">
+                    <div class="flex items-center justify-between mb-3 px-4">
+                        <div class="flex items-center gap-3">
+                            <span class="label-micro" data-i18n="previewLabel">Предпросмотр</span>
+                            <span id="formatBadge" class="hidden px-2 py-0.5 rounded text-[9px] font-black uppercase text-white"></span>
+                            <span class="text-[10px] font-medium text-slate-400 animate-pulse hidden" id="dragNotice">← Перетащите штамп в нужное место на документе</span>
+                        </div>
+                        <a id="fullScreenBtn" href="#" target="_blank" class="hidden flex items-center gap-2 bg-white border border-slate-200 px-3 py-1.5 rounded-lg text-[10px] font-bold text-black hover:bg-slate-50 hover:text-indigo-600 transition shadow-sm">
+                            <i class="bi bi-arrows-fullscreen"></i>
+                            <span data-i18n="btnFullScreen">На весь экран</span>
+                        </a>
+                    </div>
+
+                    <div id="viewerContainer" class="bg-slate-900 p-1 rounded-[1.8rem] shadow-xl relative mb-4" style="height: calc(100vh - 220px); min-height: 500px;">
+                        <div id="viewerLoader" class="viewer-loading">
+                            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
+                        </div>
+
+                        {{-- Окно предупреждения о localhost (для Excel) --}}
+                        <div id="localWarning" class="local-warning-box rounded-[1.5rem]">
+                            <i class="bi bi-exclamation-triangle text-amber-500 text-3xl mb-3"></i>
+                            <h4 class="text-base font-bold mb-1">Просмотр таблиц Excel на Localhost ограничен</h4>
+                            <p class="text-xs text-slate-400 max-w-md">Внешние онлайн-сервисы просмотра не могут загрузить файл с локального ПК. На реальном сервере таблица отобразится корректно.</p>
+                            <a id="localDownloadFallback" href="#" download class="mt-4 bg-indigo-600 text-white px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2">
+                                <i class="bi bi-download"></i> Скачать файл для проверки
+                            </a>
+                        </div>
+
+                        <div class="document-wrapper h-full" id="documentWrapper">
+                            <div class="drag-overlay" id="dragOverlay">
+                                <div id="draggable-qr-stamp">
+                                    <img id="dynamic-qr-img" src="" class="w-full object-contain pointer-events-none select-none" alt="stamp">
+                                    <div class="stamp-text-footer">
+                                        VERIFIED DOCSIGN<br>
+                                        <span id="stamp-date-node">18.05.2026</span>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
 
-                        <div class="mt-6">
-                            <button type="submit" id="btnSubmitForm" class="w-full bg-indigo-600 text-white py-3 rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-indigo-700 transition shadow-lg shadow-indigo-500/20 flex items-center justify-center gap-2">
-                                <i class="bi bi-shield-check"></i>
-                                <span data-i18n="btnSign">Применить штамп</span>
-                            </button>
+                            {{-- Область для вывода структуры документов --}}
+                            <div id="previewViewport" class="w-full h-full rounded-[1.5rem] overflow-hidden bg-white">
+                                <!-- Контент внедряется через JavaScript динамически -->
+                            </div>
                         </div>
-                    </form>
-                </div>
-            </div>
+                    </div>
 
-            {{-- ПРАВАЯ КОЛОНКА --}}
-            <div class="w-full lg:w-8/12">
-                <div class="flex items-center justify-between mb-3 px-4">
-                    <div class="flex items-center gap-3">
-                        <span class="label-micro" data-i18n="previewLabel">Предпросмотр</span>
-                        <span id="formatBadge" class="hidden px-2 py-0.5 rounded text-[9px] font-black uppercase text-white"></span>
+                    <div class="px-2">
+                        <button type="submit" id="btnSubmitForm" class="w-full bg-indigo-600 text-white py-3.5 rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-indigo-700 transition shadow-lg shadow-indigo-500/20 flex items-center justify-center gap-2">
+                            <i class="bi bi-shield-check"></i>
+                            <span data-i18n="btnSign">Применить штамп</span>
+                        </button>
                     </div>
-                    <a id="fullScreenBtn" href="#" target="_blank" class="hidden flex items-center gap-2 bg-white border border-slate-200 px-3 py-1.5 rounded-lg text-[10px] font-bold text-black hover:bg-slate-50 hover:text-indigo-600 transition shadow-sm">
-                        <i class="bi bi-arrows-fullscreen"></i>
-                        <span data-i18n="btnFullScreen">На весь экран</span>
-                    </a>
                 </div>
-                <div class="bg-slate-900 p-1 rounded-[1.8rem] shadow-xl sticky top-4 relative" style="height: calc(100vh - 140px);">
-                    <div id="viewerLoader" class="viewer-loading">
-                        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
-                    </div>
-                    <iframe id="pdfViewer" src="" class="w-full h-full rounded-[1.5rem] bg-white border-none" frameborder="0"></iframe>
-                </div>
+
             </div>
-        </div>
+        </form>
     </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/interactjs/dist/interact.min.js"></script>
 
     <script>
         document.addEventListener('DOMContentLoaded', function () {
@@ -140,8 +250,6 @@
                     signingTitle: "Защита и QR",
                     selectDocLabel: "Выбор документа",
                     docPlaceholder: "-- Список документов --",
-                    qrCodeLabel: "QR-код Верификации",
-                    qrWaiting: "Ожидание выбора...",
                     btnSign: "Применить штамп",
                     previewLabel: "Предпросмотр",
                     btnFullScreen: "На весь экран",
@@ -151,8 +259,6 @@
                     signingTitle: "Муҳофизат ва QR",
                     selectDocLabel: "Интихоби ҳуҷҷат",
                     docPlaceholder: "-- Рӯйхати ҳуҷҷатҳо --",
-                    qrCodeLabel: "QR-коди тасдиқкунанда",
-                    qrWaiting: "Интихобро интизор шавед...",
                     btnSign: "Татбиқ кардани муҳр",
                     previewLabel: "Пешнамоиш",
                     btnFullScreen: "Дар тамоми экран",
@@ -162,8 +268,6 @@
                     signingTitle: "Security & QR",
                     selectDocLabel: "Select Document",
                     docPlaceholder: "-- Document List --",
-                    qrCodeLabel: "Verification QR Code",
-                    qrWaiting: "Waiting for selection...",
                     btnSign: "Apply Stamp",
                     previewLabel: "Preview",
                     btnFullScreen: "Full Screen",
@@ -182,77 +286,193 @@
             }
             applyTranslations();
 
+            const today = new Date();
+            const dd = String(today.getDate()).padStart(2, '0');
+            const mm = String(today.getMonth() + 1).padStart(2, '0');
+            const yyyy = today.getFullYear();
+            document.getElementById('stamp-date-node').textContent = `${dd}.${mm}.${yyyy}`;
+
             const form = document.getElementById('signatureForm');
             const select = document.getElementById('documentSelect');
-            const viewer = document.getElementById('pdfViewer');
+            const previewViewport = document.getElementById('previewViewport');
             const fullScreenBtn = document.getElementById('fullScreenBtn');
             const formatBadge = document.getElementById('formatBadge');
             const loader = document.getElementById('viewerLoader');
-            const qrContainer = document.getElementById('qrContainer');
             const qrPayloadInput = document.getElementById('qrPayloadInput');
+            const localWarning = document.getElementById('localWarning');
+            const localDownloadFallback = document.getElementById('localDownloadFallback');
+
+            const stamp = document.getElementById('draggable-qr-stamp');
+            const stampImg = document.getElementById('dynamic-qr-img');
+            const dragNotice = document.getElementById('dragNotice');
+            const wrapper = document.getElementById('documentWrapper');
+
+            let currentX = 0;
+            let currentY = 0;
+
+            const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 
             function updateSelection() {
                 const selectedOption = select.options[select.selectedIndex];
                 if (selectedOption && selectedOption.value && selectedOption.value !== "") {
                     const fileUrl = selectedOption.getAttribute('data-file');
                     const type = selectedOption.getAttribute('data-type');
+                    const ext = selectedOption.getAttribute('data-ext');
                     const qrUrl = selectedOption.getAttribute('data-qr-url');
                     const qrText = selectedOption.getAttribute('data-qr-text');
 
+                    qrPayloadInput.value = qrText;
+                    localWarning.style.display = 'none';
+                    wrapper.style.display = 'block';
                     loader.style.display = 'block';
-                    viewer.style.opacity = '0.5';
+                    previewViewport.style.opacity = '0.3';
+                    previewViewport.innerHTML = ''; // Очищаем вьюпорт
 
-                    if (type === 'word') {
-                        viewer.src = `https://view.officeapps.live.com/op/view.aspx?src=${encodeURIComponent(fileUrl)}`;
-                        formatBadge.textContent = 'Word';
-                        formatBadge.className = 'px-2 py-0.5 rounded text-[9px] font-black uppercase text-white bg-blue-600 inline-block';
-                    } else {
-                        viewer.src = fileUrl + '#toolbar=0&view=FitH';
-                        formatBadge.textContent = 'PDF';
-                        formatBadge.className = 'px-2 py-0.5 rounded text-[9px] font-black uppercase text-white bg-red-600 inline-block';
-                    }
+                    // Сброс позиции штампа
+                    currentX = 0;
+                    currentY = 0;
+                    stamp.style.transform = `translate(0px, 0px)`;
 
-                    viewer.onload = () => {
-                        loader.style.display = 'none';
-                        viewer.style.opacity = '1';
-                    };
-
+                    // Выставляем индикатор формата
+                    formatBadge.textContent = ext.toUpperCase();
+                    let badgeColor = 'bg-red-600';
+                    if (type === 'word') badgeColor = 'bg-blue-600';
+                    if (type === 'excel') badgeColor = 'bg-emerald-600';
+                    if (type === 'rtf') badgeColor = 'bg-purple-600';
+                    formatBadge.className = `px-2 py-0.5 rounded text-[9px] font-black uppercase text-white ${badgeColor} inline-block`;
                     formatBadge.classList.remove('hidden');
+
                     fullScreenBtn.href = fileUrl;
                     fullScreenBtn.classList.remove('hidden');
 
-                    qrContainer.innerHTML = `
-                        <div class="bg-white p-3 rounded-2xl shadow-md border border-slate-100 flex items-center justify-center animate-fade-in">
-                            <img src="${qrUrl}" alt="QR Code" class="w-[120px] h-[120px] object-contain block" />
-                        </div>
-                    `;
+                    // 1. Локальный рендеринг DOCX файлов (работает везде, включая Localhost)
+                    if (ext === 'docx') {
+                        fetch(fileUrl)
+                            .then(response => {
+                                if(!response.ok) throw new Error('Ошибка скачивания файла');
+                                return response.blob();
+                            })
+                            .then(blob => {
+                                const wordDiv = document.createElement('div');
+                                wordDiv.id = 'word-preview';
+                                previewViewport.appendChild(wordDiv);
 
-                    qrPayloadInput.value = qrText;
+                                docx.renderAsync(blob, wordDiv)
+                                    .then(() => {
+                                        loader.style.display = 'none';
+                                        previewViewport.style.opacity = '1';
+                                        showStamp(qrUrl);
+                                    });
+                            })
+                            .catch(err => {
+                                console.error(err);
+                                loader.style.display = 'none';
+                                previewViewport.style.opacity = '1';
+                                previewViewport.innerHTML = `<div class="p-6 text-center text-sm font-semibold text-rose-500">Не удалось отобразить файл DOCX локально.</div>`;
+                                showStamp(qrUrl);
+                            });
+                        return;
+                    }
+
+                    // 2. Ограничения для Excel на Localhost
+                    if (type === 'excel' && isLocal) {
+                        loader.style.display = 'none';
+                        wrapper.style.display = 'none';
+                        localWarning.style.display = 'flex';
+                        localDownloadFallback.href = fileUrl;
+                        showStamp(qrUrl);
+                        return;
+                    }
+
+                    // 3. Стандартный рендеринг остальных файлов в iframe
+                    let iframeSrc = '';
+                    if (type === 'word' || type === 'excel') {
+                        iframeSrc = `https://view.officeapps.live.com/op/view.aspx?src=${encodeURIComponent(fileUrl)}`;
+                    } else if (type === 'rtf') {
+                        iframeSrc = fileUrl;
+                    } else {
+                        iframeSrc = fileUrl + '#toolbar=0&view=FitH';
+                    }
+
+                    const iframe = document.createElement('iframe');
+                    iframe.src = iframeSrc;
+                    iframe.className = "w-full h-full border-none";
+                    iframe.frameBorder = "0";
+
+                    iframe.onload = () => {
+                        loader.style.display = 'none';
+                        previewViewport.style.opacity = '1';
+                        showStamp(qrUrl);
+                    };
+
+                    previewViewport.appendChild(iframe);
                 }
             }
 
-            // Таймаут гарантирует, что DOM-структура option полностью собрана и доступна для чтения атрибутов
-            setTimeout(() => {
-                if (select.value && select.value !== "") {
-                    updateSelection();
+            function showStamp(qrUrl) {
+                stamp.style.display = 'block';
+                stampImg.src = qrUrl;
+                dragNotice.classList.remove('hidden');
+                calculateCoordinates();
+            }
+
+            function calculateCoordinates() {
+                if (stamp.style.display === 'block') {
+                    const targetContainer = localWarning.style.display === 'flex' ? localWarning : wrapper;
+                    const parentW = targetContainer.clientWidth || wrapper.clientWidth;
+                    const parentH = targetContainer.clientHeight || wrapper.clientHeight;
+
+                    const leftPx = stamp.offsetLeft + currentX;
+                    const topPx = stamp.offsetTop + currentY;
+
+                    let pctX = (leftPx / parentW) * 100;
+                    let pctY = (topPx / parentH) * 100;
+
+                    pctX = Math.max(0, Math.min(100, pctX));
+                    pctY = Math.max(0, Math.min(100, pctY));
+
+                    document.getElementById('qr_x').value = pctX.toFixed(4);
+                    document.getElementById('qr_y').value = pctY.toFixed(4);
                 }
-            }, 50);
+            }
+
+            interact('#draggable-qr-stamp').draggable({
+                modifiers: [
+                    interact.modifiers.restrictRect({
+                        restriction: '#viewerContainer',
+                        endOnly: false
+                    })
+                ],
+                listeners: {
+                    start(event) {
+                        document.getElementById('viewerContainer').classList.add('dragging-active');
+                    },
+                    move(event) {
+                        currentX += event.dx;
+                        currentY += event.dy;
+
+                        event.target.style.transform = `translate(${currentX}px, ${currentY}px)`;
+                        calculateCoordinates();
+                    },
+                    end(event) {
+                        document.getElementById('viewerContainer').classList.remove('dragging-active');
+                    }
+                }
+            });
+
+            if (select.value && select.value !== "") {
+                updateSelection();
+            }
 
             select.addEventListener('change', updateSelection);
 
             form.addEventListener('submit', function (e) {
-                const currentOption = select.options[select.selectedIndex];
-
                 if (!select.value || select.value === "") {
                     e.preventDefault();
                     alert(t.alertNoDoc || "Выберите документ!");
                     return;
                 }
-
-                if (currentOption) {
-                    const dynamicQrText = currentOption.getAttribute('data-qr-text');
-                    qrPayloadInput.value = dynamicQrText;
-                }
+                calculateCoordinates();
             });
         });
     </script>

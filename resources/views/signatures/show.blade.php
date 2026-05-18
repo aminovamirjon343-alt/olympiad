@@ -278,42 +278,28 @@
 {{--@endsection--}}
 
 
-
 @extends('layouts.admin')
 
 @section('content')
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <!-- Подключаем необходимые библиотеки для локального рендеринга .docx -->
+    <script src="https://unpkg.com/jszip/dist/jszip.min.js"></script>
+    <script src="https://unpkg.com/docx-preview/dist/docx-preview.min.js"></script>
 
     <div class="container mx-auto px-4 py-6 min-h-screen">
         @php
             $doc = $signature->document ?? (object)[];
             $filePath = $doc->file_path ?? '';
-            $extension = pathinfo($filePath, PATHINFO_EXTENSION);
-            $isWord = in_array(strtolower($extension), ['doc', 'docx']);
-            $isPdf = strtolower($extension) === 'pdf';
-            $previewUrl = $isWord
-                ? 'https://docs.google.com/gview?url=' . asset('storage/' . $filePath) . '&embedded=true'
-                : asset('storage/' . $filePath);
+            $extension = strtolower(pathinfo($filePath, PATHINFO_EXTENSION));
+            $isWord = in_array($extension, ['doc', 'docx']);
+            $isPdf = $extension === 'pdf';
+            $fullFileUrl = $filePath ? asset('storage/' . $filePath) : '';
 
             // Форматирование размера файла
             $fileSize = $doc->file_size ?? 0;
             $formattedSize = $fileSize > 1048576
                 ? round($fileSize / 1048576, 2) . ' МБ'
                 : ($fileSize > 1024 ? round($fileSize / 1024, 1) . ' КБ' : $fileSize . ' Б');
-
-            // Статус документа
-            $docStatus = $doc->status ?? 'draft';
-            $statusColors = [
-                'draft' => 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300',
-                'sent' => 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300',
-                'review' => 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300',
-                'signed' => 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300',
-                'rejected' => 'bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300',
-            ];
-            $statusLabels = [
-                'draft' => 'Черновик', 'sent' => 'Отправлен', 'review' => 'На проверке',
-                'signed' => 'Подписан', 'rejected' => 'Отклонён'
-            ];
         @endphp
 
         <style>
@@ -350,9 +336,9 @@
                 box-shadow: 0 4px 20px rgba(0,0,0,0.3) !important;
             }
 
-            /* Типографика (Увеличенные размеры) */
+            /* Типографика */
             .label-micro {
-                font-size: 12px !important; /* Увеличено с 10px */
+                font-size: 12px !important;
                 font-weight: 800 !important;
                 text-transform: uppercase !important;
                 letter-spacing: 0.12em !important;
@@ -365,20 +351,18 @@
             .dark .label-micro { color: #94a3b8 !important; }
 
             .data-text {
-                font-size: 17px !important; /* Увеличено с 15px */
+                font-size: 17px !important;
                 font-weight: 700;
                 color: #0f172a !important;
                 transition: color 0.2s;
             }
-            .data-text:hover { color: #4f46e5 !important; }
             .dark .data-text { color: #f8fafc !important; }
-            .dark .data-text:hover { color: #818cf8 !important; }
 
             /* Бейджи с анимацией */
             .badge-status {
-                font-size: 12px; /* Увеличено с 10px */
+                font-size: 12px;
                 font-weight: 900;
-                padding: 6px 16px; /* Чуть увеличены отступы */
+                padding: 6px 16px;
                 border-radius: 999px;
                 text-transform: uppercase;
                 letter-spacing: 0.05em;
@@ -417,90 +401,32 @@
                 border-color: rgba(148, 163, 184, 0.15);
             }
 
-            /* Индикатор формата */
             .format-indicator {
-                padding: 6px 14px; /* Чуть увеличен */
+                padding: 6px 14px;
                 border-radius: 8px;
                 color: white;
-                font-size: 12px; /* Увеличено с 10px */
+                font-size: 12px;
                 font-weight: 900;
                 letter-spacing: 0.05em;
                 text-transform: uppercase;
                 background: linear-gradient(135deg, #6366f1, #8b5cf6);
                 box-shadow: 0 4px 12px rgba(99, 102, 241, 0.35);
-                animation: float 3s ease-in-out infinite;
-            }
-            @keyframes float {
-                0%, 100% { transform: translateY(0); }
-                50% { transform: translateY(-2px); }
             }
 
-            /* Кнопки с микро-анимацией */
-            .btn-action {
-                transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-                position: relative;
-                overflow: hidden;
-            }
-            .btn-action::after {
-                content: '';
-                position: absolute;
-                inset: 0;
-                background: radial-gradient(circle at center, rgba(255,255,255,0.25) 0%, transparent 70%);
-                opacity: 0;
-                transition: opacity 0.2s;
-            }
-            .btn-action:hover::after { opacity: 1; }
+            .btn-action { transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); }
             .btn-action:hover { transform: translateY(-1px); }
-            .btn-action:active { transform: translateY(0); }
 
-            /* Подпись с эффектом */
-            .signature-stamp {
-                position: relative;
-                overflow: hidden;
-            }
-            .signature-stamp::after {
-                content: '';
-                position: absolute;
-                inset: 0;
-                background: linear-gradient(45deg, transparent 40%, rgba(255,255,255,0.4) 50%, transparent 60%);
-                transform: translateX(-100%);
-                animation: shimmer 2s infinite;
-            }
-            @keyframes shimmer {
-                100% { transform: translateX(100%); }
-            }
-
-            /* Разделитель */
             .divider {
                 height: 1px;
                 background: linear-gradient(90deg, transparent, rgba(148, 163, 184, 0.3), transparent);
                 margin: 14px 0;
             }
 
-            /* Иконки с эффектом при наведении */
-            .icon-hover {
-                transition: all 0.2s ease;
-            }
-            .icon-hover:hover {
-                transform: scale(1.1);
-                color: #6366f1 !important;
-            }
+            .animate-in { opacity: 0; transform: translateY(12px); }
 
-            /* Анимация появления */
-            @keyframes fadeInUp {
-                from { opacity: 0; transform: translateY(12px); }
-                to { opacity: 1; transform: translateY(0); }
-            }
-            .animate-in { animation: fadeInUp 0.4s ease forwards; }
-            .animate-in.delay-1 { animation-delay: 0.1s; }
-            .animate-in.delay-2 { animation-delay: 0.2s; }
-            .animate-in.delay-3 { animation-delay: 0.3s; }
-
-            /* Скроллбар для iframe */
-            iframe::-webkit-scrollbar { width: 6px; }
-            iframe::-webkit-scrollbar-track { background: transparent; }
-            iframe::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
-            .dark iframe::-webkit-scrollbar-thumb { background: #475569; }
+            /* Настройки для рендерера docx */
+            .docx-wrapper { background: transparent !important; padding: 20px !important; }
+            .docx { box-shadow: 0 10px 25px rgba(0,0,0,0.05) !important; border-radius: 8px !important; }
         </style>
 
         <div class="view-sig-page">
@@ -520,7 +446,7 @@
 
             <div class="flex flex-col gap-6">
                 {{-- ИНФОРМАЦИОННАЯ КАРТОЧКА --}}
-                <div class="form-card p-8 animate-in delay-1">
+                <div class="form-card p-8 animate-in">
                     <div class="grid grid-cols-1 md:grid-cols-4 gap-10">
                         {{-- Статус + Мета --}}
                         <div class="space-y-5">
@@ -580,8 +506,6 @@
                                     {{ $doc->content ?? 'Описание отсутствует' }}
                                 </div>
                             </div>
-
-                            <div class="divider"></div>
                         </div>
 
                         {{-- Исполнитель + Действия --}}
@@ -598,7 +522,6 @@
 
                                 <div class="divider"></div>
 
-                                {{-- Получатель --}}
                                 <div>
                                     <label class="label-micro block mb-1.5 justify-end">
                                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
@@ -606,19 +529,6 @@
                                     </label>
                                     <div class="data-text">#{{ $doc->receiver_id ? $doc->receiver_id : '—' }}</div>
                                 </div>
-
-                                {{-- Дедлайн --}}
-                                @if($doc->deadline)
-                                    <div>
-                                        <label class="label-micro block mb-1.5 justify-end">
-                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-                                            <span data-i18n="deadlineLabel">Дедлайн</span>
-                                        </label>
-                                        <div class="data-text text-lg {{ $doc->deadline < now() && !$signature->signed_at ? 'text-rose-600' : '' }}">
-                                            {{ \Carbon\Carbon::parse($doc->deadline)->format('d.m.Y') }}
-                                        </div>
-                                    </div>
-                                @endif
                             </div>
 
                             <div class="mt-4">
@@ -629,7 +539,7 @@
                                         <span data-i18n="signBtn">Подписать + QR</span>
                                     </a>
                                 @else
-                                    <div class="signature-stamp bg-gradient-to-br from-emerald-50 to-emerald-100/60 dark:from-emerald-900/20 dark:to-emerald-800/10 p-2.5 rounded-xl border border-emerald-200/60 dark:border-emerald-700/40 flex flex-col items-center">
+                                    <div class="bg-gradient-to-br from-emerald-50 to-emerald-100/60 dark:from-emerald-900/20 dark:to-emerald-800/10 p-2.5 rounded-xl border border-emerald-200/60 dark:border-emerald-700/40 flex flex-col items-center">
                                         <img src="{{ asset('storage/' . $signature->signature) }}" class="max-h-10 object-contain mb-1" alt="✓">
                                         <span class="text-[9px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-tight">✓ Verified</span>
                                     </div>
@@ -640,45 +550,58 @@
                 </div>
 
                 {{-- ПРЕДПРОСМОТР --}}
-                <div class="form-card p-6 animate-in delay-2">
+                <div class="form-card p-6 animate-in">
                     <div class="flex items-center justify-between mb-5">
                         <div class="flex items-center gap-3">
                             <span class="label-micro">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
                                 <span data-i18n="previewLabel">Предпросмотр</span>
                             </span>
-                            @if($isWord) <span class="text-[11px] bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 px-3 py-1 rounded-full font-bold uppercase">Docs</span> @endif
+                            @if($isWord) <span class="text-[11px] bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 px-3 py-1 rounded-full font-bold uppercase">WORD</span> @endif
                             @if($isPdf) <span class="text-[11px] bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300 px-3 py-1 rounded-full font-bold uppercase">PDF</span> @endif
                             <span class="text-[12px] text-slate-400 font-medium">• {{ $formattedSize }}</span>
                         </div>
+
+                        {{-- Управляющие кнопки --}}
                         <div class="flex items-center gap-2">
                             @if($filePath)
-                                {{-- Кнопка "Полный экран" — аккуратная, контрастная, идеально совпадает по высоте --}}
-                                <button onclick="toggleFullScreen()" class="icon-hover bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 p-2.5 rounded-xl border border-slate-200/80 dark:border-slate-700/80 hover:bg-indigo-600 hover:text-white hover:border-transparent transition-all shadow-sm" title="Полный экран">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg>
+                                <button id="fullScreenBtn" onclick="toggleFullScreen()" class="bg-indigo-600 text-white px-4 py-2 rounded-xl text-[11px] font-black uppercase tracking-widest hover:bg-indigo-700 transition-all flex items-center gap-2 shadow-md shadow-indigo-500/20">
+                                    <span data-i18n="fsBtn">Во весь экран</span>
                                 </button>
-
-                                {{-- Кнопка "Скачать" — точная копия из твоего макета (фиолетовый градиент, жирный белый текст) --}}
-                                <a href="{{ asset('storage/' . $filePath) }}" download class="btn-action bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-600 text-white px-5 py-2.5 rounded-xl text-[11px] font-black uppercase tracking-wider flex items-center gap-2 shadow-lg shadow-indigo-600/20 active:scale-[0.98] transition-all">
-                                    <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.8"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                                <a href="{{ $fullFileUrl }}" download="{{ $doc->title ?? 'document' }}.{{ $extension }}" class="bg-white border border-slate-200 text-slate-700 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-200 px-4 py-2 rounded-xl text-[11px] font-black uppercase tracking-widest hover:bg-slate-50 transition-all flex items-center gap-2 shadow-sm">
                                     <span data-i18n="downloadBtn">Скачать</span>
                                 </a>
                             @endif
                         </div>
                     </div>
 
-                    <div class="preview-container" id="previewBox">
+                    {{-- Блок самого плеера --}}
+                    <div id="previewBox" class="preview-container">
                         @if($filePath)
-                            <iframe src="{{ $previewUrl }}{{ $isPdf ? '#toolbar=0' : '' }}" class="w-full h-full border-0" loading="lazy" title="Document Preview"></iframe>
+                            @if($extension === 'docx')
+                                <!-- Локальный асинхронный рендеринг DOCX файла на клиенте -->
+                                <div id="word-preview" class="w-full h-full overflow-y-auto bg-white/80 dark:bg-slate-900/40" data-url="{{ $fullFileUrl }}"></div>
+                            @else
+                                <!-- Стандартный Iframe для PDF, RTF и старых XLS/DOC шлюзов -->
+                                @php
+                                    if (in_array($extension, ['doc', 'xls', 'xlsx'])) {
+                                        $iframeSrc = 'https://view.officeapps.live.com/op/view.aspx?src=' . rawurlencode($fullFileUrl);
+                                    } elseif ($extension === 'rtf') {
+                                        $iframeSrc = $fullFileUrl;
+                                    } else {
+                                        $iframeSrc = $fullFileUrl . '#toolbar=0&view=FitH';
+                                    }
+                                @endphp
+                                <iframe src="{{ $iframeSrc }}" class="w-full h-full border-0" loading="lazy" title="Document Preview"></iframe>
+                            @endif
                         @else
-                            <div class="absolute inset-0 flex flex-col items-center justify-center text-slate-400">
-                                <svg class="w-16 h-16 mb-3 opacity-50 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                                </svg>
-                                <span class="label-micro text-base" data-i18n="noFile">Файл не загружен</span>
+                            <div class="flex flex-col items-center justify-center h-full text-slate-400 gap-2">
+                                <svg class="w-12 h-12 stroke-current opacity-60" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                                <div class="label-micro" data-i18n="noFile">Файл не загружен</div>
                             </div>
                         @endif
                     </div>
+
                 </div>
             </div>
         </div>
@@ -686,6 +609,26 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', function () {
+            // Инициализация Word превью, если блок присутствует на странице
+            const wordContainer = document.getElementById("word-preview");
+            if (wordContainer) {
+                const fileUrl = wordContainer.getAttribute("data-url");
+                fetch(fileUrl)
+                    .then(response => {
+                        if (!response.ok) throw new Error('Сбой сети при получении файла');
+                        return response.blob();
+                    })
+                    .then(blob => {
+                        docx.renderAsync(blob, wordContainer)
+                            .then(() => console.log("docx-preview: рендеринг успешно завершен"))
+                            .catch(e => console.error("Ошибка библиотеки docx-preview:", e));
+                    })
+                    .catch(err => {
+                        console.error("Не удалось загрузить файл по URL:", err);
+                        wordContainer.innerHTML = `<div class="flex h-full items-center justify-center text-rose-500 font-semibold p-4 text-center">Не удалось отобразить документ. Проверьте соединение или откройте на внешнем сервере.</div>`;
+                    });
+            }
+
             // Полные переводы на 3 языка
             const translations = {
                 ru: {
@@ -704,6 +647,8 @@
                     deadlineLabel: "Дедлайн",
                     signBtn: "Подписать + QR",
                     previewLabel: "Предпросмотр",
+                    fsBtn: "Во весь экран",
+                    exitFs: "Выйти",
                     downloadBtn: "Скачать",
                     noFile: "Файл не загружен"
                 },
@@ -723,6 +668,8 @@
                     deadlineLabel: "Муҳлат",
                     signBtn: "Имзо + QR",
                     previewLabel: "Пешнамоиш",
+                    fsBtn: "Экрани пурра",
+                    exitFs: "Баромадан",
                     downloadBtn: "Боргирӣ",
                     noFile: "Файл нест"
                 },
@@ -742,6 +689,8 @@
                     deadlineLabel: "Deadline",
                     signBtn: "Sign + QR",
                     previewLabel: "Preview",
+                    fsBtn: "Full Screen",
+                    exitFs: "Exit",
                     downloadBtn: "Download",
                     noFile: "No file uploaded"
                 }
@@ -750,7 +699,7 @@
             const lang = localStorage.getItem('app-lang') || 'ru';
             const t = translations[lang] || translations.ru;
 
-            // Применяем переводы
+            // Применяем локализацию к атрибутам data-i18n
             document.querySelectorAll('[data-i18n]').forEach(el => {
                 const key = el.getAttribute('data-i18n');
                 if (t[key]) {
@@ -760,32 +709,37 @@
                 }
             });
 
-            // Анимация появления элементов при загрузке
+            // Анимация плавного появления блоков
             document.querySelectorAll('.animate-in').forEach((el, i) => {
-                el.style.opacity = '0';
-                el.style.transform = 'translateY(12px)';
                 setTimeout(() => {
                     el.style.transition = 'opacity 0.4s ease, transform 0.4s ease';
                     el.style.opacity = '1';
                     el.style.transform = 'translateY(0)';
                 }, 100 + (i * 100));
             });
+
+            window.updateFsBtnText = (isFull) => {
+                const btnSpan = document.querySelector('#fullScreenBtn [data-i18n]');
+                if(btnSpan) btnSpan.textContent = isFull ? t.exitFs : t.fsBtn;
+            };
         });
 
         function toggleFullScreen() {
             const el = document.getElementById('previewBox');
-            if (!document.fullscreenElement) {
+            if (!el) return;
+            if (!document.fullscreenElement && !document.webkitFullscreenElement) {
                 el.requestFullscreen?.() || el.webkitRequestFullscreen?.() || el.msRequestFullscreen?.();
             } else {
                 document.exitFullscreen?.() || document.webkitExitFullscreen?.() || document.msExitFullscreen?.();
             }
         }
 
-        // Поддержка клавиши Esc для выхода из полноэкранного режима
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape' && document.fullscreenElement) {
-                document.exitFullscreen?.();
-            }
-        });
+        const updateBtnState = () => {
+            const isFull = !!(document.fullscreenElement || document.webkitFullscreenElement);
+            if (window.updateFsBtnText) window.updateFsBtnText(isFull);
+        };
+
+        document.addEventListener('fullscreenchange', updateBtnState);
+        document.addEventListener('webkitfullscreenchange', updateBtnState);
     </script>
 @endsection

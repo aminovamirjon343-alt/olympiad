@@ -13,15 +13,17 @@ return new class extends Migration
     {
         Schema::create('documents', function (Blueprint $table) {
             $table->id();
-            // Добавляем поле для номера документа сразу после ID
+            // Номер документа
             $table->string('number')->nullable()->comment('Официальный номер документа');
-            $table->foreignId('user_id')->constrained()->onDelete('cascade');
+
+            // Основные метаданные
             $table->string('title');
             $table->text('content')->nullable();
             $table->string('file_path')->nullable();
             $table->string('type');
             $table->string('status')->default('active')->index();
 
+            // Взаимосвязи (user_id удален, оставлен корректный created_by)
             $table->foreignId('created_by')->constrained('users')->cascadeOnDelete();
             $table->foreignId('receiver_id')->nullable()->constrained('users')->nullOnDelete();
 

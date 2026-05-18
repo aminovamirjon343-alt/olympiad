@@ -3,8 +3,28 @@
 @section('content')
     <div class="container mx-auto px-4 py-6 min-h-screen">
         @php
-            $extension = pathinfo($signature->document->file_path, PATHINFO_EXTENSION);
-            $isWord = in_array(strtolower($extension), ['doc', 'docx']);
+            $extension = strtolower(pathinfo($signature->document->file_path, PATHINFO_EXTENSION));
+
+            // Расширенная проверка форматов
+            $isWord = in_array($extension, ['doc', 'docx']);
+            $isExcel = in_array($extension, ['xls', 'xlsx']);
+            $isRtf = $extension === 'rtf';
+            $isPdf = $extension === 'pdf';
+
+            // Привязка уникального цвета темы под каждый формат
+            if ($isWord) {
+                $themeColor = '#2b579a'; // Синий Word
+                $badgeClass = 'bg-blue-600';
+            } elseif ($isExcel) {
+                $themeColor = '#107c41'; // Зеленый Excel
+                $badgeClass = 'bg-emerald-600';
+            } elseif ($isRtf) {
+                $themeColor = '#7c3aed'; // Фиолетовый RTF
+                $badgeClass = 'bg-purple-600';
+            } else {
+                $themeColor = '#6366f1'; // Индиго по умолчанию для PDF
+                $badgeClass = 'bg-red-600';
+            }
 
             // Динамическая локализация содержимого самого QR-кода на стороне бэкенда
             $doc = $signature->document;
@@ -25,7 +45,7 @@
 
         <style>
             .edit-sig-page {
-                --primary-color: #6366f1;
+                --primary-color: {{ $themeColor }};
                 font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
             }
 
@@ -48,13 +68,13 @@
 
             .pad-container {
                 background-color: rgba(0,0,0,0.02) !important;
-                border: 2px dashed {{ $isWord ? '#2b579a' : '#6366f1' }};
+                border: 2px dashed {{ $themeColor }};
                 transition: all .3s ease;
             }
             .dark .pad-container { background-color: rgba(255,255,255,0.02) !important; }
 
             .btn-update {
-                background: {{ $isWord ? '#2b579a' : '#6366f1' }};
+                background: {{ $themeColor }};
                 color: #ffffff !important;
                 font-weight: 900 !important;
                 text-transform: uppercase;
@@ -95,7 +115,7 @@
 
                     <div class="flex items-center">
                         <h1 class="text-3xl navbar-style-text theme-heading" data-i18n="pageTitle">Обновление QR-защиты</h1>
-                        <span class="format-badge {{ $isWord ? 'bg-blue-600' : 'bg-red-600' }}">
+                        <span class="format-badge {{ $badgeClass }}">
                             {{ $extension }}
                         </span>
                     </div>
@@ -129,7 +149,7 @@
                             </div>
                         </div>
 
-                        {{-- Маленькая и компактная кнопка, которая не растягивается во всю ширину --}}
+                        {{-- Компактная кнопка отправки --}}
                         <div class="flex justify-center pt-2">
                             <button type="submit" class="btn-update px-5 py-2.5 rounded-xl text-[12px] font-bold transition-all active:scale-95">
                                 <span data-i18n="submitBtn">Обновить документ</span> ({{ strtoupper($extension) }})
@@ -153,7 +173,7 @@
                         </div>
                     </div>
 
-                    {{-- Блок "Внимание" --}}
+                    {{-- Блок "Внимание" с адаптивным текстом под формат --}}
                     <div class="bg-red-600 rounded-[2.2rem] p-7 text-white shadow-2xl relative overflow-hidden border-[2px] border-white/15">
                         <div class="relative z-10">
                             <div class="flex items-center gap-3 mb-4">
@@ -184,7 +204,9 @@
                     noStamp: "Файл штампа не найден",
                     infoTitle: "Внимание",
                     infoTextPdf: "При обновлении штампа система полностью перегенерирует документ. Текущий QR-код будет замещён актуальной версией, а старый файл удалён из системы для оптимизации памяти.",
-                    infoTextWord: "Для документов Word (.docx) штамп защиты перезапишется в структуре файла. Убедитесь, что формат файла корректен."
+                    infoTextWord: "Для документов Word (.docx) штамп защиты перезапишется в структуре файла. Убедитесь, что исходный макет не содержит конфликтов.",
+                    infoTextExcel: "Для таблиц Excel (.xlsx) защитный QR-код будет обновлен непосредственно внутри структуры листа метаданных без потери ваших формул.",
+                    infoTextRtf: "Для документов формата RTF структура разметки будет перекомпилирована с интеграцией нового бинарного контейнера штампа."
                 },
                 en: {
                     backBtn: "Back",
@@ -196,7 +218,9 @@
                     noStamp: "Stamp file not found",
                     infoTitle: "Attention",
                     infoTextPdf: "When updating the stamp, the system completely regenerates document. The current QR code will be replaced with the updated version, and the old file will be deleted to optimize storage.",
-                    infoTextWord: "For Word documents (.docx), the protection stamp will be overwritten within the file structure. Please ensure the file format is valid."
+                    infoTextWord: "For Word documents (.docx), the protection stamp will be overwritten within the file structure. Please ensure the file format is valid.",
+                    infoTextExcel: "For Excel spreadsheets (.xlsx), the secure QR code will be updated right inside the sheet structure without breaking formulas.",
+                    infoTextRtf: "For RTF files, the layout markup will be recompiled to natively integrate the new stamp binary container."
                 },
                 tj: {
                     backBtn: "Бозгашт",
@@ -208,7 +232,9 @@
                     noStamp: "Файли муҳр ёфт нашуд",
                     infoTitle: "Диққат",
                     infoTextPdf: "Ҳангоми навсозии муҳр система ҳуҷҷати комилан аз нав месозад. QR-коди ҷорӣ бо нусхаи нав иваз карда шуда, файли кӯҳна барои сарфаи хотира нест карда мешавад.",
-                    infoTextWord: "Барои ҳуҷҷатҳои Word (.docx) муҳри муҳофизатӣ дар сохтори файл аз нав навишта мешавад. Боварӣ ҳосил кунед, ки формати файл дуруст аст."
+                    infoTextWord: "Барои ҳуҷҷатҳои Word (.docx) муҳри муҳофизатӣ дар сохтори файл аз нав навишта мешавад. Боварӣ ҳосил кунед, ки формати файл дуруст аст.",
+                    infoTextExcel: "Барои ҷадвалҳои Excel (.xlsx) коди муҳофизатии QR бевосита дар дохили сохтори варақ бидуни вайрон кардани формулаҳо нав карда мешавад.",
+                    infoTextRtf: "Барои ҳуҷҷатҳои формати RTF сохтори маркап аз нав компилятсия шуда, контейнери бинарии нав ворид карда мешавад."
                 }
             };
 
@@ -221,12 +247,20 @@
                 if (t && t[key]) el.textContent = t[key];
             });
 
-            // Подставляем информационный текст динамически в зависимости от формата
-            // Исправлено: приведение к строгому логическому сравнению без лишних кавычек в JS
-            const isWordDoc = {{ $isWord ? 'true' : 'false' }};
+            // Динамическое определение типа документа во фронтенде
+            const ext = "{{ $extension }}";
             const infoContainer = document.getElementById('infoTextContainer');
+
             if (infoContainer) {
-                infoContainer.textContent = isWordDoc ? t.infoTextWord : t.infoTextPdf;
+                if (['doc', 'docx'].includes(ext)) {
+                    infoContainer.textContent = t.infoTextWord;
+                } else if (['xls', 'xlsx'].includes(ext)) {
+                    infoContainer.textContent = t.infoTextExcel;
+                } else if (ext === 'rtf') {
+                    infoContainer.textContent = t.infoTextRtf;
+                } else {
+                    infoContainer.textContent = t.infoTextPdf;
+                }
             }
         });
     </script>

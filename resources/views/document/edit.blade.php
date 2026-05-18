@@ -44,13 +44,14 @@
                         </p>
                     </div>
 
-                    <form action="{{ route('documents.update', $document->id) }}" method="POST" enctype="multipart/form-data" class="space-y-6">
+                    <form action="{{ route('documents.update', $document->id) }}" method="POST" enctype="multipart/form-data" class="space-y-6"
+                          @if($isOwner) onsubmit="let btn = this.querySelector('button[type=submit]'); if(btn) { btn.disabled = true; btn.style.opacity = '0.7'; }" @endif>
                         @csrf
                         @method('PUT')
 
                         {{-- Number --}}
                         <div>
-                            <label class="label"> <span data-i18n="docNumberLabel">Номер документа</span></label>
+                            <label class="label"><span data-i18n="docNumberLabel">Номер документа</span></label>
                             <input type="text" name="number" value="{{ old('number', $document->number) }}"
                                    class="input font-bold text-black {{ !$isOwner ? 'bg-slate-50 cursor-not-allowed opacity-70' : '' }}"
                                 {{ !$isOwner ? 'readonly' : '' }}>
@@ -66,7 +67,7 @@
                             </div>
                             <div>
                                 <label class="label"><span data-i18n="deadline">Дедлайн</span></label>
-                                <input type="date" name="deadline" value="{{ old('deadline', optional($document->deadline)->format('Y-m-d')) }}"
+                                <input type="date" name="deadline" value="{{ old('deadline', $document->deadline ? $document->deadline->format('Y-m-d') : '') }}"
                                        class="input font-bold text-black {{ !$isOwner ? 'bg-slate-50' : '' }}"
                                     {{ !$isOwner ? 'readonly' : '' }}>
                             </div>
@@ -74,8 +75,8 @@
 
                         {{-- Recipient Email --}}
                         <div>
-                            <label class="label"> <span data-i18n="recipientEmail">Email получателя</span></label>
-                            <input type="email" name="recipient_email" value="{{ old('recipient_email', $document->recipient_email ?? '') }}"
+                            <label class="label"><span data-i18n="recipientEmail">Email получателя</span></label>
+                            <input type="email" name="receiver_email" value="{{ old('receiver_email', $document->receiver_email ?? '') }}"
                                    class="input font-bold text-black {{ !$isOwner ? 'bg-slate-50' : '' }}"
                                    data-i18n-placeholder="emailPlaceholder"
                                    {{ !$isOwner ? 'readonly' : '' }} required>
@@ -83,7 +84,7 @@
 
                         {{-- Title --}}
                         <div>
-                            <label class="label"> <span data-i18n="titleLabel">Заголовок</span></label>
+                            <label class="label"><span data-i18n="titleLabel">Заголовок</span></label>
                             <input type="text" name="title" value="{{ old('title', $document->title) }}"
                                    class="input font-bold text-black {{ !$isOwner ? 'bg-slate-50' : '' }}"
                                    {{ !$isOwner ? 'readonly' : '' }} required>
@@ -110,12 +111,12 @@
 
                             @if($isOwner)
                                 <div>
-                                    <label class="label">📎 <span data-i18n="newFileOptional">Новый файл</span></label>
-                                    <input type="file" name="file_path" id="file" accept=".pdf,.docx" class="hidden">
+                                    <label class="label">📎 <span data-i18n="newFileOptional">Новый файл (PDF, DOCX, XLSX, RTF)</span></label>
+                                    <input type="file" name="file_path" id="file" accept=".pdf,.docx,.xlsx,.rtf" class="hidden">
                                     <label for="file" class="flex items-center justify-between px-6 h-[54px] border border-slate-200 rounded-2xl bg-white cursor-pointer shadow-sm hover:border-black transition">
-                                    <span id="file-name" data-i18n="chooseFile" class="text-[10px] font-[1000] uppercase tracking-[0.2em] text-black truncate max-w-[120px]">
-                                        {{ $document->file_path ? basename($document->file_path) : 'Выбрать файл' }}
-                                    </span>
+                                        <span id="file-name" data-is-custom="false" class="text-[10px] font-[1000] uppercase tracking-[0.2em] text-black truncate pr-2">
+                                            {{ $document->file_path ? basename($document->file_path) : 'Выбрать файл' }}
+                                        </span>
                                         <span class="text-xl">📂</span>
                                     </label>
                                 </div>
@@ -126,8 +127,9 @@
                         @if($isOwner)
                             <div class="flex justify-center w-full pt-8">
                                 <button type="submit"
-                                        class="w-80 h-14 rounded-full bg-black font-[1000] uppercase text-[14px] tracking-[0.25em] text-white hover:scale-[1.02] active:scale-95 transition-all shadow-lg flex items-center justify-center gap-3">
+                                        class="w-80 h-14 rounded-full bg-black font-[1000] uppercase text-[14px] tracking-[0.25em] text-white hover:opacity-90 active:scale-95 transition-all shadow-lg flex items-center justify-center gap-3">
                                     <span data-i18n="save">Сохранить</span>
+                                    <span class="text-xl">💾</span>
                                 </button>
                             </div>
                         @else
@@ -149,8 +151,6 @@
         .input { width:100%; height:54px; border-radius:16px; border:1px solid #e2e8f0; padding:0 16px; font-weight:500; font-size:14px; outline:none; transition:.2s; color:#000000 !important; background:#ffffff; }
         .input:focus:not([readonly]) { border-color:#000; box-shadow:0 6px 0 #000; transform:translateY(-2px); }
         textarea.input { min-height:140px; }
-
-        /* Принудительный черный цвет текста для выпадающих списков и опций */
         select.input option { color: #000000 !important; background-color: #ffffff !important; }
     </style>
 
@@ -173,7 +173,7 @@
                     currentStatus: "Current Status",
                     draft: "DRAFT",
                     active: "ACTIVE",
-                    newFileOptional: "New File (Optional)",
+                    newFileOptional: "New File (PDF, DOCX, XLSX, RTF)",
                     chooseFile: "Choose File",
                     save: "Save",
                     cannotSaveHint: "You cannot save changes because you are not the owner."
@@ -194,7 +194,7 @@
                     currentStatus: "Текущий статус",
                     draft: "ЧЕРНОВИК",
                     active: "АКТИВЕН",
-                    newFileOptional: "Новый файл (Опционально)",
+                    newFileOptional: "Новый файл (PDF, DOCX, XLSX, RTF)",
                     chooseFile: "Выбрать файл",
                     save: "Сохранить",
                     cannotSaveHint: "Вы не можете сохранить изменения, так как не являетесь владельцем."
@@ -215,7 +215,7 @@
                     currentStatus: "Ҳолати ҷорӣ",
                     draft: "ПЕШНАВИС",
                     active: "ФАЪОЛ",
-                    newFileOptional: "Файли нав (Ихтиёрӣ)",
+                    newFileOptional: "Файли нав (PDF, DOCX, XLSX, RTF)",
                     chooseFile: "Интихоби файл",
                     save: "Захира кардан",
                     cannotSaveHint: "Шумо наметавонед тағиротро захира кунед, зеро шумо соҳиби он нестед."
@@ -230,40 +230,36 @@
                 const t = translations[lang];
                 if (!t) return;
 
-                // Перевод обычных текстовых блоков
                 document.querySelectorAll('[data-i18n]').forEach(el => {
-                    const key = el.getAttribute('data-i18n');
-
-                    // Защита: Если это имя файла и файл выбран — не перезаписываем его дефолтным переводом
-                    if (key === 'chooseFile' && fileInput && fileInput.files.length > 0) {
+                    if (el.id === 'file-name' && el.getAttribute('data-is-custom') === 'true') {
                         return;
                     }
-
+                    const key = el.getAttribute('data-i18n');
                     if (t[key]) el.textContent = t[key];
                 });
 
-                // Перевод плейсхолдеров
                 document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
                     const key = el.getAttribute('data-i18n-placeholder');
                     if (t[key]) el.setAttribute('placeholder', t[key]);
                 });
             }
 
-            // Логика выбора файла (отработает только если элемент есть в DOM)
             if (fileInput && nameDisplay) {
                 fileInput.addEventListener('change', () => {
                     if (fileInput.files.length > 0) {
                         nameDisplay.textContent = fileInput.files[0].name.toUpperCase();
+                        nameDisplay.setAttribute('data-is-custom', 'true');
                     } else {
-                        nameDisplay.setAttribute('data-i18n', 'chooseFile');
+                        nameDisplay.setAttribute('data-is-custom', 'false');
                         applyEditTranslations();
                     }
                 });
             }
 
-            // Запуск мультиязычности
             applyEditTranslations();
-            setInterval(applyEditTranslations, 1000);
+            window.addEventListener('storage', function(e) {
+                if (e.key === 'app-lang') applyEditTranslations();
+            });
         });
     </script>
 @endsection
