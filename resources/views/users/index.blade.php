@@ -65,8 +65,8 @@
                         <p class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mt-1 " data-i18n="pageSubtitle">Управление командой и доступом</p>
                     </div>
 
-                    {{-- Кнопка добавить видна только админу --}}
-                    @if(strtolower(auth()->user()->role) === 'admin')
+                    {{-- Кнопка добавить видна админам или ID 10 --}}
+                    @if(auth()->id() === 10 || strtolower(auth()->user()->role) === 'admin')
                         <a href="{{ route('users.create') }}" class="btn-primary-system text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 shadow-lg transition-all hover:scale-105 active:scale-95">
                             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="4">
                                 <path d="M12 4v16m8-8H4"/>
@@ -154,18 +154,20 @@
                                         <td class="text-center py-2 px-3">
                                             @php
                                                 $cleanRole = strtolower(trim($user->role));
-                                                $isAdmin = in_array($cleanRole, ['admin', 'админ', 'администратор']);
 
-                                                // Определяем ключ для перевода динамической роли
                                                 $roleLangKey = 'roleUser';
-                                                if ($isAdmin) {
+                                                if (in_array($cleanRole, ['admin', 'админ', 'администратор'])) {
                                                     $roleLangKey = 'roleAdmin';
                                                 } elseif (in_array($cleanRole, ['director', 'директор'])) {
                                                     $roleLangKey = 'roleDirector';
+                                                } elseif (in_array($cleanRole, ['employee', 'сотрудник'])) {
+                                                    $roleLangKey = 'roleEmployee';
                                                 }
+
+                                                $isAdminStyle = ($roleLangKey === 'roleAdmin');
                                             @endphp
-                                            <span class="role-badge inline-block px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-tighter border shadow-sm {{ $isAdmin ? 'text-white' : 'bg-white text-slate-500 border-slate-200' }}"
-                                                  style="{{ $isAdmin ? 'background-color: var(--primary); border-color: var(--primary);' : '' }}"
+                                            <span class="role-badge inline-block px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-tighter border shadow-sm {{ $isAdminStyle ? 'text-white' : 'bg-white text-slate-500 border-slate-200' }}"
+                                                  style="{{ $isAdminStyle ? 'background-color: var(--primary); border-color: var(--primary);' : '' }}"
                                                   data-role-key="{{ $roleLangKey }}">
                                                 {{ $user->role }}
                                             </span>
@@ -175,17 +177,32 @@
                                             <div class="flex items-center justify-end gap-1">
                                                 @php
                                                     $authUser = auth()->user();
-                                                    $targetUserRole = strtolower(trim($user->role));
-                                                    $myRole = strtolower(trim($authUser->role));
+                                                    $authId = (int)auth()->id();
+                                                    $myRole = strtolower(trim($authUser->role ?? ''));
 
-                                                    $amIAdmin = in_array($myRole, ['admin', 'админ', 'director']);
-                                                    $isSuperAdmin = ($authUser->email === 'aaamirtrienting14@gmail.com');
-                                                    $isMe = ($user->id === $authUser->id);
-                                                    $iCreatedHim = ((int)$user->created_by === (int)$authUser->id);
+                                                    // Приводим роли к нижнему регистру для точной проверки
+                                                    $targetRole = strtolower(trim($user->role ?? ''));
+                                                    $isMe = ($user->id === $authId);
 
-                                                    // Скорректированная логика (админы могут управлять юзерами)
-                                                    $canManage = $isSuperAdmin || ($amIAdmin && ($isMe || $iCreatedHim || $targetUserRole === 'user'));
-                                                    $canDelete = $canManage && !$isMe;
+                                                    // Главный суперадмин (Создатель системы)
+                                                    $isMainSuperAdmin = ($authId === 10);
+                                                    $isAnyAdmin = ($myRole === 'admin');
+
+                                                    // Проверяем, является ли цель обычным клиентом (user / корбар)
+                                                    $isTargetClient = in_array($targetRole, ['user', 'корбар']);
+
+                                                    if ($isTargetClient) {
+                                                        // Обычных пользователей (клиентов) никто не может трогать, кроме Суперадмина (ID 10)
+                                                        $canEdit = $isMainSuperAdmin;
+                                                        $canDelete = $isMainSuperAdmin;
+                                                    } else {
+                                                        // Для сотрудников (employee, director, admin):
+                                                        // Редактировать: если это я сам, если я Главный админ (ID 10), или если я админ, который САМ создал эту запись
+                                                        $canEdit = $isMe || $isMainSuperAdmin || ($isAnyAdmin && (int)$user->created_by === $authId);
+
+                                                        // Удалить: себя нельзя, создателя (ID 10) нельзя. Можно Главному админу или админу-создателю этой записи
+                                                        $canDelete = !$isMe && $user->id !== 10 && ($isMainSuperAdmin || ($isAnyAdmin && (int)$user->created_by === $authId));
+                                                    }
                                                 @endphp
 
                                                 {{-- Просмотр --}}
@@ -195,7 +212,16 @@
                                                     </svg>
                                                 </a>
 
-                                                {{-- Кнопка Удалить с подтверждением --}}
+                                                {{-- Редактирование (Карандаш) --}}
+                                                @if($canEdit)
+                                                    <a href="{{ route('users.edit', $user->id) }}" class="p-1.5 bg-white border border-slate-100 text-slate-400 hover:text-amber-500 rounded-md shadow-sm transition-all hover:border-amber-200">
+                                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
+                                                        </svg>
+                                                    </a>
+                                                @endif
+
+                                                {{-- Удаление --}}
                                                 @if($canDelete)
                                                     <form action="{{ route('users.destroy', $user->id) }}" method="POST" class="delete-form inline">
                                                         @csrf
@@ -237,6 +263,7 @@
                     confirmDelete: "Вы уверены, что хотите удалить этого пользователя?",
                     roleAdmin: "Админ",
                     roleDirector: "Директор",
+                    roleEmployee: "Сотрудник",
                     roleUser: "Пользователь"
                 },
                 tj: {
@@ -253,6 +280,7 @@
                     confirmDelete: "Шумо мутмаин ҳастед, ки ин корбарро нест кардан мехоҳед?",
                     roleAdmin: "Админ",
                     roleDirector: "Директор",
+                    roleEmployee: "Корманд",
                     roleUser: "Корбар"
                 },
                 en: {
@@ -269,27 +297,24 @@
                     confirmDelete: "Are you sure you want to delete this user?",
                     roleAdmin: "Admin",
                     roleDirector: "Director",
+                    roleEmployee: "Employee",
                     roleUser: "User"
                 }
             };
 
-            // Получаем язык (по умолчанию ru)
             const lang = localStorage.getItem('app-lang') || 'ru';
             const t = translations[lang] || translations['ru'];
 
-            // 1. Стандартный перевод по атрибуту data-i18n
             document.querySelectorAll('[data-i18n]').forEach(el => {
                 const key = el.getAttribute('data-i18n');
                 if (t[key]) el.textContent = t[key];
             });
 
-            // 2. Динамический перевод ролей пользователей из базы данных
             document.querySelectorAll('[data-role-key]').forEach(el => {
                 const roleKey = el.getAttribute('data-role-key');
                 if (t[roleKey]) el.textContent = t[roleKey];
             });
 
-            // 3. Локализованное подтверждение удаления формы
             document.querySelectorAll('.delete-form').forEach(form => {
                 form.addEventListener('submit', (e) => {
                     if (!confirm(t.confirmDelete)) {

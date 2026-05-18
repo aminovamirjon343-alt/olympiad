@@ -100,6 +100,7 @@
 
 
 
+
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DocumentCommentController;
 use App\Http\Controllers\DocumentController;
@@ -154,6 +155,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/analysis', [AnalysisController::class, 'index'])->name('analysis.index');
 
+
     // Профиль пользователя
     Route::get('/profile', [ProfileController::class, 'show'])->name('profile.show');
     Route::get('/profile/edit', [ProfileController::class, 'edit'])->name('profile.edit');
@@ -183,7 +185,7 @@ Route::middleware(['auth'])->group(function () {
     Route::resource('logs', DocumentLogController::class);
     Route::resource('workflow', DocumentWorkflowController::class);
 
-    // Очистка логов (теперь она защищена авторизацией!)
+    // Очистка логов
     Route::post('/logs/clear', [DocumentLogController::class, 'clear'])->name('logs.clear');
 
     // Поиск
@@ -201,45 +203,24 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/documents/{documentId}/comments', [DocumentCommentController::class, 'index'])->name('comments.index');
     Route::delete('/comments/{comment}', [DocumentCommentController::class, 'destroy'])->name('comments.destroy');
 
-    // Уведомления
+    // ========================================================
+    // УВЕДОМЛЕНИЯ (Чистая группа без конфликтов и дубликатов)
+    // ========================================================
 
+    // Универсальный роут для чтения конкретного уведомления
+    Route::any('/notifications/{id}/read', [NotificationController::class, 'read'])->name('notifications.read');
+    Route::delete('/notifications/{id}', [NotificationController::class, 'destroy'])->name('notifications.destroy');
+    Route::patch('/notifications/{id}/mark-as-read', [NotificationController::class, 'markAsRead'])->name('notifications.read_patch');
+    Route::post('/comments/store_notification', [NotificationController::class, 'store'])->name('comments.store_notification');
 
+    // Группа для списков, создания и массовых действий
     Route::prefix('notifications')->name('notifications.')->group(function () {
         Route::get('/', [NotificationController::class, 'index'])->name('index');
         Route::get('/create', [NotificationController::class, 'create'])->name('create');
-        Route::post('/{id}/read', [NotificationController::class, 'read'])->name('read');
         Route::delete('/clear-all', [NotificationController::class, 'clearAll'])->name('clearAll');
 
-        Route::get('/read-all', function () {
-            DB::table('notifications')
-                ->where('user_id', auth()->id())
-                ->update(['is_read' => true]);
-            return redirect()->route('notifications.index');
-        })->name('read_all');
+        // Массовое прочтение через контроллер
+        Route::post('/read-all', [NotificationController::class, 'readAll'])->name('readAll');
     });
 
-});
-
-// ========================================================
-// УВЕДОМЛЕНИЯ (Полностью исправленный и чистый блок)
-// ========================================================
-
-// Универсальный роут для чтения (принимает GET, POST, PATCH)
-Route::any('/notifications/{id}/read', [NotificationController::class, 'read'])->name('notifications.read');
-Route::delete('/notifications/{id}', [NotificationController::class, 'destroy'])->name('notifications.destroy');
-
-// Вспомогательные роуты
-Route::patch('/notifications/{id}/mark-as-read', [NotificationController::class, 'markAsRead'])->name('notifications.read_patch');
-Route::post('/comments/store_notification', [NotificationController::class, 'store'])->name('comments.store_notification');
-
-// Группа для списков и создания (БЕЗ конфликтующего роута /read)
-Route::prefix('notifications')->name('notifications.')->group(function () {
-    Route::get('/', [NotificationController::class, 'index'])->name('index');
-    Route::get('/create', [NotificationController::class, 'create'])->name('create');
-    Route::delete('/clear-all', [NotificationController::class, 'clearAll'])->name('clearAll');
-
-    // ИСПРАВЛЕНО: Правильный POST-роут внутри группы.
-    // Теперь его URL будет: /notifications/read-all
-    // А его системное имя будет строго: notifications.readAll
-    Route::post('/read-all', [App\Http\Controllers\NotificationController::class, 'readAll'])->name('readAll');
 });

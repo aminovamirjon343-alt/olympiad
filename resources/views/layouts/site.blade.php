@@ -2221,9 +2221,36 @@
 
             <div class="flex items-center gap-3">
                 <div class="hidden sm:flex items-center gap-1 glass rounded-lg p-1">
-                    <button class="lang-btn active px-3 py-1 rounded-md text-xs font-medium transition-all duration-200 border border-transparent" data-lang="ru">RU</button>
-                    <button class="lang-btn px-3 py-1 rounded-md text-xs font-medium transition-all duration-200 border border-transparent" data-lang="en">EN</button>
-                    <button class="lang-btn px-3 py-1 rounded-md text-xs font-medium transition-all duration-200 border border-transparent" data-lang="tj">TJ</button>
+                    <select id="langSelect"
+                            class="bg-transparent text-white text-xs font-medium px-2 py-1 rounded-md outline-none cursor-pointer transition-all duration-200"
+                            onchange="localStorage.setItem('selectedLang', this.value); document.querySelector(`[data-lang='${this.value}']`).click()">
+                        <option value="ru" class="bg-[#0f172a] text-white">RU</option>
+                        <option value="en" class="bg-[#0f172a] text-white">EN</option>
+                        <option value="tj" class="bg-[#0f172a] text-white">TJ</option>
+                    </select>
+
+                    <div class="hidden">
+                        <button class="lang-btn active" data-lang="ru"></button>
+                        <button class="lang-btn" data-lang="en"></button>
+                        <button class="lang-btn" data-lang="tj"></button>
+                    </div>
+
+                    <script>
+                        document.addEventListener("DOMContentLoaded", function() {
+                            const savedLang = localStorage.getItem('selectedLang') || 'ru'; // Если ничего не сохранено, будет 'ru'
+                            const select = document.getElementById('langSelect');
+
+                            if (select) {
+                                select.value = savedLang; // Ставим сохраненный язык в селект
+
+                                // Ждем долю секунды, чтобы твой основной JS успел загрузиться, и кликаем по кнопке
+                                setTimeout(() => {
+                                    const btn = document.querySelector(`[data-lang='${savedLang}']`);
+                                    if (btn) btn.click();
+                                }, 50);
+                            }
+                        });
+                    </script>
                 </div>
                 <a href="{{route('login')}}" class="btn-primary px-5 py-2 rounded-lg text-sm font-semibold text-white shadow-lg">
                     <span data-i18n="nav_start">Начать</span>
@@ -2315,7 +2342,7 @@
 
             <div class="stat-card group rounded-2xl p-5 bg-white/5 border border-white/10 backdrop-blur-xl hover:bg-white/10 transition-all duration-300">
                 <div class="flex justify-between items-start mb-2">
-                    <div class="text-3xl md:text-4xl font-black gradient-text"><span class="counter" data-target="10">0</span>К+</div>
+
                     <div class="p-1.5 bg-green-500/20 rounded-lg text-green-400">
                         <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
@@ -2323,7 +2350,7 @@
                     </div>
                 </div>
                 <div class="text-[10px] uppercase tracking-[0.2em] text-green-400 font-bold mb-1" data-i18n="stat_users">Пользователи</div>
-                <div class="text-xs text-slate-300 leading-tight" data-i18n="stat_users_desc">активных пользователей по всей стране</div>
+                <div class="text-xs text-slate-300 leading-tight" data-i18n="stat_users_desc">активных пользователей по всей стране Таджикистан</div>
             </div>
 
             <div class="stat-card group rounded-2xl p-5 bg-white/5 border border-white/10 backdrop-blur-xl hover:bg-white/10 transition-all duration-300">
@@ -2459,8 +2486,7 @@
                     <div class="w-9 h-9 rounded-xl bg-red-500 border border-red-400/50 shadow-[0_0_15px_rgba(239,68,68,0.5)]"></div>
                     <div class="w-9 h-9 rounded-xl bg-orange-500 border border-orange-400/50 shadow-[0_0_15px_rgba(249,115,22,0.5)]"></div>
                     <div class="w-9 h-9 rounded-xl bg-yellow-400 border border-yellow-300/50 shadow-[0_0_15px_rgba(250,204,21,0.5)]"></div>
-                    <div class="w-9 h-9 rounded-xl bg-slate-400 border border-slate-300/50 shadow-lg"></div>
-                </div>
+               </div>
                 <div class="text-xs text-slate-500 mt-1" data-i18n="f6_palette">Цветовая палитра</div>
             </div>
         </div>
@@ -2677,12 +2703,13 @@
 </section>
 
 <!-- AI Section -->
-<section id="ai" class="relative py-32 overflow-hidden">
+<section id="ai" class="relative py-16 overflow-hidden">
     <div class="absolute inset-0 bg-gradient-to-b from-transparent via-amber-950/10 to-transparent"></div>
     <div class="orb w-[400px] h-[400px] bg-amber-600/20 top-0 right-0 blur-[120px]"></div>
 
     <div class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="text-center mb-20 scroll-reveal">
+
+        <div class="text-center mb-10 scroll-reveal">
             <span class="inline-flex items-center gap-2 text-xs font-semibold text-amber-400 uppercase tracking-widest mb-4">
                 <span class="w-8 h-px bg-amber-400"></span>
                 <span data-i18n="ai_label">AI Анализ</span>
@@ -2692,47 +2719,56 @@
             <p class="max-w-2xl mx-auto text-lg text-slate-400" data-i18n="ai_subtitle">AI помогает анализировать данные, автоматизировать процессы и выводить информацию в удобном виде</p>
         </div>
 
-        <div class="section-analytics">
-            <div class="section-title mt-5 mb-4">
-                <div class="accent" style="background:#8b5cf6;box-shadow:0 0 12px #8b5cf680"></div><span class="text-white font-bold text-lg" data-i18n="userAnalytics">Аналитика пользователей</span>
+        <div class="acard">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <div>
+                    <div class="slabel" data-i18n="baseActivity">Активность базы</div>
+                    <h6 class="mb-0 fw-bold" style="color:var(--text)" data-i18n="audienceDynamics">Динамика прироста аудитории</h6>
+                </div>
+                <div class="d-flex gap-3">
+                    <small class="d-flex align-items-center gap-1" style="color:#3b82f6">
+                        <span class="legend-dot" style="background:#3b82f6"></span>
+                        <span data-i18n="registrations">Регистрации</span>
+                    </small>
+                    <small class="d-flex align-items-center gap-1" style="color:#ef4444">
+                        <span class="legend-dot" style="background:#ef4444"></span>
+                        <span data-i18n="deletions">Удаления</span>
+                    </small>
+                </div>
+            </div>
+            <div id="userChart"></div>
+        </div>
+
+        <div class="flex flex-col md:flex-row gap-3 mt-4">
+            <div class="flex-1">
+                <div class="acard h-100">
+                    <div class="slabel" data-i18n="usersCount">Пользователи</div>
+                    <div class="bignum mt-2">29</div>
+                    <small class="text-slate-400" data-i18n="activeProfiles">активных профилей</small>
+                </div>
             </div>
 
-            <div class="acard">
-                <div class="d-flex justify-content-between align-items-center mb-2 flex flex-wrap gap-3">
-                    <div><div class="slabel" data-i18n="baseActivity">Активность базы</div><h6 class="mb-0 fw-bold text-white" data-i18n="audienceDynamics">Динамика прироста аудитории</h6></div>
-                    <div class="flex gap-3">
-                        <span class="text-xs flex items-center gap-1 text-blue-400"><span class="legend-dot" style="background:#3b82f6"></span><span data-i18n="registrations">Регистрации</span></span>
-                        <span class="text-xs flex items-center gap-1 text-red-400"><span class="legend-dot" style="background:#ef4444"></span><span data-i18n="deletions">Удаления</span></span>
+            <div class="flex-1">
+                <div class="acard h-100">
+                    <div class="slabel" data-i18n="new30Days">Новые (30 дней)</div>
+                    <div class="bignum mt-2 text-emerald-400">29</div>
+                    <div class="progbg" style="background: rgba(255,255,255,0.05); height: 4px; border-radius: 2px; margin-top: 8px; overflow: hidden;">
+                        <div class="fill" style="width:100%; background:#10b981; height: 100%;"></div>
                     </div>
                 </div>
-                <div id="userChart"></div>
             </div>
 
-            <div class="flex flex-col md:flex-row gap-3 mt-4">
-                <div class="flex-1">
-                    <div class="acard h-100">
-                        <div class="slabel" data-i18n="usersCount">Пользователи</div>
-                        <div class="bignum mt-2">10,000+</div>
-                        <small class="text-slate-400" data-i18n="activeProfiles">активных профилей</small>
-                    </div>
-                </div>
-                <div class="flex-1">
-                    <div class="acard h-100">
-                        <div class="slabel" data-i18n="new30Days">Новые (30 дней)</div>
-                        <div class="bignum mt-2 text-emerald-400">847</div>
-                        <div class="progbg"><div class="fill" style="width:75%;background:#10b981"></div></div>
-                    </div>
-                </div>
-                <div class="flex-1">
-                    <div class="acard h-100" style="border-top:3px solid #ef4444">
-                        <div class="slabel text-red-400" data-i18n="churnRate">Churn Rate</div>
-                        <div class="bignum mt-2">3.2%</div>
-                        <small class="text-slate-400" data-i18n="churnDesc">коэффициент оттока</small>
-                    </div>
+            <div class="flex-1">
+                <div class="acard h-100" style="border-top:3px solid #ef4444">
+                    <div class="slabel text-red-400" data-i18n="churnRate">Churn Rate</div>
+                    <div class="bignum mt-2 text-red-400">27.6%</div>
+                    <small class="text-slate-400" data-i18n="churnDesc">коэффициент оттока</small>
                 </div>
             </div>
         </div>
+
     </div>
+
 </section>
 
 <!-- Contact / CTA Section -->
@@ -2834,7 +2870,7 @@
             stat_speed: "Скорость",
             stat_speed_desc: "на оформление одного документа",
             stat_users: "Пользователи",
-            stat_users_desc: "активных пользователей по всей стране",
+            stat_users_desc: "активных пользователей по всему Таджикистану",
             stat_access: "ДАСТРАСӢ",
             stat_access_desc: "имзогузорӣ дар тамоми ҳудуди Тоҷикистон",
             stat_protection: "Защита",
@@ -2928,7 +2964,7 @@
             stat_speed: "Speed",
             stat_speed_desc: "to process one document",
             stat_users: "Users",
-            stat_users_desc: "active users across the country",
+            stat_users_desc: "active users throughout Tajikistan",
             stat_access: "ACCESS",
             stat_access_desc: "signing across the entire territory of Tajikistan",
             stat_protection: "Protection",
@@ -3022,7 +3058,7 @@
             stat_speed: "Суръат",
             stat_speed_desc: "барои расмиёти як ҳуҷҷат",
             stat_users: "Корбарон",
-            stat_users_desc: "корбарони фаъол дар саросари кишвар",
+            stat_users_desc: "корбарони фаъол дар тамоми Тоҷикистон",
             stat_access: "ДАСТРАСӢ",
             stat_access_desc: "имзогузорӣ дар тамоми ҳудуди Тоҷикистон",
             stat_protection: "Ҳимоя",
@@ -3258,18 +3294,28 @@
     }
 
     // ApexCharts
+    // ApexCharts с кастомным тултипом и обновленными данными (53 пользователя, 8 удалений)
     document.addEventListener('DOMContentLoaded', () => {
         setLanguage('ru');
 
-        // Demo data for chart
+        // Данные по дням мая. В сумме тут ровно 53 регистрации и 8 удалений.
         const demoData = [
-            { date: 'Янв', reg: 120, del: 10 },
-            { date: 'Фев', reg: 180, del: 15 },
-            { date: 'Мар', reg: 250, del: 20 },
-            { date: 'Апр', reg: 300, del: 12 },
-            { date: 'Май', reg: 280, del: 18 },
-            { date: 'Июн', reg: 350, del: 8 },
-            { date: 'Июл', reg: 420, del: 5 }
+            { date: '01.05', reg: 0, del: 0 }, { date: '02.05', reg: 2, del: 0 },
+            { date: '03.05', reg: 0, del: 0 }, { date: '04.05', reg: 4, del: 1 },
+            { date: '05.05', reg: 0, del: 0 }, { date: '06.05', reg: 3, del: 0 },
+            { date: '07.05', reg: 1, del: 0 }, { date: '08.05', reg: 0, del: 0 },
+            { date: '09.05', reg: 5, del: 2 }, { date: '10.05', reg: 8, del: 0 }, // Пик регистраций
+            { date: '11.05', reg: 0, del: 0 }, { date: '12.05', reg: 3, del: 1 },
+            { date: '13.05', reg: 2, del: 0 }, { date: '14.05', reg: 12, del: 0 }, // Большой пик
+            { date: '15.05', reg: 1, del: 0 }, { date: '16.05', reg: 0, del: 0 },
+            { date: '17.05', reg: 10, del: 4 }, // Пик удалений и регистраций
+            { date: '18.05', reg: 2, del: 0 }, { date: '19.05', reg: 0, del: 0 },
+            { date: '20.05', reg: 0, del: 0 }, { date: '21.05', reg: 0, del: 0 },
+            { date: '22.05', reg: 0, del: 0 }, { date: '23.05', reg: 0, del: 0 },
+            { date: '24.05', reg: 0, del: 0 }, { date: '25.05', reg: 0, del: 0 },
+            { date: '26.05', reg: 0, del: 0 }, { date: '27.05', reg: 0, del: 0 },
+            { date: '28.05', reg: 0, del: 0 }, { date: '29.05', reg: 0, del: 0 },
+            { date: '30.05', reg: 0, del: 0 }, { date: '31.05', reg: 0, del: 0 }
         ];
 
         const chartOptions = {
@@ -3281,8 +3327,8 @@
                 data: demoData.map(item => item.del)
             }],
             chart: {
-                type: 'area',
-                height: 280,
+                type: 'line', // Чистая линия, без старой заливки area
+                height: 350,
                 toolbar: { show: false },
                 zoom: { enabled: false },
                 background: 'transparent',
@@ -3290,33 +3336,66 @@
                 fontFamily: 'Inter, sans-serif'
             },
             colors: ['#3b82f6', '#ef4444'],
-            fill: {
-                type: 'gradient',
-                gradient: {
-                    shadeIntensity: 1,
-                    opacityFrom: 0.3,
-                    opacityTo: 0.0,
-                    stops: [0, 90, 100]
-                }
-            },
             stroke: {
                 curve: 'smooth',
                 width: 3
+            },
+            markers: {
+                size: 4,
+                strokeColors: '#111827',
+                strokeWidth: 2,
+                hover: { size: 6 }
             },
             dataLabels: { enabled: false },
             grid: {
                 borderColor: 'rgba(255, 255, 255, 0.05)',
                 strokeDashArray: 4,
+                xaxis: { lines: { show: false } },
                 yaxis: { lines: { show: true } }
             },
             xaxis: {
                 categories: demoData.map(item => item.date),
                 axisBorder: { show: false },
                 axisTicks: { show: false },
+                labels: { style: { colors: '#9ca3af' } }
             },
-            yaxis: { tickAmount: 4 },
-            tooltip: { theme: 'dark', x: { show: true }, marker: { show: true } },
-            legend: { show: false }
+            yaxis: {
+                min: 0,
+                tickAmount: 4,
+                labels: { style: { colors: '#9ca3af' } }
+            },
+            legend: { show: false },
+
+            // Красивое всплывающее окошко при ведении мышкой
+            tooltip: {
+                shared: true,
+                intersect: false,
+                custom: function({ series, seriesIndex, dataPointIndex, w }) {
+                    const date = w.globals.categoryLabels[dataPointIndex];
+                    const registrations = series[0][dataPointIndex];
+                    const deletions = series[1][dataPointIndex];
+
+                    return `
+                    <div style="background: #151d30; border: 1px solid #24324f; border-radius: 8px; padding: 12px 16px; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5); min-width: 160px; font-family: sans-serif;">
+                        <div style="font-weight: bold; font-size: 13px; color: #ffffff; margin-bottom: 8px; border-bottom: 1px dashed #24324f; padding-bottom: 4px;">${date}</div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; font-size: 13px; margin-top: 4px;">
+                            <div style="display: flex; align-items: center; gap: 8px; color: #9ca3af;">
+                                <span style="width: 8px; height: 8px; border-radius: 50%; background: #3b82f6;"></span>
+                                Регистрации:
+                            </div>
+                            <div style="font-weight: bold; color: #ffffff;">${registrations}</div>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; font-size: 13px; margin-top: 4px;">
+                            <div style="display: flex; align-items: center; gap: 8px; color: #9ca3af;">
+                                <span style="width: 8px; height: 8px; border-radius: 50%; background: #ef4444;"></span>
+                                Удаления:
+                            </div>
+                            <div style="font-weight: bold; color: #ffffff;">${deletions}</div>
+                        </div>
+                    </div>
+                `;
+                }
+            }
         };
 
         const chartEl = document.querySelector("#userChart");
@@ -3324,6 +3403,15 @@
             const chart = new ApexCharts(chartEl, chartOptions);
             chart.render();
         }
+    });
+    document.querySelector('.lang-select').addEventListener('change', (event) => {
+        const selectedLang = event.target.value;
+
+        // Здесь вызывается ваша функция смены языка.
+        // Например, если у вас было что-то вроде changeLanguage(selectedLang):
+        changeLanguage(selectedLang);
+
+        console.log('Язык изменен на:', selectedLang); // Для теста
     });
 </script>
 

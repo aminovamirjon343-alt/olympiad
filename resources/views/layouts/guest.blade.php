@@ -712,10 +712,26 @@
 <div class="notification" id="notification"></div>
 
 <!-- Language switcher -->
-<div class="lang-switcher">
-    <button class="lang-btn active" data-lang="ru" onclick="switchLang('ru')">🇺 РУ</button>
-    <button class="lang-btn" data-lang="tj" onclick="switchLang('tj')">🇯 TJ</button>
-    <button class="lang-btn" data-lang="en" onclick="switchLang('en')">🇬🇧 EN</button>
+<div class="lang-switcher" style="position: fixed; top: 20px; right: 20px; z-index: 100; display: inline-block;">
+    <div style="position: relative;">
+        <select id="lang-select" onchange="switchLang(this.value)"
+                style="appearance: none; -webkit-appearance: none; -moz-appearance: none;
+                       background: rgba(15, 23, 42, 0.7); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+                       border: 1px solid rgba(148, 163, 184, 0.15); border-radius: 12px;
+                       padding: 8px 32px 8px 14px; color: #94a3b8; font-family: 'Figtree', sans-serif;
+                       font-size: 13px; font-weight: 600; cursor: pointer; outline: none;
+                       letter-spacing: 0.5px; transition: all 0.3s ease; width: 100%; text-transform: uppercase;">
+            <option value="ru" style="background: #0f172a; color: #f1f5f9;">🇷🇺 РУ</option>
+            <option value="tj" style="background: #0f172a; color: #f1f5f9;">🇹🇯 TJ</option>
+            <option value="en" style="background: #0f172a; color: #f1f5f9;">🇬🇧 EN</option>
+        </select>
+
+        <div style="position: absolute; inset-y: 0; right: 12px; display: flex; align-items: center; pointer-events: none; color: #94a3b8;">
+            <svg style="width: 12px; height: 12px;" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3">
+                <path d="M19 9l-7 7-7-7"/>
+            </svg>
+        </div>
+    </div>
 </div>
 
 <!-- Main container -->

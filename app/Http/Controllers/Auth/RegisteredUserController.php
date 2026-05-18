@@ -30,16 +30,20 @@ class RegisteredUserController extends Controller
      */
     public function store(Request $request): RedirectResponse
     {
+        // 1. Добавляем валидацию для поля 'role'
         $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
+            'role' => ['required', 'string', 'in:admin,employee,director,user'], // Проверяем, что пришло значение из твоего enum
         ]);
 
+        // 2. Сохраняем роль в базу данных
         $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
             'password' => Hash::make($request->password),
+            'role' => $request->role, // <- ВОТ ЭТОГО НЕ ХВАТАЛО!
         ]);
 
         event(new Registered($user));

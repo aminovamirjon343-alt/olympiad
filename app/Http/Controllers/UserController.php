@@ -34,9 +34,12 @@ class UserController extends Controller
             'role'     => 'required|in:admin,employee,director,user',
         ]);
 
-        $user = new User($data);
-        $user->password = Hash::make($request->password);
-        $user->save();
+        $data['password'] = Hash::make($data['password']);
+
+        // 🚀 Важно: Запоминаем ID админа, который создал этого пользователя
+        $data['created_by'] = auth()->id();
+
+        User::create($data);
 
         return redirect()->route('users.index')->with('success', 'Пользователь создан!');
     }
@@ -68,47 +71,72 @@ class UserController extends Controller
     {
         $authId = (int)auth()->id();
         $authUser = auth()->user();
+        $myRole = strtolower(trim($authUser->role ?? ''));
+        $targetRole = strtolower(trim($user->role));
 
-        // 1. Защита: роль USER неприкасаема
-        if (strtolower($user->role) === 'user') {
-            return redirect()->route('users.show', $user->id)
-                ->with('error', 'Роль USER неприкасаема');
+        // 🛑 ЗАЩИТА РОЛИ USER: Ни один админ не может её редактировать
+        if ($targetRole === 'user') {
+            return redirect()->route('users.index')->with('error', 'Пользователи с ролью USER неприкасаемы.');
         }
 
-        // 2. Разрешаем редактирование (Опечатка исправлена здесь)
-        if ($user->id === $authId || $authId === 10 || ($authUser && $authUser->role === 'admin')) {
+        // Защита создателя системы (ID 10)
+        if ($user->id === 10 && $authId !== 10) {
+            return redirect()->route('users.index')->with('error', 'Вы не можете редактировать Создателя системы.');
+        }
+
+        $isMe = ($user->id === $authId);
+        $isMainAdmin = ($authId === 10);
+        $isCreator = ((int)$user->created_by === $authId);
+
+        // Разрешено, если это мой профиль, я Главный админ, или я админ, который создал этого юзера
+        if ($isMe || $isMainAdmin || ($myRole === 'admin' && $isCreator)) {
             return view('users.edit', compact('user'));
         }
 
-        return redirect()->route('users.show', $user->id)
-            ->with('error', 'Вы не можете редактировать этого пользователя.');
+        return redirect()->route('users.index')->with('error', 'Вы можете редактировать только тех, кого добавили сами.');
     }
 
     public function update(Request $request, User $user)
     {
         $authId = (int)Auth::id();
         $authUser = Auth::user();
+        $myRole = strtolower(trim($authUser->role ?? ''));
+        $targetRole = strtolower(trim($user->role));
 
-        if (strtolower($user->role) === 'user') {
-            return redirect()->route('users.show', $user->id)
-                ->with('error', 'Этого пользователя нельзя изменять');
+        // 🛑 ЗАЩИТА РОЛИ USER на сохранение
+        if ($targetRole === 'user') {
+            return redirect()->route('users.index')->with('error', 'Изменение пользователей с ролью USER запрещено.');
         }
 
-        $isSelf = $user->id === $authId;
-        $isAdmin = ($authId === 10 || ($authUser && $authUser->role === 'admin'));
-
-        if (!$isSelf && !$isAdmin) {
-            return redirect()->route('users.show', $user->id)
-                ->with('error', 'У вас нет прав на обновление этого профиля');
+        if ($user->id === 10 && $authId !== 10) {
+            return redirect()->route('users.index')->with('error', 'Изменение данных Создателя системы запрещено.');
         }
 
-        $data = $request->validate([
+        $isMe = ($user->id === $authId);
+        $isMainAdmin = ($authId === 10);
+        $isCreator = ((int)$user->created_by === $authId);
+
+        if (!$isMe && !$isMainAdmin && !($myRole === 'admin' && $isCreator)) {
+            return redirect()->route('users.index')->with('error', 'У вас нет прав на обновление этого профиля.');
+        }
+
+        $rules = [
             'name'    => 'required|string|max:255',
             'email'   => 'required|email|unique:users,email,' . $user->id,
             'phone'   => 'nullable|string',
             'company' => 'nullable|string|max:255',
-            'role'    => 'required|in:admin,employee,director,user',
-        ]);
+        ];
+
+        // Менять роль могут только авторы записи или главный админ
+        if (($isMainAdmin || $isCreator) && !$isMe) {
+            $rules['role'] = 'required|in:admin,employee,director,user';
+        }
+
+        $data = $request->validate($rules);
+
+        if ($isMe || (!$isMainAdmin && !$isCreator)) {
+            $data['role'] = $user->role;
+        }
 
         $user->update($data);
 
@@ -117,22 +145,33 @@ class UserController extends Controller
 
     public function destroy(User $user)
     {
-        $authUser = Auth::user();
         $authId = (int)Auth::id();
+        $authUser = Auth::user();
+        $myRole = strtolower(trim($authUser->role ?? ''));
+        $targetRole = strtolower(trim($user->role ?? ''));
 
-        if ($user->id === $authUser->id) {
-            return back()->with('error', 'Вы не можете удалить самого себя');
+        // Защита клиентов системы от удаления обычными админами
+        if (in_array($targetRole, ['user', 'корбар']) && $authId !== 10) {
+            return back()->with('error', 'Вы не можете удалять зарегистрированных клиентов.');
         }
 
-        if (strtolower($user->role) === 'user') {
-            return back()->with('error', 'Этого пользователя нельзя трогать, он независим');
+        if ($user->id === $authId) {
+            return back()->with('error', 'Вы не можете удалить самого себя.');
         }
 
-        if ($authId !== 10 && $authUser->role !== 'admin') {
-            return back()->with('error', 'У вас нет прав на удаление сотрудников');
+        if ($user->id === 10) {
+            return back()->with('error', 'Этот аккаунт защищен от удаления.');
         }
 
-        $user->delete();
-        return redirect()->route('users.index')->with('success', 'Сотрудник удален');
+        $isMainAdmin = ($authId === 10);
+        $isCreator = ((int)$user->created_by === $authId);
+
+        // Удалить может либо ID 10, либо админ, который лично добавил этого сотрудника
+        if ($isMainAdmin || ($myRole === 'admin' && $isCreator)) {
+            $user->delete();
+            return redirect()->route('users.index')->with('success', 'Пользователь успешно удален.');
+        }
+
+        return back()->with('error', 'Вы можете удалять только тех сотрудников, которых добавили сами.');
     }
 }
