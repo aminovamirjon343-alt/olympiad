@@ -89,8 +89,8 @@
                             <div>
                                 <label class="label">⚙️ <span data-i18n="status">Статус</span></label>
                                 <select name="status" class="input">
-                                    <option value="draft" {{ old('status') == 'draft' ? 'selected' : '' }} data-i18n="draft">Черновик</option>
-                                    <option value="active" {{ old('status') !== 'draft' ? 'selected' : '' }} data-i18n="active">Активен</option>
+                                    <option value="draft" {{ old('status') == 'draft' ? 'selected' : '' }}>Черновик</option>
+                                    <option value="active" {{ old('status', 'active') == 'active' ? 'selected' : '' }}>Активен</option>
                                 </select>
                             </div>
                             <div>

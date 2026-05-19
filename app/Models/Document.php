@@ -6,12 +6,14 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+
 use Illuminate\Support\Facades\Auth;
 
 class Document extends Model
 {
     use SoftDeletes;
-
+    use HasFactory;
     // Константы статусов
     const STATUS_DRAFT = 'draft';
     const STATUS_ACTIVE = 'active';
@@ -163,4 +165,5 @@ class Document extends Model
     {
         return $this->belongsTo(User::class, 'created_by');
     }
+
 }

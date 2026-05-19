@@ -4,7 +4,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght=400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
 
-    <!-- Подключаем библиотеки для рендеринга Word (.docx) на клиенте -->
     <script src="https://unpkg.com/jszip/dist/jszip.min.js"></script>
     <script src="https://unpkg.com/docx-preview/dist/docx-preview.min.js"></script>
 
@@ -48,55 +47,23 @@
             position: relative;
             width: 100%;
             height: 100%;
-            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: auto;
+            background-color: #0f172a;
         }
 
-        /* Слои для предотвращения лагов при dragging */
-        .drag-overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
+        /* Комфортный адаптивный просмотрщик на всю область контейнера */
+        #previewViewport {
+            position: relative;
             width: 100%;
             height: 100%;
-            pointer-events: none;
-            z-index: 30;
+            background: #0f172a;
+            margin: auto;
+            overflow-y: auto;
         }
 
-        /* Штамп DocSign */
-        #draggable-qr-stamp {
-            position: absolute;
-            width: 95px;
-            height: 95px;
-            background: #ffffff !important;
-            border: 1.5px solid #000000;
-            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
-            cursor: move;
-            pointer-events: auto;
-            display: none;
-            touch-action: none;
-            padding: 4px;
-            left: 50px;
-            top: 50px;
-            box-sizing: border-box;
-            text-align: center;
-            z-index: 35;
-        }
-        #dynamic-qr-img {
-            width: 100%;
-            height: 65px;
-            object-fit: contain;
-        }
-        .stamp-text-footer {
-            font-size: 5.5px !important;
-            font-weight: 800 !important;
-            color: #000000 !important;
-            line-height: 1.1;
-            text-transform: uppercase;
-            margin-top: 2px;
-            font-family: monospace;
-        }
-
-        /* Заглушка для Excel/локальных ограничений */
         .local-warning-box {
             display: none;
             position: absolute;
@@ -111,28 +78,25 @@
             text-align: center;
         }
 
-        .dragging-active iframe, .dragging-active #word-preview {
-            pointer-events: none !important;
-        }
-
-        /* Оформление области превью Word */
         #word-preview {
             width: 100%;
             height: 100%;
             overflow-y: auto;
             background-color: #ffffff;
         }
-        .docx-wrapper { background: transparent !important; padding: 14px !important; }
-        .docx { box-shadow: 0 4px 12px rgba(0,0,0,0.08) !important; padding: 20px !important; }
+        .docx-wrapper { background: transparent !important; padding: 0 !important; }
+        .docx { box-shadow: none !important; padding: 20px !important; width: 100% !important; min-height: 100% !important; }
     </style>
 
     <div class="container mx-auto px-2 py-4 sig-container">
         <form action="{{ route('signatures.store') }}" method="POST" id="signatureForm">
             @csrf
             <input type="hidden" name="qr_payload" id="qrPayloadInput">
-            <input type="hidden" name="qr_x" id="qr_x" value="0">
-            <input type="hidden" name="qr_y" id="qr_y" value="0">
-            <input type="hidden" name="target_page" id="target_page" value="1">
+
+            {{-- Передаем маркер -1, чтобы бэкенд знал, что штамп нужен строго на последней странице в углу --}}
+            <input type="hidden" name="qr_x" id="qr_x" value="80">
+            <input type="hidden" name="qr_y" id="qr_y" value="85">
+            <input type="hidden" name="target_page" id="target_page" value="-1">
 
             <div class="flex flex-col lg:flex-row gap-6 items-start">
 
@@ -188,7 +152,7 @@
                         <div class="flex items-center gap-3">
                             <span class="label-micro" data-i18n="previewLabel">Предпросмотр</span>
                             <span id="formatBadge" class="hidden px-2 py-0.5 rounded text-[9px] font-black uppercase text-white"></span>
-                            <span class="text-[10px] font-medium text-slate-400 animate-pulse hidden" id="dragNotice">← Перетащите штамп в нужное место на документе</span>
+                            <span class="text-[10px] font-medium text-slate-400" id="dragNotice" data-i18n="autoNotice">Штамп будет наложен автоматически при подписании</span>
                         </div>
                         <a id="fullScreenBtn" href="#" target="_blank" class="hidden flex items-center gap-2 bg-white border border-slate-200 px-3 py-1.5 rounded-lg text-[10px] font-bold text-black hover:bg-slate-50 hover:text-indigo-600 transition shadow-sm">
                             <i class="bi bi-arrows-fullscreen"></i>
@@ -196,35 +160,23 @@
                         </a>
                     </div>
 
-                    <div id="viewerContainer" class="bg-slate-900 p-1 rounded-[1.8rem] shadow-xl relative mb-4" style="height: calc(100vh - 220px); min-height: 500px;">
+                    <div id="viewerContainer" class="bg-slate-950 p-2 rounded-[1.8rem] shadow-xl relative mb-4" style="height: calc(100vh - 220px); min-height: 520px;">
                         <div id="viewerLoader" class="viewer-loading">
                             <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
                         </div>
 
-                        {{-- Окно предупреждения о localhost (для Excel) --}}
                         <div id="localWarning" class="local-warning-box rounded-[1.5rem]">
                             <i class="bi bi-exclamation-triangle text-amber-500 text-3xl mb-3"></i>
                             <h4 class="text-base font-bold mb-1">Просмотр таблиц Excel на Localhost ограничен</h4>
-                            <p class="text-xs text-slate-400 max-w-md">Внешние онлайн-сервисы просмотра не могут загрузить файл с локального ПК. На реальном сервере таблица отобразится корректно.</p>
+                            <p class="text-xs text-slate-400 max-w-md">Внешние онлайн-сервисы просмотра не могут загрузить файл с локального ПК.</p>
                             <a id="localDownloadFallback" href="#" download class="mt-4 bg-indigo-600 text-white px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2">
                                 <i class="bi bi-download"></i> Скачать файл для проверки
                             </a>
                         </div>
 
                         <div class="document-wrapper h-full" id="documentWrapper">
-                            <div class="drag-overlay" id="dragOverlay">
-                                <div id="draggable-qr-stamp">
-                                    <img id="dynamic-qr-img" src="" class="w-full object-contain pointer-events-none select-none" alt="stamp">
-                                    <div class="stamp-text-footer">
-                                        VERIFIED DOCSIGN<br>
-                                        <span id="stamp-date-node">18.05.2026</span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {{-- Область для вывода структуры документов --}}
-                            <div id="previewViewport" class="w-full h-full rounded-[1.5rem] overflow-hidden bg-white">
-                                <!-- Контент внедряется через JavaScript динамически -->
+                            <div id="previewViewport" class="rounded-xl">
+                                <div id="renderTarget" class="w-full h-full"></div>
                             </div>
                         </div>
                     </div>
@@ -241,8 +193,6 @@
         </form>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/interactjs/dist/interact.min.js"></script>
-
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             const translations = {
@@ -253,7 +203,8 @@
                     btnSign: "Применить штамп",
                     previewLabel: "Предпросмотр",
                     btnFullScreen: "На весь экран",
-                    alertNoDoc: "Выберите документ!"
+                    alertNoDoc: "Выберите документ!",
+                    autoNotice: "Штамп будет наложен автоматически при подписании"
                 },
                 tj: {
                     signingTitle: "Муҳофизат ва QR",
@@ -262,7 +213,8 @@
                     btnSign: "Татбиқ кардани муҳр",
                     previewLabel: "Пешнамоиш",
                     btnFullScreen: "Дар тамоми экран",
-                    alertNoDoc: "Ҳуҷҷатро интихоб кунед!"
+                    alertNoDoc: "Ҳуҷҷатро интихоб кунед!",
+                    autoNotice: "Муҳр ҳангоми имзо ба таври автоматикӣ гузошта мешавад"
                 },
                 en: {
                     signingTitle: "Security & QR",
@@ -271,7 +223,8 @@
                     btnSign: "Apply Stamp",
                     previewLabel: "Preview",
                     btnFullScreen: "Full Screen",
-                    alertNoDoc: "Please select a document!"
+                    alertNoDoc: "Please select a document!",
+                    autoNotice: "The stamp will be applied automatically upon signing"
                 }
             };
 
@@ -286,29 +239,17 @@
             }
             applyTranslations();
 
-            const today = new Date();
-            const dd = String(today.getDate()).padStart(2, '0');
-            const mm = String(today.getMonth() + 1).padStart(2, '0');
-            const yyyy = today.getFullYear();
-            document.getElementById('stamp-date-node').textContent = `${dd}.${mm}.${yyyy}`;
-
             const form = document.getElementById('signatureForm');
             const select = document.getElementById('documentSelect');
             const previewViewport = document.getElementById('previewViewport');
+            const renderTarget = document.getElementById('renderTarget');
             const fullScreenBtn = document.getElementById('fullScreenBtn');
             const formatBadge = document.getElementById('formatBadge');
             const loader = document.getElementById('viewerLoader');
             const qrPayloadInput = document.getElementById('qrPayloadInput');
             const localWarning = document.getElementById('localWarning');
             const localDownloadFallback = document.getElementById('localDownloadFallback');
-
-            const stamp = document.getElementById('draggable-qr-stamp');
-            const stampImg = document.getElementById('dynamic-qr-img');
-            const dragNotice = document.getElementById('dragNotice');
             const wrapper = document.getElementById('documentWrapper');
-
-            let currentX = 0;
-            let currentY = 0;
 
             const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 
@@ -318,22 +259,15 @@
                     const fileUrl = selectedOption.getAttribute('data-file');
                     const type = selectedOption.getAttribute('data-type');
                     const ext = selectedOption.getAttribute('data-ext');
-                    const qrUrl = selectedOption.getAttribute('data-qr-url');
                     const qrText = selectedOption.getAttribute('data-qr-text');
 
                     qrPayloadInput.value = qrText;
                     localWarning.style.display = 'none';
-                    wrapper.style.display = 'block';
+                    wrapper.style.display = 'flex';
                     loader.style.display = 'block';
                     previewViewport.style.opacity = '0.3';
-                    previewViewport.innerHTML = ''; // Очищаем вьюпорт
+                    renderTarget.innerHTML = '';
 
-                    // Сброс позиции штампа
-                    currentX = 0;
-                    currentY = 0;
-                    stamp.style.transform = `translate(0px, 0px)`;
-
-                    // Выставляем индикатор формата
                     formatBadge.textContent = ext.toUpperCase();
                     let badgeColor = 'bg-red-600';
                     if (type === 'word') badgeColor = 'bg-blue-600';
@@ -345,7 +279,6 @@
                     fullScreenBtn.href = fileUrl;
                     fullScreenBtn.classList.remove('hidden');
 
-                    // 1. Локальный рендеринг DOCX файлов (работает везде, включая Localhost)
                     if (ext === 'docx') {
                         fetch(fileUrl)
                             .then(response => {
@@ -355,110 +288,53 @@
                             .then(blob => {
                                 const wordDiv = document.createElement('div');
                                 wordDiv.id = 'word-preview';
-                                previewViewport.appendChild(wordDiv);
+                                renderTarget.appendChild(wordDiv);
 
                                 docx.renderAsync(blob, wordDiv)
                                     .then(() => {
                                         loader.style.display = 'none';
                                         previewViewport.style.opacity = '1';
-                                        showStamp(qrUrl);
                                     });
                             })
                             .catch(err => {
                                 console.error(err);
                                 loader.style.display = 'none';
                                 previewViewport.style.opacity = '1';
-                                previewViewport.innerHTML = `<div class="p-6 text-center text-sm font-semibold text-rose-500">Не удалось отобразить файл DOCX локально.</div>`;
-                                showStamp(qrUrl);
+                                renderTarget.innerHTML = `<div class="p-6 text-center text-sm font-semibold text-rose-500">Не удалось отобразить файл DOCX локально.</div>`;
                             });
                         return;
                     }
 
-                    // 2. Ограничения для Excel на Localhost
                     if (type === 'excel' && isLocal) {
                         loader.style.display = 'none';
                         wrapper.style.display = 'none';
                         localWarning.style.display = 'flex';
                         localDownloadFallback.href = fileUrl;
-                        showStamp(qrUrl);
                         return;
                     }
 
-                    // 3. Стандартный рендеринг остальных файлов в iframe
                     let iframeSrc = '';
                     if (type === 'word' || type === 'excel') {
                         iframeSrc = `https://view.officeapps.live.com/op/view.aspx?src=${encodeURIComponent(fileUrl)}`;
                     } else if (type === 'rtf') {
                         iframeSrc = fileUrl;
                     } else {
-                        iframeSrc = fileUrl + '#toolbar=0&view=FitH';
+                        iframeSrc = fileUrl + '#toolbar=0&navpanes=0&scrollbar=0&view=FitH';
                     }
 
                     const iframe = document.createElement('iframe');
                     iframe.src = iframeSrc;
-                    iframe.className = "w-full h-full border-none";
+                    iframe.className = "w-full h-full border-none block";
                     iframe.frameBorder = "0";
 
                     iframe.onload = () => {
                         loader.style.display = 'none';
                         previewViewport.style.opacity = '1';
-                        showStamp(qrUrl);
                     };
 
-                    previewViewport.appendChild(iframe);
+                    renderTarget.appendChild(iframe);
                 }
             }
-
-            function showStamp(qrUrl) {
-                stamp.style.display = 'block';
-                stampImg.src = qrUrl;
-                dragNotice.classList.remove('hidden');
-                calculateCoordinates();
-            }
-
-            function calculateCoordinates() {
-                if (stamp.style.display === 'block') {
-                    const targetContainer = localWarning.style.display === 'flex' ? localWarning : wrapper;
-                    const parentW = targetContainer.clientWidth || wrapper.clientWidth;
-                    const parentH = targetContainer.clientHeight || wrapper.clientHeight;
-
-                    const leftPx = stamp.offsetLeft + currentX;
-                    const topPx = stamp.offsetTop + currentY;
-
-                    let pctX = (leftPx / parentW) * 100;
-                    let pctY = (topPx / parentH) * 100;
-
-                    pctX = Math.max(0, Math.min(100, pctX));
-                    pctY = Math.max(0, Math.min(100, pctY));
-
-                    document.getElementById('qr_x').value = pctX.toFixed(4);
-                    document.getElementById('qr_y').value = pctY.toFixed(4);
-                }
-            }
-
-            interact('#draggable-qr-stamp').draggable({
-                modifiers: [
-                    interact.modifiers.restrictRect({
-                        restriction: '#viewerContainer',
-                        endOnly: false
-                    })
-                ],
-                listeners: {
-                    start(event) {
-                        document.getElementById('viewerContainer').classList.add('dragging-active');
-                    },
-                    move(event) {
-                        currentX += event.dx;
-                        currentY += event.dy;
-
-                        event.target.style.transform = `translate(${currentX}px, ${currentY}px)`;
-                        calculateCoordinates();
-                    },
-                    end(event) {
-                        document.getElementById('viewerContainer').classList.remove('dragging-active');
-                    }
-                }
-            });
 
             if (select.value && select.value !== "") {
                 updateSelection();
@@ -472,7 +348,6 @@
                     alert(t.alertNoDoc || "Выберите документ!");
                     return;
                 }
-                calculateCoordinates();
             });
         });
     </script>

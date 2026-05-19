@@ -831,13 +831,81 @@
                 color: #fff;
             }
         </style>
+        <style>
+            :root {
+                --primary: #4f46e5;
+                --primary-dark: #4338ca;
+                --accent: #6366f1;
+                --dropdown-bg: #ffffff;
+            }
+
+            /* Поддержка темной темы */
+            .dark .palette-dropdown { background-color: #1e293b; border: 1px solid #334155; }
+            .dark .palette-dropdown h6 { color: #f1f5f9; }
+
+            .palette-dropdown {
+                display: none;
+                position: absolute;
+                right: 0;
+                top: 45px;
+                background: var(--dropdown-bg);
+                padding: 16px;
+                border-radius: 12px;
+                box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.2);
+                z-index: 1000;
+                width: 200px;
+                border: 1px solid #e2e8f0;
+                text-align: center;
+            }
+
+            .palette-dropdown.show { display: block; }
+
+            .palette-dropdown h6 {
+                margin: 0 0 12px 0;
+                font-size: 0.8rem;
+                text-transform: uppercase;
+                letter-spacing: 0.05em;
+                color: #64748b;
+                font-weight: 700;
+            }
+
+            .color-options {
+                display: grid;
+                grid-template-columns: repeat(5, 30px);
+                gap: 10px;
+                justify-content: center;
+            }
+
+            .color-swatch {
+                width: 30px;
+                height: 30px;
+                border-radius: 50%;
+                cursor: pointer;
+                transition: transform 0.2s;
+                border: 2px solid transparent;
+                box-sizing: border-box;
+            }
+
+            .color-swatch:hover { transform: scale(1.1); }
+            .color-swatch.active { border-color: #000; box-shadow: 0 0 0 2px #fff inset; }
+
+            .palette-btn {
+                cursor: pointer;
+                background: transparent;
+                border: none;
+                color: var(--primary);
+                padding: 8px;
+                border-radius: 50%;
+            }
+        </style>
+
         <div class="position-relative">
             <button class="palette-btn" onclick="togglePalette()" title="Theme Colors">
                 <i class="bi bi-palette"></i>
             </button>
             <div class="palette-dropdown" id="paletteDropdown">
                 <h6>Primary Color</h6>
-                <div class="color-options" id="colorOptions">
+                <div class="color-options">
                     <div class="color-swatch active" style="background:#4f46e5" onclick="setColor('#4f46e5','#4338ca','#6366f1',this)"></div>
                     <div class="color-swatch" style="background:#0ea5e9" onclick="setColor('#0ea5e9','#0284c7','#38bdf8',this)"></div>
                     <div class="color-swatch" style="background:#22c55e" onclick="setColor('#22c55e','#16a34a','#4ade80',this)"></div>
@@ -851,6 +919,39 @@
                 </div>
             </div>
         </div>
+
+        <script>
+            function togglePalette() {
+                document.getElementById('paletteDropdown').classList.toggle('show');
+            }
+
+            function setColor(primary, dark, accent, element) {
+                // Применяем новые цвета
+                const root = document.documentElement.style;
+                root.setProperty('--primary', primary);
+                root.setProperty('--primary-dark', dark);
+                root.setProperty('--accent', accent);
+
+                // Сохраняем настройки
+                localStorage.setItem('theme-primary', primary);
+                localStorage.setItem('theme-primary-dark', dark);
+                localStorage.setItem('theme-accent', accent);
+
+                // Обновляем UI (активность)
+                document.querySelectorAll('.color-swatch').forEach(sw => sw.classList.remove('active'));
+                element.classList.add('active');
+
+                // Закрываем
+                document.getElementById('paletteDropdown').classList.remove('show');
+            }
+
+            // Закрытие при клике вне меню
+            document.addEventListener('click', (e) => {
+                if (!e.target.closest('.position-relative')) {
+                    document.getElementById('paletteDropdown').classList.remove('show');
+                }
+            });
+        </script>
 
         <!-- Language Selector -->
         <div class="d-flex align-items-center gap-1">
@@ -1224,7 +1325,7 @@
                 search: "Search", management: "Management", workflow: "Workflow", signatures: "Signatures",
                 versions: "Versions", logs: "Logs", admin: "Admin", users: "Users", notifications: "Notifications",
                 account: "Account", profile: "Profile", settings: "Settings", logout: "Logout",
-                welcomeBack: "Welcdome back {{ strtok(auth()->user()->name, ' ') }} !", dashSubtitle: "Here's what's happening with your documents today.",
+                welcomeBack: "Welcome back {{ strtok(auth()->user()->name, ' ') }} !", dashSubtitle: "Here's what's happening with your documents today.",
                 newDocument: "New Document", totalDocs: "Total Documents", pendingReview: "Pending Review",
                 signed: "Signed", activeUsers: "Active Users", recentDocuments: "Recent Documents", viewAll: "View All",
                 document: "Document", author: "Author", status: "Status", date: "Date", actions: "Actions",

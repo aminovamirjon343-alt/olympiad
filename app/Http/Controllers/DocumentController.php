@@ -27,6 +27,7 @@ class DocumentController extends Controller
     /**
      * Показ всех сигнатур подписей текущего пользователя
      */
+
     public function indexSignatures()
     {
         $user = Auth::user();
@@ -417,7 +418,12 @@ class DocumentController extends Controller
 
         if (!$user->is_admin) {
             $query->where(function($q) use ($user) {
-                $q->where('created_by', $user->id)->orWhere('receiver_id', $user->id);
+                $q->where('created_by', $user->id) // Автор видит свои черновики
+                ->orWhere(function($subQuery) use ($user) {
+                    // Получатель видит только то, что уже перешло в работу (active/completed)
+                    $subQuery->where('receiver_id', $user->id)
+                        ->where('status', '!=', 'draft');
+                });
             });
         }
 
@@ -472,7 +478,7 @@ class DocumentController extends Controller
     {
         $request->validate([
             'title' => 'required|string|max:255',
-            'status' => 'required|in:draft,active,completed',
+            'status' => 'required|in:draft,active', // Убрал completed из создания
             'receiver_email' => 'required|email',
             'file_path'      => 'required|file|mimes:pdf,docx,xlsx,rtf|max:10240',
         ]);
@@ -482,31 +488,31 @@ class DocumentController extends Controller
             return back()->withErrors(['receiver_email' => 'Пользователь не найден!'])->withInput();
         }
 
-        $filePath = $request->file('file_path')
-            ? $request->file('file_path')->store('documents', 'public')
-            : null;
+        $filePath = $request->file('file_path')->store('documents', 'public');
 
-        // Удалена дублирующая колонка user_id, пишем строго в created_by
         $document = Document::create([
             'number' => $request->number,
             'title' => $request->title,
             'content' => $request->content,
             'type' => $request->type ?? 'document',
-            'status' => $request->status,
+            'status' => $request->status, // Сохраняем статус (draft или active)
             'file_path' => $filePath,
             'created_by' => Auth::id(),
             'receiver_id' => $receiver->id,
             'deadline' => $request->deadline,
         ]);
 
+        // Логирование создания
         DocumentLog::create([
             'document_id' => $document->id,
             'user_id' => Auth::id(),
-            'action' => 'сохтан',
-            'description' => "Документ инициализирован в статусе [" . ($request->status == 'draft' ? 'Черновик' : 'Активный') . "]"
+            'action' => 'создание',
+            'description' => "Документ создан в статусе: " . ($request->status === 'draft' ? 'Черновик' : 'Активный')
         ]);
 
-        if ($request->status === 'active') {
+        // КРИТИЧЕСКАЯ ПРОВЕРКА:
+        // Только если статус 'active', мы создаем подписи и уведомляем
+        if ($request->status === 'active')  {
             DocumentSignature::create([
                 'document_id' => $document->id,
                 'user_id' => $receiver->id,
@@ -525,14 +531,13 @@ class DocumentController extends Controller
             DocumentLog::create([
                 'document_id' => $document->id,
                 'user_id' => Auth::id(),
-                'action' => 'навсозӣ',
+                'action' => 'отправка',
                 'description' => "Документ передан на подпись получателю: {$receiver->name}"
             ]);
         }
 
-        return redirect()->route('documents.index')->with('success', 'Документ создан!');
+        return redirect()->route('documents.index')->with('success', 'Документ сохранен как ' . ($request->status === 'draft' ? 'Черновик' : 'Активный'));
     }
-
     /**
      * Скачивание прикрепленного файла
      */
@@ -582,33 +587,53 @@ class DocumentController extends Controller
 
     public function update(Request $request, Document $document)
     {
-        if ($document->created_by !== Auth::id()) abort(403);
+        // 1. Исправленная проверка доступа:
+        // Используем 'created_by' и разрешаем администратору изменять любой документ
+        $isAdmin = auth()->user()->is_admin;
+        $isOwner = (int)$document->created_by === (int)auth()->id();
+
+        if (!$isOwner && !$isAdmin) {
+            abort(403, 'У вас нет прав на изменение этого документа.');
+        }
+
+        // 2. Валидация
+        $request->validate([
+            'number'   => 'nullable|string|max:100',
+            'title'    => 'required|string|max:255',
+            'status'   => 'required|in:draft,active,completed',
+            'deadline' => 'nullable|date',
+            'file_path'=> 'nullable|file|mimes:pdf,docx,xlsx,rtf|max:10240'
+        ]);
 
         $oldStatus = $document->status;
+        $newStatus = $request->input('status');
+
+        // 3. Подготовка данных
         $data = $request->only(['number', 'title', 'content', 'status', 'deadline']);
 
+        // 4. Безопасная обработка файла
         if ($request->hasFile('file_path')) {
-            $request->validate([
-                'file_path' => 'required|file|mimes:pdf,docx,xlsx,rtf|max:10240'
-            ]);
-
-            if ($document->file_path) {
-                Storage::disk('public')->delete($document->file_path);
+            // Удаляем старый файл, если он есть
+            if ($document->file_path && \Illuminate\Support\Facades\Storage::disk('public')->exists($document->file_path)) {
+                \Illuminate\Support\Facades\Storage::disk('public')->delete($document->file_path);
             }
-
             $data['file_path'] = $request->file('file_path')->store('documents', 'public');
         }
 
+        // 5. Обновление документа
         $document->update($data);
 
+        // 6. Логирование изменений
         DocumentLog::create([
             'document_id' => $document->id,
-            'user_id' => Auth::id(),
-            'action' => 'навсозӣ',
-            'description' => 'Внесены изменения в содержимое или параметры документа'
+            'user_id'     => Auth::id(),
+            'action'      => 'навсозӣ',
+            'description' => 'Параметры документа обновлены'
         ]);
 
-        if ($oldStatus === 'draft' && $request->status === 'active') {
+        // 7. Логика перехода из Черновика -> Активен
+        if ($oldStatus === 'draft' && $newStatus === 'active') {
+            // Создаем запись для подписи, если её еще нет
             DocumentSignature::updateOrCreate(
                 ['document_id' => $document->id, 'user_id' => $document->receiver_id],
                 ['signature' => '']
@@ -616,15 +641,14 @@ class DocumentController extends Controller
 
             DocumentLog::create([
                 'document_id' => $document->id,
-                'user_id' => Auth::id(),
-                'action' => 'навсозӣ',
+                'user_id'     => Auth::id(),
+                'action'      => 'навсозӣ',
                 'description' => 'Статус изменен с [Черновик] на [Активный]. Документ отправлен получателю'
             ]);
         }
 
-        return redirect()->route('documents.index')->with('success', 'Документ обновлен!');
+        return redirect()->route('documents.index')->with('success', 'Документ успешно обновлен!');
     }
-
     public function destroy(Document $document)
     {
         if ($document->created_by !== Auth::id() && !Auth::user()->is_admin) {

@@ -24,12 +24,16 @@ class UserFactory extends Factory
      */
     public function definition(): array
     {
+        $names = ['Ali', 'Bakhtiyor', 'Faridun', 'Jamshed', 'Rustam', 'Siyovush', 'Dilshod', 'Umed', 'Parviz', 'Firuz', 'Manucher', 'Shavkat', 'Zafar', 'Komil', 'Firdavs'];
+        $name = $this->faker->randomElement($names);
+
         return [
-            'name' => fake()->name(),
-            'email' => fake()->unique()->safeEmail(),
-            'email_verified_at' => now(),
-            'password' => static::$password ??= Hash::make('password'),
-            'remember_token' => Str::random(10),
+            'name' => $name,
+            'email' => strtolower($name) . $this->faker->unique()->numberBetween(100, 999) . '@email.tj',
+            'password' => \Illuminate\Support\Facades\Hash::make('1404trend'),
+            'role' => $this->faker->randomElement(['admin', 'employee', 'director', 'user']),
+            'company' => 'StartCoding',
+            'phone' => '+992' . $this->faker->numerify('9#######'),
         ];
     }
 

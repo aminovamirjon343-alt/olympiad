@@ -2,8 +2,11 @@
 
 @section('content')
     @php
-        // Проверяем, является ли текущий пользователь владельцем документа
-        $isOwner = auth()->id() === $document->user_id;
+        // Исправлено: приводим оба значения к (int) для надежного сравнения
+        // Также используем 'created_by', так как это поле используется в вашем контроллере
+        $ownerId = (int) ($document->created_by ?? 0);
+        $currentUserId = (int) auth()->id();
+        $isOwner = ($currentUserId === $ownerId);
     @endphp
 
     <div class="min-h-[calc(100vh-64px)] bg-slate-50 py-10 px-4 md:px-8 font-inter text-slate-900">

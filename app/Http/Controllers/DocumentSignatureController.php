@@ -14,7 +14,6 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\DB;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
-// Импортируем классы PHPWord для работы со штампами в DOCX
 use PhpOffice\PhpWord\PhpWord;
 use PhpOffice\PhpWord\IOFactory;
 use Exception;
@@ -58,7 +57,6 @@ class DocumentSignatureController extends Controller
         $signer = Auth::user();
         $creator = $document->user;
 
-        // Проверка очереди подписания (Workflow)
         $currentWorkflow = DocumentWorkflow::where('document_id', $document->id)
             ->where('status', 'pending')
             ->orderBy('step_order', 'asc')
@@ -76,26 +74,17 @@ class DocumentSignatureController extends Controller
         $sentDate = $document->created_at ? $document->created_at->format('d.m.Y H:i') : now()->format('d.m.Y H:i');
         $signedDate = now()->format('d.m.Y H:i:s');
 
-        // Сборка метаданных для QR-кода
-        $qrData = "DocSign | ";
-        $qrData .= "DOC: {$document->title} | ";
-        $qrData .= "SENDER: {$senderName} ({$senderEmail}) | ";
-        $qrData .= "SIGNED BY: {$signerName} ({$signerEmail}) | ";
-        $qrData .= "SENT AT: {$sentDate} | ";
-        $qrData .= "SIGNED AT: {$signedDate}";
-
+        $qrData = "DocSign | DOC: {$document->title} | SENDER: {$senderName} ({$senderEmail}) | SIGNED BY: {$signerName} ({$signerEmail}) | SENT AT: {$sentDate} | SIGNED AT: {$signedDate}";
         $extension = strtolower(pathinfo($document->file_path, PATHINFO_EXTENSION));
 
+        $redirectType = 'other';
+
         try {
-            return DB::transaction(function () use ($document, $signer, $currentWorkflow, $qrData, $request, $extension) {
+            DB::transaction(function () use ($document, $signer, $currentWorkflow, $qrData, $extension, &$redirectType) {
 
-                // 🔥 1. МОДИФИКАЦИЯ И ВНЕДРЕНИЕ ШТАМПА В ДОКУМЕНТЫ WORD (.DOCX) - КАК В PDF
                 if ($extension === 'docx') {
-
-                    // Вызываем логику физического изменения Word файла
                     $result = $this->processDocxSigning($document, $qrData);
 
-                    // Сохраняем информацию о подписи в БД
                     DocumentSignature::updateOrCreate(
                         ['document_id' => $document->id, 'user_id' => $signer->id],
                         ['signature' => $result['qr_path'], 'signed_at' => now()]
@@ -103,20 +92,19 @@ class DocumentSignatureController extends Controller
 
                     $this->processWorkflow($document, $currentWorkflow, $signer);
 
-                    // Переопределяем file_path документа на новый подписанный файл
                     $document->update([
                         'file_path' => $result['docx_path'],
                         'status'    => ($this->isLastStep($document)) ? 'completed' : 'processing'
                     ]);
 
-                    $this->logAction($document->id, 'signed', "В структуру файла DOCX внедрен штамп подписи: {$signer->name}");
+                    $this->logAction($document->id, 'signed', "Автоштамп подписи (последняя страница, угол) добавлен в DOCX: {$signer->name}");
 
-                    return redirect()->route('signatures.index')->with('success', 'Документ Word успешно подписан, штамп внедрен в файл!');
+                    $redirectType = 'docx';
+                    return;
                 }
 
-                // 🔥 2. СЛИЯНИЕ ШТАМПА С PDF ФАЙЛОМ
                 if ($extension === 'pdf') {
-                    $result = $this->processPdfSigning($document, $qrData, $request);
+                    $result = $this->processPdfSigning($document, $qrData);
 
                     DocumentSignature::updateOrCreate(
                         ['document_id' => $document->id, 'user_id' => $signer->id],
@@ -130,14 +118,14 @@ class DocumentSignatureController extends Controller
                         'status'    => ($this->isLastStep($document)) ? 'completed' : 'processing'
                     ]);
 
-                    $this->logAction($document->id, 'signed', "В файл PDF внедрен штамп подписи: {$signer->name}");
+                    $this->logAction($document->id, 'signed', "Автоштамп подписи (последняя страница, угол) внедрен в PDF: {$signer->name}");
 
-                    return redirect()->route('signatures.index')->with('success', 'Документ PDF успешно подписан и обновлен!');
+                    $redirectType = 'pdf';
+                    return;
                 }
 
-                // 🔥 3. ОБРАБОТКА ТАБЛИЦ EXCEL И ОСТАЛЬНЫХ ФОРМАТОВ (XLSX, XLS, RTF)
+                // Обработка EXCEL и остальных форматов (Генерация простого QR-кода)
                 $permanentQrName = 'signatures/qr_' . time() . '.svg';
-
                 $publicSigsPath = storage_path('app/public/signatures');
                 if (!File::exists($publicSigsPath)) {
                     File::makeDirectory($publicSigsPath, 0755, true, true);
@@ -153,17 +141,21 @@ class DocumentSignatureController extends Controller
 
                 $this->processWorkflow($document, $currentWorkflow, $signer);
 
-                $document->update([
-                    'status' => ($this->isLastStep($document)) ? 'completed' : 'processing'
-                ]);
-
-                $this->logAction($document->id, 'signed', "Документ Excel/Таблица (" . strtoupper($extension) . ") подписан в системе: {$signer->name}");
-
-                return redirect()->route('signatures.index')->with('success', 'Документ успешно подписан электронным штампом!');
+                $document->update(['status' => ($this->isLastStep($document)) ? 'completed' : 'processing']);
+                $this->logAction($document->id, 'signed', "Документ Excel подписан системой: {$signer->name}");
             });
+
+            if ($redirectType === 'docx') {
+                return redirect()->route('signatures.index')->with('success', 'Документ Word успешно подписан!');
+            } elseif ($redirectType === 'pdf') {
+                return redirect()->route('signatures.index')->with('success', 'Документ PDF успешно подписан!');
+            }
+
+            return redirect()->route('signatures.index')->with('success', 'Документ успешно подписан!');
+
         } catch (Exception $e) {
-            \Log::error("Ошибка сохранения подписи DocSign: " . $e->getMessage() . " в файле " . $e->getFile() . ":" . $e->getLine());
-            return back()->withInput()->with('error', 'Критическая ошибка сохранения: ' . $e->getMessage());
+            \Log::error("Ошибка автоматического сохранения подписи: " . $e->getMessage());
+            return back()->with('error', 'Критическая ошибка: ' . $e->getMessage());
         }
     }
 
@@ -195,60 +187,54 @@ class DocumentSignatureController extends Controller
         $qrData = "DocSign (UPDATED) | DOC: {$document->title} | SENDER: {$senderName} ({$senderEmail}) | SIGNED BY: {$signerName} ({$signerEmail}) | SENT AT: {$sentDate} | SIGNED AT: {$signedDate}";
         $extension = strtolower(pathinfo($document->file_path, PATHINFO_EXTENSION));
 
-        try {
-            return DB::transaction(function () use ($qrData, $signature, $request, $document, $extension) {
+        $redirectType = 'other';
 
-                // Обновление подписи для DOCX
+        try {
+            return DB::transaction(function () use ($qrData, $signature, $document, $extension, &$redirectType) {
+
                 if ($extension === 'docx') {
-                    if ($signature->signature) {
-                        Storage::disk('public')->delete($signature->signature);
-                    }
-                    if ($document->file_path) {
-                        Storage::disk('public')->delete($document->file_path);
-                    }
+                    if ($signature->signature) Storage::disk('public')->delete($signature->signature);
+                    if ($document->file_path) Storage::disk('public')->delete($document->file_path);
 
                     $result = $this->processDocxSigning($document, $qrData);
 
                     $document->update(['file_path' => $result['docx_path']]);
-                    $signature->update([
-                        'signature' => $result['qr_path'],
-                        'signed_at' => now(),
-                    ]);
+                    $signature->update(['signature' => $result['qr_path'], 'signed_at' => now()]);
 
-                    return redirect()->route('signatures.show', $signature->id)->with('success', 'Файл Word и штамп обновлены!');
+                    $redirectType = 'docx';
+                    return;
                 }
 
-                // Обновление подписи для PDF
                 if ($extension === 'pdf') {
-                    $result = $this->processPdfSigning($document, $qrData, $request);
+                    if ($signature->signature) Storage::disk('public')->delete($signature->signature);
+                    if ($document->file_path) Storage::disk('public')->delete($document->file_path);
 
-                    Storage::disk('public')->delete([$document->file_path, $signature->signature]);
+                    $result = $this->processPdfSigning($document, $qrData);
 
                     $document->update(['file_path' => $result['pdf_path']]);
-                    $signature->update([
-                        'signature' => $result['qr_path'],
-                        'signed_at' => now(),
-                    ]);
+                    $signature->update(['signature' => $result['qr_path'], 'signed_at' => now()]);
 
-                    return redirect()->route('signatures.show', $signature->id)->with('success', 'Файл PDF и штамп обновлены!');
+                    $redirectType = 'pdf';
+                    return;
                 }
 
-                // Обновление подписи для Excel и прочих
-                if ($signature->signature) {
-                    Storage::disk('public')->delete($signature->signature);
-                }
+                if ($signature->signature) Storage::disk('public')->delete($signature->signature);
 
                 $permanentQrName = 'signatures/qr_' . time() . '.svg';
                 $qrCodeSvg = QrCode::format('svg')->size(300)->margin(1)->generate($qrData);
                 File::put(storage_path('app/public/' . $permanentQrName), $qrCodeSvg);
 
-                $signature->update([
-                    'signature' => $permanentQrName,
-                    'signed_at' => now(),
-                ]);
-
-                return redirect()->route('signatures.show', $signature->id)->with('success', 'Данные подписи обновлены!');
+                $signature->update(['signature' => $permanentQrName, 'signed_at' => now()]);
             });
+
+            if ($redirectType === 'docx') {
+                return redirect()->route('signatures.show', $signature->id)->with('success', 'Файл Word автоматически переподписан!');
+            } elseif ($redirectType === 'pdf') {
+                return redirect()->route('signatures.show', $signature->id)->with('success', 'Файл PDF автоматически обновлен!');
+            }
+
+            return redirect()->route('signatures.show', $signature->id)->with('success', 'Данные подписи обновлены!');
+
         } catch (Exception $e) {
             return back()->with('error', 'Ошибка обновления: ' . $e->getMessage());
         }
@@ -258,7 +244,6 @@ class DocumentSignatureController extends Controller
         if (!Auth::user()->is_admin && $signature->user_id !== Auth::id()) abort(403);
 
         $extension = strtolower(pathinfo($signature->document->file_path, PATHINFO_EXTENSION));
-        // Удаляем файлы с диска как для PDF, так и для DOCX
         if (in_array($extension, ['pdf', 'docx'])) {
             Storage::disk('public')->delete($signature->document->file_path);
         }
@@ -272,165 +257,91 @@ class DocumentSignatureController extends Controller
     }
 
     /**
-     * МОДЕРНИЗИРОВАННАЯ логика DOCX: Создает штамп ТОЧНО КАК В PDF (Компактный квадрат поверх текста)
+     * АВТОМАТИЧЕСКАЯ УСТАНОВКА ШТАМПА В УГОЛ НА ПОСЛЕДНЕЙ СТРАНИЦЕ DOCX
      */
-    /**
-     * МОДЕРНИЗИРОВАННАЯ логика DOCX: Исправлено позиционирование штампа (как в PDF)
-     */
-    /**
-     * МОДЕРНИЗИРОВАННАЯ логика DOCX: Исправлена ошибка с константой WIDTH_BIT.
-     * Штамп идет строго за текстом компактным квадратом.
-     */
-    /**
-     * МОДЕРНИЗИРОВАННАЯ логика DOCX: Штамп создается ГОРИЗОНТАЛЬНЫМ (двухколоночным),
-     * полностью повторяя структуру штампа из PDF.
-     */
-    /**
-     * МОДЕРНИЗИРОВАННАЯ логика DOCX: Штамп ставится точно по координатам перетаскивания (qr_x, qr_y)
-     */
-    private function processDocxSigning($document, $qrPayload, Request $request = null)
+    private function processDocxSigning($document, $qrPayload)
     {
         $originalPath = storage_path('app/public/' . $document->file_path);
         if (!File::exists($originalPath)) {
-            throw new Exception("Исходный файл Word не найден по пути: " . $originalPath);
+            throw new Exception("Исходный файл Word не найден.");
         }
 
-        // 1. Создаем временную директорию для PNG штампа
         $tempDir = storage_path('app/temp_sigs');
-        if (!File::exists($tempDir)) {
-            File::makeDirectory($tempDir, 0755, true);
-        }
-        $tempQrPath = $tempDir . '/' . uniqid() . '.png';
+        if (!File::exists($tempDir)) File::makeDirectory($tempDir, 0755, true);
 
-        // Стабильное получение QR-кода через API
+        $tempQrPath = $tempDir . '/' . uniqid() . '_qr.png';
+        $tempStampPath = $tempDir . '/' . uniqid() . '_stamp.png';
+
+        // 1. Скачивание QR-кода
         $qrApiUrl = "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=" . urlencode($qrPayload);
-        $ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL, $qrApiUrl);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
-        curl_setopt($ch, CURLOPT_TIMEOUT, 10);
-        $content = curl_exec($ch);
-        curl_close($ch);
-
-        if (!$content) {
-            $content = @file_get_contents($qrApiUrl);
-        }
-        if (!$content) {
-            throw new Exception("Не удалось сгенерировать PNG штамп для Word.");
-        }
+        $content = @file_get_contents($qrApiUrl);
+        if (!$content) throw new Exception("Не удалось сгенерировать базовый QR-код.");
         File::put($tempQrPath, $content);
 
-        // 2. Загружаем документ Word
-        try {
-            $phpWord = IOFactory::load($originalPath);
-        } catch (Exception $e) {
-            $phpWord = new PhpWord();
-        }
+        // 2. Генерация штампа через GD
+        $stampW = 220; $stampH = 260;
+        $im = imagecreatetruecolor($stampW, $stampH);
+        imagefill($im, 0, 0, imagecolorallocate($im, 255, 255, 255));
+        $black = imagecolorallocate($im, 0, 0, 0);
 
+        imagerectangle($im, 0, 0, $stampW - 1, $stampH - 1, $black);
+
+        $qrSource = imagecreatefrompng($tempQrPath);
+        imagecopyresampled($im, $qrSource, 20, 15, 0, 0, 180, 180, 300, 300);
+        imagedestroy($qrSource);
+
+        imagestring($im, 3, 50, 210, "VERIFIED DOCSIGN", $black);
+        imagestring($im, 3, 60, 230, now()->format('d.m.Y H:i'), $black);
+
+        imagepng($im, $tempStampPath);
+        imagedestroy($im);
+
+        // 3. Интеграция в PHPWord
+        $phpWord = IOFactory::load($originalPath);
         $sections = $phpWord->getSections();
-        $section = count($sections) > 0 ? $sections[count($sections) - 1] : $phpWord->addSection();
+        $section = count($sections) > 0 ? end($sections) : $phpWord->addSection();
 
-        // 3. ТОЧНЫЙ РАСЧЕТ КООРДИНАТ (Перевод процентов с фронтенда в Твипы Word)
-        // Стандартный лист А4 в PHPWord: 11906 x 16838 twips
-        $pageW = 11906;
-        $pageH = 16838;
-
-        // Компактная фиксированная ширина штампа-кубика (около 3.5 см = ~2000 twips)
-        $stampWidthTwips = 2000;
-
-        if ($request && $request->filled('qr_x') && $request->filled('qr_y') && $request->input('qr_x') !== 'NaN') {
-            $pctX = (float)$request->input('qr_x');
-            $pctY = (float)$request->input('qr_y');
-
-            $x = ($pctX / 100) * $pageW;
-            $y = ($pctY / 100) * $pageH;
-        } else {
-            // Если координаты не пришли, аккуратно смещаем в правый нижний угол
-            $margin = 850;
-            $x = $pageW - $stampWidthTwips - $margin;
-            $y = $pageH - $stampWidthTwips - $margin;
-        }
-
-        // Защита от вылета за границы страницы листа (как в PDF контроллере)
-        if ($x > ($pageW - $stampWidthTwips)) $x = $pageW - $stampWidthTwips;
-        if ($y > ($pageH - $stampWidthTwips)) $y = $pageH - $stampWidthTwips;
-        if ($x < 0) $x = 0;
-        if ($y < 0) $y = 0;
-
-        // 4. СТРОИМ ВЕРТИКАЛЬНЫЙ ШТАМП-КУБИК (Вариант 2)
-        $tableStyle = [
-            'borderColor'  => '000000', // Черная или темно-синяя строгая рамка, как на скриншоте 2
-            'borderSize'   => 8,         // Толщина рамки
-            'cellMargin'   => 50,        // Минимальные внутренние отступы
-            'position'     => [
-                'posHorizontal' => 'left',
-                'posVertical'   => 'top',
-                'horzAnchor'    => 'page',  // Считаем абсолютно от краев страницы
-                'vertAnchor'    => 'page',
-                'leftFromText'  => (int)$x,
-                'topFromText'   => (int)$y,
-                'overlap'       => 'never'
-            ]
-        ];
-
-        $table = $section->addTable($tableStyle);
-
-        // Ряд 1: Большой QR-код сверху
-        $row1 = $table->addRow();
-        $cell1 = $row1->addCell($stampWidthTwips);
-        $cell1->addImage($tempQrPath, [
-            'width'     => 75, // Оптимальный размер картинки внутри рамки
-            'height'    => 75,
-            'alignment' => \PhpOffice\PhpWord\SimpleType\Jc::CENTER
+        // ВАЖНО: используем $tempStampPath (локальный файл), а не $permanentQrName
+        $section->addImage($tempStampPath, [
+            'width'            => 90,
+            'height'           => 105,
+            'positioning'      => \PhpOffice\PhpWord\Style\Image::POSITION_ABSOLUTE,
+            'posHorizontal'    => \PhpOffice\PhpWord\Style\Image::POSITION_HORIZONTAL_RIGHT,
+            'posHorizontalRel' => \PhpOffice\PhpWord\Style\Image::POSITION_RELATIVE_TO_PAGE,
+            'posVertical'      => \PhpOffice\PhpWord\Style\Image::POSITION_VERTICAL_BOTTOM,
+            'posVerticalRel'   => \PhpOffice\PhpWord\Style\Image::POSITION_RELATIVE_TO_PAGE,
+            'marginLeft'       => -20,
+            'marginTop'        => -20,
+            'wrappingStyle'    => \PhpOffice\PhpWord\Style\Image::WRAPPING_STYLE_BEHIND
         ]);
 
-        // Ряд 2: Текст верификации (Строго под QR по центру)
-        $row2 = $table->addRow();
-        $cell2 = $row2->addCell($stampWidthTwips);
-        $cell2->addText(
-            "VERIFIED DOCSIGN",
-            ['bold' => true, 'size' => 6, 'color' => '1A365D'],
-            ['alignment' => \PhpOffice\PhpWord\SimpleType\Jc::CENTER, 'spaceBefore' => 30, 'spaceAfter' => 10]
-        );
-
-        // Ряд 3: Дата подписания без лишнего текста
-        $row3 = $table->addRow();
-        $cell3 = $row3->addCell($stampWidthTwips);
-        $cell3->addText(
-            now()->format('d.m.Y H:i'),
-            ['size' => 5.5, 'color' => '505050'],
-            ['alignment' => \PhpOffice\PhpWord\SimpleType\Jc::CENTER, 'spaceAfter' => 20]
-        );
-
-        // 5. Сохранение и финализация путей
-        $newFileName = 'documents/signed_' . time() . '.docx';
-        $permanentQrName = 'signatures/qr_' . time() . '.png';
+        // 4. Сохранение
+        $time = time();
+        $newFileName = 'documents/signed_' . $time . '.docx';
+        $permanentQrName = 'signatures/qr_' . $time . '.png';
 
         $objWriter = IOFactory::createWriter($phpWord, 'Word2007');
         $objWriter->save(storage_path('app/public/' . $newFileName));
 
+        // 5. Перенос файлов
         $publicSigsPath = storage_path('app/public/signatures');
-        if (!File::exists($publicSigsPath)) {
-            File::makeDirectory($publicSigsPath, 0755, true, true);
-        }
-        File::move($tempQrPath, storage_path('app/public/' . $permanentQrName));
+        if (!File::exists($publicSigsPath)) File::makeDirectory($publicSigsPath, 0755, true, true);
 
-        return [
-            'docx_path' => $newFileName,
-            'qr_path'   => $permanentQrName
-        ];
+        File::move($tempStampPath, storage_path('app/public/' . $permanentQrName));
+        if (File::exists($tempQrPath)) File::delete($tempQrPath);
+
+        return ['docx_path' => $newFileName, 'qr_path' => $permanentQrName];
     }
     /**
-     * Приватная логика слияния штампа с PDF файлом
+     * АВТОМАТИЧЕСКАЯ УСТАНОВКА ШТАМПА СТРОГО НА ПОСЛЕДНЮЮ СТРАНИЦУ В ПРАВЫЙ НИЖНИЙ УГОЛ PDF
      */
-    private function processPdfSigning($document, $qrPayload, Request $request = null)
+    private function processPdfSigning($document, $qrPayload)
     {
         $tempDir = storage_path('app/temp_sigs');
         if (!File::exists($tempDir)) File::makeDirectory($tempDir, 0755, true);
         $tempImgPath = $tempDir . '/' . uniqid() . '.png';
 
         $qrApiUrl = "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=" . urlencode($qrPayload);
-
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_URL, $qrApiUrl);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
@@ -439,15 +350,12 @@ class DocumentSignatureController extends Controller
         $content = curl_exec($ch);
         curl_close($ch);
 
-        if (!$content) {
-            $content = @file_get_contents($qrApiUrl);
-        }
-
-        if (!$content) throw new Exception("Ошибка API QR-кодов. Не удалось получить штамп.");
+        if (!$content) $content = @file_get_contents($qrApiUrl);
+        if (!$content) throw new Exception("Не удалось сгенерировать штамп.");
         File::put($tempImgPath, $content);
 
         $originalPath = storage_path('app/public/' . $document->file_path);
-        if (!File::exists($originalPath)) throw new Exception("Файл PDF не найден по пути: " . $originalPath);
+        if (!File::exists($originalPath)) throw new Exception("Файл PDF не найден.");
 
         $pdf = new \setasign\Fpdi\Tcpdf\Fpdi();
         $pdf->setPrintHeader(false);
@@ -455,59 +363,43 @@ class DocumentSignatureController extends Controller
         $pdf->SetAutoPageBreak(false);
 
         $pageCount = $pdf->setSourceFile($originalPath);
-        $targetPage = ($request && $request->filled('target_page')) ? (int)$request->input('target_page') : $pageCount;
 
         for ($pageNo = 1; $pageNo <= $pageCount; $pageNo++) {
             $templateId = $pdf->importPage($pageNo);
             $size = $pdf->getTemplateSize($templateId);
+
             $pdf->AddPage($size['orientation'], [$size['width'], $size['height']]);
             $pdf->useTemplate($templateId);
 
-            if ($pageNo === $targetPage) {
-                $stampW = 35;
+            if ($pageNo === $pageCount) {
+                $stampW = 30;
                 $stampH = 35;
-                $qrSize = 25;
+                $qrSize = 22;
 
-                if ($request && $request->filled('qr_x') && $request->filled('qr_y') && $request->input('qr_x') !== 'NaN') {
-                    $pctX = (float)$request->input('qr_x');
-                    $pctY = (float)$request->input('qr_y');
+                $marginRight = 5;
+                $marginBottom = 5;
 
-                    $x = ($pctX / 100) * $size['width'];
-                    $y = ($pctY / 100) * $size['height'];
-                } else {
-                    $margin = 15;
-                    $x = $size['width'] - $stampW - $margin;
-                    $y = $size['height'] - $stampH - $margin;
-                }
-
-                if ($x > ($size['width'] - $stampW)) $x = $size['width'] - $stampW;
-                if ($y > ($size['height'] - $stampH)) $y = $size['height'] - $stampH;
-                if ($x < 0) $x = 0;
-                if ($y < 0) $y = 0;
+                $x = $size['width'] - $stampW - $marginRight;
+                $y = $size['height'] - $stampH - $marginBottom;
 
                 $pdf->setCellPaddings(0, 0, 0, 0);
-
-                $brandColorR = 26;
-                $brandColorG = 54;
-                $brandColorB = 93;
-
                 $pdf->SetFillColor(255, 255, 255);
                 $pdf->Rect($x, $y, $stampW, $stampH, 'F');
 
-                $pdf->SetDrawColor($brandColorR, $brandColorG, $brandColorB);
+                $pdf->SetDrawColor(0, 0, 0);
                 $pdf->SetLineWidth(0.3);
                 $pdf->Rect($x, $y, $stampW, $stampH, 'D');
 
-                $pdf->Image($tempImgPath, $x + 5, $y + 2, $qrSize, $qrSize, 'PNG');
+                $pdf->Image($tempImgPath, $x + 4, $y + 3, $qrSize, $qrSize, 'PNG');
 
-                $pdf->SetFont('helvetica', 'B', 5);
-                $pdf->SetTextColor($brandColorR, $brandColorG, $brandColorB);
-                $pdf->SetXY($x, $y + $qrSize + 3);
+                $pdf->SetFont('courier', 'B', 5);
+                $pdf->SetTextColor(0, 0, 0);
+                $pdf->SetXY($x, $y + $qrSize + 4.5);
                 $pdf->Cell($stampW, 2.5, "VERIFIED DOCSIGN", 0, 0, 'C');
 
-                $pdf->SetFont('helvetica', '', 4.5);
-                $pdf->SetTextColor(80, 80, 80);
-                $pdf->SetXY($x, $y + $qrSize + 5.5);
+                $pdf->SetFont('courier', 'B', 4.5);
+                $pdf->SetTextColor(0, 0, 0);
+                $pdf->SetXY($x, $y + $qrSize + 7);
                 $pdf->Cell($stampW, 2.5, now()->format('d.m.Y H:i'), 0, 0, 'C');
             }
         }
@@ -518,10 +410,7 @@ class DocumentSignatureController extends Controller
         $pdf->Output(storage_path('app/public/' . $newFileName), 'F');
 
         $publicSigsPath = storage_path('app/public/signatures');
-        if (!File::exists($publicSigsPath)) {
-            File::makeDirectory($publicSigsPath, 0755, true, true);
-        }
-
+        if (!File::exists($publicSigsPath)) File::makeDirectory($publicSigsPath, 0755, true, true);
         File::move($tempImgPath, storage_path('app/public/' . $permanentQrName));
 
         return ['pdf_path' => $newFileName, 'qr_path' => $permanentQrName];
@@ -530,7 +419,6 @@ class DocumentSignatureController extends Controller
     private function isLastStep($document) {
         $hasWorkflow = DocumentWorkflow::where('document_id', $document->id)->exists();
         if (!$hasWorkflow) return true;
-
         return !DocumentWorkflow::where('document_id', $document->id)->where('status', 'pending')->exists();
     }
 
@@ -546,15 +434,11 @@ class DocumentSignatureController extends Controller
     private function processWorkflow($document, $currentWorkflow, $signer) {
         if ($currentWorkflow) {
             $currentWorkflow->update(['status' => 'approved']);
-
             $next = DocumentWorkflow::where('document_id', $document->id)
                 ->where('step_order', '>', $currentWorkflow->step_order)
                 ->orderBy('step_order')
                 ->first();
-
-            if ($next) {
-                $next->update(['status' => 'pending']);
-            }
+            if ($next) $next->update(['status' => 'pending']);
         }
     }
 }

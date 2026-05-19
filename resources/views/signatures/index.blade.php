@@ -185,8 +185,8 @@
                         <div class="px-6 py-4 border-t border-black/5 dark:border-white/5 flex justify-center gap-6 bg-black/[0.02] dark:bg-white/[0.02]">
                             <a href="{{ route('signatures.show', $s->id) }}" class="text-indigo-500 hover:text-indigo-700 action-link" data-i18n="linkOpen">Открыть</a>
                             @if(auth()->user()->is_admin || auth()->id() === $s->user_id)
-                                <a href="{{ route('signatures.edit', $s->id) }}" class="text-amber-500 hover:text-amber-600 action-link" data-i18n="linkEdit">Правка</a>
-                                <form action="{{ route('signatures.destroy', $s->id) }}" method="POST" class="inline">
+{{--                                <a href="{{ route('signatures.edit', $s->id) }}" class="text-amber-500 hover:text-amber-600 action-link" data-i18n="linkEdit">Правка</a>--}}
+                               <form action="{{ route('signatures.destroy', $s->id) }}" method="POST" class="inline">
                                     @csrf @method('DELETE')
                                     <button type="submit" class="text-rose-500 hover:text-rose-700 action-link" data-i18n="linkDelete" onclick="return confirm('Удалить?')">Удалить</button>
                                 </form>

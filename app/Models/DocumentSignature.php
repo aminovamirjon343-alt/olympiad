@@ -2,10 +2,12 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class DocumentSignature extends Model
 {
+    use HasFactory;
     protected $fillable = [
         'document_id', 'user_id', 'signature', 'signed_at', 'expires_at' //
     ];
