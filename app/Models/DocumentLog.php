@@ -23,14 +23,12 @@ class DocumentLog extends Model
         return $this->belongsTo(User::class);
     }
 
-    /**
-     * 🔥 Быстрая запись лога в систему
-     */
+
     public static function write($documentId, $action, $description = null)
     {
         return self::create([
             'document_id' => $documentId,
-            'user_id'     => auth()->id(), // Автоматически берем ID текущего юзера
+            'user_id'     => auth()->id(),
             'action'      => $action,
             'description' => $description,
         ]);

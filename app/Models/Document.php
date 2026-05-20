@@ -14,7 +14,6 @@ class Document extends Model
 {
     use SoftDeletes;
     use HasFactory;
-    // Константы статусов
     const STATUS_DRAFT = 'draft';
     const STATUS_ACTIVE = 'active';
     const STATUS_REJECTED = 'rejected';
@@ -36,92 +35,73 @@ class Document extends Model
         'deadline' => 'datetime',
     ];
 
-    /**
-     * Scope: Фильтрация документов в зависимости от роли (Админ или Сотрудник)
-     */
+
     public function scopeVisibleToAuth($query)
     {
         $user = Auth::user();
 
         if (!$user) return $query->whereRaw('1 = 0'); // Если не залогинен — ничего не показывать
 
-        // Если админ — видит всё (фильтр не добавляем)
         if ($user->is_admin) {
             return $query;
         }
 
-        // Если обычный пользователь — только свои или входящие
         return $query->where(function($q) use ($user) {
-            // 1. Автор видит свои документы в любом статусе (даже черновики)
-            $q->where('created_by', $user->id)
-                // 2. А получатель видит документ ТОЛЬКО если статус НЕ черновик
-                ->orWhere(function($subQ) use ($user) {
-                    $subQ->where('receiver_id', $user->id)
-                        ->where('status', '!=', self::STATUS_DRAFT);
+            $q->where('created_by', $user->id)->orWhere(function($subQ) use ($user) {
+                    $subQ->where('receiver_id', $user->id)->where('status', '!=', self::STATUS_DRAFT);
                 });
         });
     }
 
-    /**
-     * Отношения
-     */
-
-    // Кто создал (автор)
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
     }
 
-    // Тот же автор (алиас для удобства)
     public function createdBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
     }
 
-    // Получатель документа
+
     public function receiver(): BelongsTo
     {
         return $this->belongsTo(User::class, 'receiver_id');
     }
 
-    // Подписи к документу
+
     public function signatures(): HasMany
     {
         return $this->hasMany(DocumentSignature::class);
     }
 
-    // Логи действий
     public function logs(): HasMany
     {
         return $this->hasMany(DocumentLog::class);
     }
 
-    /**
-     * Хелперы проверки состояния
-     */
+
 
     public function isDraft(): bool
     {
         return $this->status === self::STATUS_DRAFT;
     }
 
-    // Ожидает подписи (Активен, но подписи еще нет)
+
     public function isWaiting(): bool
     {
         return $this->status === self::STATUS_ACTIVE &&
             !$this->signatures()->where('signature', '!=', '')->exists();
     }
 
-    // Подписан (Активен И есть подпись)
+
     public function isSigned(): bool
     {
         return $this->status === self::STATUS_ACTIVE &&
             $this->signatures()->where('signature', '!=', '')->exists();
     }
 
-    /**
-     * Проверка прав доступа к конкретному документу
-     */
+
     public function canManage(): bool
     {
         $user = Auth::user();
@@ -131,11 +111,8 @@ class Document extends Model
         return $user->is_admin || $this->created_by === $user->id;
     }
 
-    /**
-     * Аксессоры для UI (Бейджи и Тексты)
-     */
 
-    // Текстовая метка статуса
+
     public function getStatusLabelAttribute(): string
     {
         if ($this->status === self::STATUS_DRAFT) return 'ЧЕРНОВИК';
@@ -144,7 +121,7 @@ class Document extends Model
         return $this->isSigned() ? 'ПОДПИСАН' : 'ОЖИДАЕТ';
     }
 
-    // CSS Классы для Tailwind
+
     public function getStatusStyleAttribute(): string
     {
         if ($this->status === self::STATUS_DRAFT) {

@@ -15,24 +15,19 @@ use Carbon\Carbon;
 
 class ProfileController extends Controller
 {
-    /**
-     * Отображение профиля с активностью за месяц
-     */
+
     public function show(Request $request): View
     {
         $user = $request->user();
         $year = (int) $request->get('year', now()->year);
 
-        // 1. Настройка дат и расчет недель для сетки
-        $firstDayOfYear = Carbon::create($year, 1, 1);
+       $firstDayOfYear = Carbon::create($year, 1, 1);
         $startDate = $firstDayOfYear->copy()->startOfWeek(Carbon::MONDAY);
         $endDate = Carbon::create($year, 12, 31)->endOfWeek(Carbon::SUNDAY);
 
-        // Вычисляем количество недель для сетки
         $totalDays = $startDate->diffInDays($endDate) + 1;
         $weeksCount = (int) ceil($totalDays / 7);
 
-        // 2. Получение активности (используем правильную колонку created_by)
         $activityData = Document::where('created_by', $user->id)
             ->whereYear('created_at', $year)
             ->selectRaw('DATE(created_at) as date, COUNT(*) as count')
@@ -53,14 +48,12 @@ class ProfileController extends Controller
     {
         $user = auth()->user();
 
-        // Валидация данных
         $data = $request->validate([
             'email_notifications' => 'nullable|string', // чекбоксы приходят как "on" или отсутствуют
             'tg_notifications'    => 'nullable|string',
             'language'            => 'required|string|in:ru,tg',
         ]);
 
-        // Обновляем данные (преобразуем чекбоксы в boolean)
         $user->update([
             'email_notifications' => $request->has('email_notifications'),
             'tg_notifications'    => $request->has('tg_notifications'),
@@ -70,9 +63,7 @@ class ProfileController extends Controller
         return back()->with('success', 'Настройки успешно обновлены!');
     }
 
-    /**
-     * Форма редактирования
-     */
+
     public function edit(Request $request): View
     {
         return view('profile.edit', [
@@ -80,14 +71,10 @@ class ProfileController extends Controller
         ]);
     }
 
-    /**
-     * Обновление данных профиля (Имя, Компания, Email, Телефон)
-     */
     public function update(Request $request): RedirectResponse
     {
         $user = $request->user();
 
-        // Добавлено поле 'company' в соответствии с $fillable
         $validated = $request->validate([
             'name'    => ['required', 'string', 'max:255'],
             'company' => ['nullable', 'string', 'max:255'], // Валидация для названия компании
@@ -95,22 +82,18 @@ class ProfileController extends Controller
             'phone'   => ['nullable', 'string', 'max:20'],
         ]);
 
-        // Заполняем модель валидированными данными
-        $user->fill($validated);
+       $user->fill($validated);
 
         if ($user->isDirty('email')) {
             $user->email_verified_at = null;
         }
 
-        // Сохраняем в базу данных
         $user->save();
 
         return Redirect::route('profile.edit')->with('status', 'profile-updated');
     }
 
-    /**
-     * Обновление пароля (Отдельный метод)
-     */
+
     public function updatePassword(Request $request): RedirectResponse
     {
         $validated = $request->validateWithBag('updatePassword', [
@@ -125,9 +108,6 @@ class ProfileController extends Controller
         return back()->with('status', 'password-updated');
     }
 
-    /**
-     * Удаление аккаунта
-     */
     public function destroy(Request $request): RedirectResponse
     {
         $request->validateWithBag('userDeletion', [

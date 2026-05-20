@@ -256,9 +256,7 @@ class DocumentSignatureController extends Controller
         return back()->with('success', 'Запись удалена');
     }
 
-    /**
-     * АВТОМАТИЧЕСКАЯ УСТАНОВКА ШТАМПА В УГОЛ НА ПОСЛЕДНЕЙ СТРАНИЦЕ DOCX
-     */
+
     private function processDocxSigning($document, $qrPayload)
     {
         $originalPath = storage_path('app/public/' . $document->file_path);
@@ -296,13 +294,12 @@ class DocumentSignatureController extends Controller
         imagepng($im, $tempStampPath);
         imagedestroy($im);
 
-        // 3. Интеграция в PHPWord
+
         $phpWord = IOFactory::load($originalPath);
         $sections = $phpWord->getSections();
         $section = count($sections) > 0 ? end($sections) : $phpWord->addSection();
 
-        // ВАЖНО: используем $tempStampPath (локальный файл), а не $permanentQrName
-        $section->addImage($tempStampPath, [
+       $section->addImage($tempStampPath, [
             'width'            => 90,
             'height'           => 105,
             'positioning'      => \PhpOffice\PhpWord\Style\Image::POSITION_ABSOLUTE,
@@ -315,7 +312,7 @@ class DocumentSignatureController extends Controller
             'wrappingStyle'    => \PhpOffice\PhpWord\Style\Image::WRAPPING_STYLE_BEHIND
         ]);
 
-        // 4. Сохранение
+
         $time = time();
         $newFileName = 'documents/signed_' . $time . '.docx';
         $permanentQrName = 'signatures/qr_' . $time . '.png';
@@ -323,7 +320,7 @@ class DocumentSignatureController extends Controller
         $objWriter = IOFactory::createWriter($phpWord, 'Word2007');
         $objWriter->save(storage_path('app/public/' . $newFileName));
 
-        // 5. Перенос файлов
+
         $publicSigsPath = storage_path('app/public/signatures');
         if (!File::exists($publicSigsPath)) File::makeDirectory($publicSigsPath, 0755, true, true);
 
@@ -332,9 +329,7 @@ class DocumentSignatureController extends Controller
 
         return ['docx_path' => $newFileName, 'qr_path' => $permanentQrName];
     }
-    /**
-     * АВТОМАТИЧЕСКАЯ УСТАНОВКА ШТАМПА СТРОГО НА ПОСЛЕДНЮЮ СТРАНИЦУ В ПРАВЫЙ НИЖНИЙ УГОЛ PDF
-     */
+
     private function processPdfSigning($document, $qrPayload)
     {
         $tempDir = storage_path('app/temp_sigs');

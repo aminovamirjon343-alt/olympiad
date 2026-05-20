@@ -48,9 +48,7 @@ class NotificationController extends Controller
         return back()->with('success', 'Удалено');
     }
 
-    /**
-     * Создание комментария и уведомление ВСЕХ причастных
-     */
+
     public function store(Request $request)
     {
         $request->validate([
@@ -60,7 +58,6 @@ class NotificationController extends Controller
 
         $currentUser = Auth::user();
 
-        // 1. Создаем комментарий
         $comment = DocumentComment::create([
             'document_id' => $request->document_id,
             'user_id'     => $currentUser->id,
@@ -68,19 +65,13 @@ class NotificationController extends Controller
         ]);
 
         $document = Document::findOrFail($request->document_id);
-
-        // --- ЛОГИКА УВЕДОМЛЕНИЙ ---
-
-        // 2. Получаем список ID всех, кто должен получить уведомление
-        // Это автор документа + все, кто уже комментировал этот документ
         $participantIds = DocumentComment::where('document_id', $document->id)
             ->pluck('user_id')
             ->push($document->created_by) // Добавляем автора документа
             ->unique()                    // Убираем дубликаты
             ->filter(fn($id) => $id != $currentUser->id); // Исключаем того, кто пишет сейчас
 
-        // 3. Рассылаем уведомления всем участникам
-        foreach ($participantIds as $userId) {
+       foreach ($participantIds as $userId) {
             Notification::create([
                 'user_id'         => $userId,
                 'type'            => 'comment',
@@ -104,7 +95,6 @@ class NotificationController extends Controller
     }
     public function read($id)
     {
-        // Используем твою рабочую логику, которая обновляет поле is_read в базе
         return $this->markAsRead($id);
     }
 }

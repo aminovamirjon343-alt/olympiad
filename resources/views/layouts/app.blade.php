@@ -14,10 +14,16 @@
         }
     </script>
 
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-</head>
+    @php
+        $manifest = json_decode(file_get_contents(public_path('build/manifest.json')), true);
+        $cssFile = $manifest['resources/css/app.css']['file'];
+        $jsFile = $manifest['resources/js/app.js']['file'];
+    @endphp
+
+    <link rel="stylesheet" href="{{ asset('build/' . $cssFile) }}">
+    <script src="{{ asset('build/' . $jsFile) }}" defer></script>
+    <link rel="stylesheet" href="{{ asset('assets/vendor/bootstrap-icons/bootstrap-icons.css') }}">
+    <link rel="stylesheet" href="{{ asset('assets/vendor/fontawesome/css/all.min.css') }}"></head>
 <body class="bg-gray-50 dark:bg-dark-900 text-gray-900 dark:text-gray-100 antialiased transition-colors duration-300">
 
 <div class="flex h-screen overflow-hidden">

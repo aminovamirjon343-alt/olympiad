@@ -36,7 +36,6 @@ class UserController extends Controller
 
         $data['password'] = Hash::make($data['password']);
 
-        // 🚀 Важно: Запоминаем ID админа, который создал этого пользователя
         $data['created_by'] = auth()->id();
 
         User::create($data);
@@ -74,8 +73,7 @@ class UserController extends Controller
         $myRole = strtolower(trim($authUser->role ?? ''));
         $targetRole = strtolower(trim($user->role));
 
-        // 🛑 ЗАЩИТА РОЛИ USER: Ни один админ не может её редактировать
-        if ($targetRole === 'user') {
+       if ($targetRole === 'user') {
             return redirect()->route('users.index')->with('error', 'Пользователи с ролью USER неприкасаемы.');
         }
 
@@ -166,7 +164,6 @@ class UserController extends Controller
         $isMainAdmin = ($authId === 10);
         $isCreator = ((int)$user->created_by === $authId);
 
-        // Удалить может либо ID 10, либо админ, который лично добавил этого сотрудника
         if ($isMainAdmin || ($myRole === 'admin' && $isCreator)) {
             $user->delete();
             return redirect()->route('users.index')->with('success', 'Пользователь успешно удален.');

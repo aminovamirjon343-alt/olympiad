@@ -4,6 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DocSign</title>
+
+    <link rel="icon" type="image/png" href="https://cdn-icons-png.flaticon.com/512/5968/5968517.png">
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
@@ -21,10 +25,10 @@
             z-index: 5;
         }
         .search-box input {
-            padding-left: 35px !important; /* Отступ для иконки */
+            padding-left: 35px !important;
             border-radius: 20px !important;
         }
-        /* Синий текст для поиска */
+
         .search-box input.blue-text-fixed {
             color: var(--table-text) !important;
         }
@@ -200,7 +204,7 @@
 
         .comment-box { background: #f8fafc; border-radius: 12px; padding: 16px; margin-bottom: 12px; border: 1px solid #e2e8f0; }
 
-        /* Theme toggle buttons */
+
         .theme-btn {
             width: 40px; height: 40px; border-radius: 12px;
             border: 2px solid #e2e8f0; background: white;
@@ -233,7 +237,7 @@
         html.dark .palette-btn { border-color: #334155; background: #1e293b; color: #cbd5e1; }
         html.dark .palette-btn:hover { border-color: var(--accent); color: var(--accent); background: #334155; }
 
-        /* Color palette dropdown */
+
         .palette-dropdown {
             position: absolute; top: 50px; right: 0;
             width: 220px; background: white; border-radius: 16px;
@@ -264,234 +268,14 @@
 
 <body>
 <div id="pjax-container">
-{{-- resources/views/layouts/admin.blade.php --}}
-{{--<div id="edo-loader">--}}
-{{--    <div class="loader-wrapper">--}}
-{{--        <div class="animation-zone">--}}
-{{--            <div class="document-item">--}}
-{{--                <div class="doc-body">--}}
-{{--                    <div class="doc-line"></div>--}}
-{{--                    <div class="doc-line short"></div>--}}
-{{--                    <div class="doc-stamp"></div>--}}
-{{--                </div>--}}
-{{--            </div>--}}
-{{--            <div class="plane-v4">--}}
-{{--                <svg viewBox="0 0 100 100">--}}
-{{--                    <path d="M15 50 L85 20 L55 55 L55 75 L70 65 L85 20 L35 65 L15 50 Z" fill="#3498db" stroke="#fff" stroke-width="1.5"/>--}}
-{{--                </svg>--}}
-{{--            </div>--}}
-{{--        </div>--}}
-{{--        <h2 class="status-text">Загрузка данных...</h2>--}}
-{{--       <div class="progress-bar"></div>--}}
-{{--    </div>--}}
-{{--</div>--}}
-
-{{--<style>--}}
-{{--    /* Прячем скролл, пока идет загрузка */--}}
-{{--    body.loading { overflow: hidden; }--}}
-
-{{--    #edo-loader {--}}
-{{--        position: fixed; inset: 0;--}}
-{{--        background: #ffffff;--}}
-{{--        display: flex; flex-direction: column; justify-content: center; align-items: center;--}}
-{{--        z-index: 999999; font-family: 'Inter', system-ui, -apple-system, sans-serif;--}}
-{{--        opacity: 1; visibility: visible;--}}
-{{--        transition: opacity 0.5s ease;--}}
-{{--    }--}}
-
-{{--    .animation-zone { position: relative; width: 300px; height: 180px; }--}}
-
-{{--    .document-item {--}}
-{{--        position: absolute; top: 50%; left: 50%;--}}
-{{--        width: 50px; height: 65px;--}}
-{{--        background: #fff; border: 2px solid #3498db; border-radius: 4px;--}}
-{{--        transform: translate(-50%, -50%);--}}
-{{--        box-shadow: 0 15px 35px rgba(52, 152, 219, 0.15);--}}
-{{--        animation: docState 2.8s infinite ease-in-out;--}}
-{{--    }--}}
-
-{{--    .doc-body { padding: 8px; }--}}
-{{--    .doc-line { height: 3px; background: #ebf5fb; margin-bottom: 6px; border-radius: 2px; }--}}
-{{--    .doc-line.short { width: 60%; }--}}
-{{--    .doc-stamp { position: absolute; bottom: 8px; right: 8px; width: 10px; height: 10px; border: 1px solid #3498db; border-radius: 50%; }--}}
-
-{{--    .plane-v4 {--}}
-{{--        position: absolute; width: 65px; height: 65px;--}}
-{{--        top: 50%; left: 50%;--}}
-{{--        filter: drop-shadow(0 5px 15px rgba(52, 152, 219, 0.3));--}}
-{{--        animation: strikeCatch 2.8s infinite cubic-bezier(0.5, 0, 0.5, 1);--}}
-{{--    }--}}
-
-{{--    @keyframes docState {--}}
-{{--        0% { transform: translate(-50%, 40px); opacity: 0; }--}}
-{{--        20%, 45% { transform: translate(-50%, -50%); opacity: 1; }--}}
-{{--        60%, 100% { transform: translate(400px, -500px) rotate(30deg); opacity: 0; }--}}
-{{--    }--}}
-
-{{--    @keyframes strikeCatch {--}}
-{{--        0% { transform: translate(-350px, 200px) rotate(-10deg); opacity: 0; }--}}
-{{--        20% { opacity: 1; }--}}
-{{--        45% { transform: translate(-15px, -15px) rotate(0deg) scale(1.1); }--}}
-{{--        65%, 100% { transform: translate(500px, -600px) rotate(-20deg); opacity: 1; }--}}
-{{--    }--}}
-
-{{--    .status-text { margin-top: 20px; color: #2c3e50; text-align: center; font-size: 1.4rem; font-weight: 600; letter-spacing: -0.02em; }--}}
-
-{{--    .progress-bar {--}}
-{{--        width: 130px; height: 4px; background: #ebf5fb;--}}
-{{--        margin: 15px auto; border-radius: 10px; position: relative; overflow: hidden;--}}
-{{--    }--}}
-{{--    .progress-bar::after {--}}
-{{--        content: ''; position: absolute; left: -100%; width: 100%; height: 100%;--}}
-{{--        background: #3498db; animation: lineLoad 2.8s infinite;--}}
-{{--    }--}}
-{{--    @keyframes lineLoad { 0% { left: -100%; } 50%, 100% { left: 100%; } }--}}
-
-{{--    .loader-hidden { opacity: 0 !important; visibility: hidden !important; }--}}
-{{--</style>--}}
-
-{{--<script>--}}
-{{--    document.body.classList.add('loading');--}}
-
-{{--    window.onbeforeunload = function() {--}}
-{{--        document.getElementById('edo-loader').classList.remove('loader-hidden');--}}
-{{--    };--}}
-
-{{--    window.addEventListener("load", function() {--}}
-{{--        const loader = document.getElementById('edo-loader');--}}
-{{--        setTimeout(() => {--}}
-{{--            loader.classList.add('loader-hidden');--}}
-{{--            document.body.classList.remove('loading');--}}
-{{--        }, 1200);--}}
-{{--    });--}}
-{{--</script>--}}
-{{--<div id="edo-loader">--}}
-{{--    <div class="loader-wrapper">--}}
-{{--        <div class="animation-zone">--}}
-{{--            <div class="document-item">--}}
-{{--                <div class="doc-body">--}}
-{{--                    <div class="doc-line"></div>--}}
-{{--                    <div class="doc-line short"></div>--}}
-{{--                    <div class="doc-stamp"></div>--}}
-{{--                </div>--}}
-{{--            </div>--}}
-
-{{--            <div class="plane-v4">--}}
-{{--                <svg viewBox="0 0 100 100">--}}
-{{--                    <path d="M15 50 L85 20 L55 55 L55 75 L70 65 L85 20 L35 65 L15 50 Z" fill="#3498db" stroke="#fff" stroke-width="1.5"/>--}}
-{{--                </svg>--}}
-{{--                <div class="speed-spark"></div>--}}
-{{--            </div>--}}
-{{--        </div>--}}
-
-{{--        <h2 class="status-text">Захват крылом...</h2>--}}
-{{--        <p style="color: #3498db; margin-top: -10px; font-size: 0.9rem;">Мгновенная доставка в реестр</p>--}}
-{{--        <div class="progress-bar"></div>--}}
-{{--    </div>--}}
-{{--</div>--}}
-
-{{--<style>--}}
-{{--    /* Лоадер виден СРАЗУ, без задержек */--}}
-{{--    #edo-loader {--}}
-{{--        position: fixed;--}}
-{{--        inset: 0;--}}
-{{--        background: #ffffff;--}}
-{{--        display: flex;--}}
-{{--        flex-direction: column;--}}
-{{--        justify-content: center;--}}
-{{--        align-items: center;--}}
-{{--        z-index: 999999;--}}
-{{--        font-family: 'Inter', system-ui, sans-serif;--}}
-{{--        overflow: hidden;--}}
-{{--        opacity: 1;--}}
-{{--        visibility: visible;--}}
-{{--    }--}}
-
-{{--    .animation-zone { position: relative; width: 300px; height: 300px; }--}}
-
-{{--    .document-item {--}}
-{{--        position: absolute; top: 50%; left: 50%;--}}
-{{--        width: 50px; height: 65px;--}}
-{{--        background: #fff; border: 2px solid #3498db; border-radius: 4px;--}}
-{{--        transform: translate(-50%, -50%);--}}
-{{--        box-shadow: 0 15px 35px rgba(52, 152, 219, 0.15);--}}
-{{--        z-index: 5;--}}
-{{--        animation: docState 2.8s infinite ease-in-out;--}}
-{{--    }--}}
-
-{{--    .doc-body { padding: 8px; }--}}
-{{--    .doc-line { height: 3px; background: #ebf5fb; margin-bottom: 6px; border-radius: 2px; }--}}
-{{--    .doc-line.short { width: 60%; }--}}
-{{--    .doc-stamp { position: absolute; bottom: 8px; right: 8px; width: 12px; height: 12px; border: 1px solid #3498db; border-radius: 50%; }--}}
-
-{{--    .plane-v4 {--}}
-{{--        position: absolute; width: 65px; height: 65px;--}}
-{{--        top: 50%; left: 50%;--}}
-{{--        z-index: 10;--}}
-{{--        filter: drop-shadow(0 5px 15px rgba(52, 152, 219, 0.3));--}}
-{{--        animation: strikeCatch 2.8s infinite cubic-bezier(0.5, 0, 0.5, 1);--}}
-{{--    }--}}
-
-{{--    @keyframes docState {--}}
-{{--        0% { transform: translate(-50%, 50px) scale(0.8); opacity: 0; }--}}
-{{--        20% { transform: translate(-50%, -50%) scale(1); opacity: 1; }--}}
-{{--        45% { transform: translate(-50%, -50%); }--}}
-{{--        55% { transform: translate(450px, -550px) rotate(30deg); opacity: 0; }--}}
-{{--        100% { transform: translate(450px, -550px); opacity: 0; }--}}
-{{--    }--}}
-
-{{--    @keyframes strikeCatch {--}}
-{{--        0% { transform: translate(-350px, 250px) rotate(-10deg); opacity: 0; }--}}
-{{--        20% { opacity: 1; }--}}
-{{--        45% { transform: translate(-15px, -15px) rotate(0deg) scale(1.1); }--}}
-{{--        60% { transform: translate(500px, -600px) rotate(-15deg); opacity: 1; }--}}
-{{--        100% { transform: translate(600px, -700px); opacity: 0; }--}}
-{{--    }--}}
-
-{{--    .status-text { margin-top: 20px; color: #2c3e50; text-align: center; font-size: 1.4rem; font-weight: 600; }--}}
-
-{{--    .progress-bar {--}}
-{{--        width: 130px; height: 4px; background: #ebf5fb;--}}
-{{--        margin: 15px auto; border-radius: 10px; position: relative; overflow: hidden;--}}
-{{--    }--}}
-{{--    .progress-bar::after {--}}
-{{--        content: ''; position: absolute; left: -100%; width: 100%; height: 100%;--}}
-{{--        background: #3498db; animation: lineLoad 2.8s infinite;--}}
-{{--    }--}}
-{{--    @keyframes lineLoad { 0% { left: -100%; } 50%, 100% { left: 100%; } }--}}
-
-{{--    /* Класс скрытия для плавного выхода */--}}
-{{--    .loader-hidden {--}}
-{{--        opacity: 0 !important;--}}
-{{--        visibility: hidden !important;--}}
-{{--        transition: opacity 0.4s ease, visibility 0.4s;--}}
-{{--    }--}}
-{{--</style>--}}
-
-{{--<script>--}}
-{{--    // 1. Показываем лоадер ПЕРЕД тем как страница начнет обновляться (уходить на сервер)--}}
-{{--    window.addEventListener('beforeunload', function() {--}}
-{{--        document.getElementById('edo-loader').style.display = 'flex';--}}
-{{--    });--}}
-
-{{--    // 2. Скрываем лоадер только когда ПОЛНОСТЬЮ всё загрузилось (Google завершил обновление)--}}
-{{--    window.addEventListener("load", function() {--}}
-{{--        const loader = document.getElementById('edo-loader');--}}
-
-{{--        // Минимальное время показа 1.5 сек, чтобы не было мерцания на быстрых ПК--}}
-{{--        setTimeout(() => {--}}
-{{--            loader.classList.add('loader-hidden');--}}
-{{--        }, 1500);--}}
-{{--    });--}}
-{{--</script>--}}
 
 
 <nav class="flex items-center justify-between p-4 bg-black text-white">
     <div class="flex items-center gap-4">
         <span class="font-[1000] uppercase tracking-widest text-sm">Olympiad Admin</span>
 
-        {{-- Вставляем переключатель здесь --}}
-        @if(app()->environment('local')) {{-- Показываем только на локалке --}}
+
+        @if(app()->environment('local'))
         <form action="{{ route('login.as') }}" method="POST" class="ml-4">
             @csrf
             <select name="user_id" onchange="this.form.submit()"
@@ -517,7 +301,7 @@
 
 <div class="overlay" id="overlay" onclick="toggleSidebar()"></div>
 
-<!-- Sidebar -->
+
 <aside class="sidebar" id="sidebar">
     <div class="logo">
         <div class="logo-icon"><i class="bi bi-file-earmark-text"></i></div>
@@ -549,7 +333,7 @@
             <i class="bi bi-chevron-down small"></i>
         </a>
 
-        {{-- SUB MENU --}}
+
 
         <div class="collapse ps-4 mt-1 space-y-1" id="documentsMenu">
             <div class="my-1 border-t border-slate-100 mx-2"></div>

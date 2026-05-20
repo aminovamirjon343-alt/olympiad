@@ -17,7 +17,6 @@ class Notification extends Model
         'read_at'
     ];
 
-    // Это превратит JSON из базы в удобный массив для Blade автоматически
     protected $casts = [
         'data' => 'array',
         'is_read' => 'boolean',

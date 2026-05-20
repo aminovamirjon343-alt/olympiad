@@ -43,7 +43,6 @@ class DocumentCommentController extends Controller
             return back()->with('error', 'Вы должны войти в систему, чтобы оставить комментарий');
         }
 
-        // 1. Сохраняем комментарий
         $comment = DocumentComment::create([
             'document_id' => $request->document_id,
             'user_id' => auth()->id(),
@@ -52,7 +51,6 @@ class DocumentCommentController extends Controller
 
         $document = Document::find($request->document_id);
 
-        // 🔥 ЛОГ: Записываем добавление комментария в историю документа
         if ($document) {
             DocumentLog::create([
                 'document_id' => $document->id,
@@ -62,7 +60,6 @@ class DocumentCommentController extends Controller
             ]);
         }
 
-        // 2. Исправленное создание уведомления
         if ($document && $document->created_by && $document->created_by !== auth()->id()) {
             Notification::create([
                 'id' => (string) Str::uuid(),
@@ -87,7 +84,6 @@ class DocumentCommentController extends Controller
 
         $comment->delete();
 
-        // 🔥 ЛОГ: Записываем удаление комментария в историю документа
         DocumentLog::create([
             'document_id' => $documentId,
             'user_id'     => auth()->id(),

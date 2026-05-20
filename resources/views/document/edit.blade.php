@@ -2,17 +2,15 @@
 
 @section('content')
     @php
-        // Исправлено: приводим оба значения к (int) для надежного сравнения
-        // Также используем 'created_by', так как это поле используется в вашем контроллере
         $ownerId = (int) ($document->created_by ?? 0);
         $currentUserId = (int) auth()->id();
         $isOwner = ($currentUserId === $ownerId);
     @endphp
 
     <div class="min-h-[calc(100vh-64px)] bg-slate-50 py-10 px-4 md:px-8 font-inter text-slate-900">
-        <div class="max-w-2xl mx-auto">
+       <div class="max-w-5xl mx-auto">
 
-            {{-- BACK --}}
+
             <div class="flex items-center gap-3 mb-6">
                 <a href="{{ route('documents.index') }}"
                    class="w-11 h-11 flex items-center justify-center rounded-xl bg-white border border-slate-200 shadow-sm hover:bg-black hover:text-white transition text-black">
@@ -23,11 +21,11 @@
                 </div>
             </div>
 
-            {{-- CARD --}}
+
             <div class="bg-white rounded-3xl border border-slate-200 shadow-xl overflow-hidden">
                 <div class="p-9 md:p-11 text-black">
 
-                    {{-- HEADER --}}
+
                     <div class="text-center mb-10">
                         <div class="w-16 h-16 mx-auto bg-black text-white rounded-2xl flex items-center justify-center text-2xl mb-4">
                             {{ $isOwner ? '✏️' : '🔒' }}
@@ -52,7 +50,7 @@
                         @csrf
                         @method('PUT')
 
-                        {{-- Number --}}
+
                         <div>
                             <label class="label"><span data-i18n="docNumberLabel">Номер документа</span></label>
                             <input type="text" name="number" value="{{ old('number', $document->number) }}"
@@ -60,7 +58,7 @@
                                 {{ !$isOwner ? 'readonly' : '' }}>
                         </div>
 
-                        {{-- ROW: Type & Deadline --}}
+
                         <div class="grid md:grid-cols-2 gap-5">
                             <div>
                                 <label class="label"><span data-i18n="docType">Тип</span></label>
@@ -76,7 +74,7 @@
                             </div>
                         </div>
 
-                        {{-- Recipient Email --}}
+
                         <div>
                             <label class="label"><span data-i18n="recipientEmail">Email получателя</span></label>
                             <input type="email" name="receiver_email" value="{{ old('receiver_email', $document->receiver_email ?? '') }}"
@@ -85,7 +83,7 @@
                                    {{ !$isOwner ? 'readonly' : '' }} required>
                         </div>
 
-                        {{-- Title --}}
+
                         <div>
                             <label class="label"><span data-i18n="titleLabel">Заголовок</span></label>
                             <input type="text" name="title" value="{{ old('title', $document->title) }}"
@@ -93,7 +91,7 @@
                                    {{ !$isOwner ? 'readonly' : '' }} required>
                         </div>
 
-                        {{-- Description --}}
+
                         <div>
                             <label class="label"><span data-i18n="descriptionLabel">Описание</span></label>
                             <textarea name="content" rows="5"
@@ -101,7 +99,7 @@
                                       {{ !$isOwner ? 'readonly' : '' }}>{{ old('content', $document->content) }}</textarea>
                         </div>
 
-                        {{-- ROW: Status & File --}}
+
                         <div class="grid md:grid-cols-2 gap-5">
                             <div>
                                 <label class="label"><span data-i18n="currentStatus">Текущий статус</span></label>
@@ -126,7 +124,7 @@
                             @endif
                         </div>
 
-                        {{-- КНОПКА СОХРАНЕНИЯ / ПОДСКАЗКА --}}
+
                         @if($isOwner)
                             <div class="flex justify-center w-full pt-8">
                                 <button type="submit"

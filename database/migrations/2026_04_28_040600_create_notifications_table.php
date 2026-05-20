@@ -6,23 +6,16 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
+
     public function up(): void
     {
         Schema::create('notifications', function (Blueprint $table) {
             $table->id();
             $table->string('type');
 
-            // Добавляем morphs для системы Laravel
             $table->morphs('notifiable');
-
-            // Оставляем твои поля для ручной записи (делаем их nullable)
             $table->foreignId('user_id')->nullable()->constrained()->onDelete('cascade');
             $table->text('message')->nullable();
-
-            // Стандартное поле данных Laravel
             $table->text('data')->nullable();
 
             $table->timestamp('read_at')->nullable();
@@ -31,9 +24,6 @@ return new class extends Migration
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('notifications');

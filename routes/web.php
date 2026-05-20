@@ -119,11 +119,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
-// ==========================================
-// 1. ПУБЛИЧНЫЕ РОУТЫ (ДОСТУПНЫ ВСЕМ БЕЗ ЛОГИНА)
-// ==========================================
 
-// Главная страница сайта (открывается сразу)
 Route::get('/', function () {
     return view('layouts.site');
 })->name('site.home');
@@ -133,9 +129,6 @@ Route::get('/site', function () {
 })->name('site.main');
 
 
-// ==========================================
-// 2. АВТОРИЗАЦИЯ И ЛОКАЛЬНЫЙ ВХОД
-// ==========================================
 require __DIR__ . '/auth.php';
 
 if (app()->environment('local')) {
@@ -146,23 +139,20 @@ if (app()->environment('local')) {
 }
 
 
-// ==========================================
-// 3. ЗАКРЫТАЯ АДМИНКА (ТОЛЬКО ПОСЛЕ ЛОГИНА)
-// ==========================================
 Route::middleware(['auth'])->group(function () {
 
-    // Главная панель (Админка)
+
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/analysis', [AnalysisController::class, 'index'])->name('analysis.index');
 
 
-    // Профиль пользователя
+
     Route::get('/profile', [ProfileController::class, 'show'])->name('profile.show');
     Route::get('/profile/edit', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
-    // Настройки
+
     Route::get('/setting', function () {
         return view('settings.index');
     })->name('settings');
@@ -170,14 +160,14 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/settings/general', [ProfileController::class, 'updateGeneral'])->name('settings.general.update');
     Route::put('/settings/edi', [SettingsController::class, 'update'])->name('settings.update');
 
-    // Документы и AI
+
     Route::get('/documents/{id}/download-pdf', [DocumentController::class, 'downloadPdf'])->name('documents.downloadPdf');
     Route::get('/documents/{id}/download-word', [DocumentController::class, 'downloadWord'])->name('documents.downloadWord');
     Route::post('/documents/ai-process', [DocumentController::class, 'storeFromPdf'])->name('documents.ai-process');
     Route::post('/documents/{id}/sign', [DocumentController::class, 'sign'])->name('documents.sign');
     Route::post('/documents/{document}/sign', [DocumentSignatureController::class, 'store'])->name('documents.sign_signature');
 
-    // Ресурсные контроллеры
+
     Route::resource('documents', DocumentController::class);
     Route::resource('users', UserController::class);
     Route::resource('signatures', DocumentSignatureController::class);
@@ -185,10 +175,10 @@ Route::middleware(['auth'])->group(function () {
     Route::resource('logs', DocumentLogController::class);
     Route::resource('workflow', DocumentWorkflowController::class);
 
-    // Очистка логов
+
     Route::post('/logs/clear', [DocumentLogController::class, 'clear'])->name('logs.clear');
 
-    // Поиск
+
     Route::get('/search', [SearchController::class, 'index'])->name('search');
     Route::get('/api/users/search', function (Request $request) {
         $user = \App\Models\User::where('email', $request->email)->first();
@@ -198,28 +188,23 @@ Route::middleware(['auth'])->group(function () {
         ]);
     })->name('users.search_api');
 
-    // Комментарии
+
     Route::post('/comments', [DocumentCommentController::class, 'store'])->name('comments.store');
     Route::get('/documents/{documentId}/comments', [DocumentCommentController::class, 'index'])->name('comments.index');
     Route::delete('/comments/{comment}', [DocumentCommentController::class, 'destroy'])->name('comments.destroy');
 
-    // ========================================================
-    // УВЕДОМЛЕНИЯ (Чистая группа без конфликтов и дубликатов)
-    // ========================================================
-
-    // Универсальный роут для чтения конкретного уведомления
     Route::any('/notifications/{id}/read', [NotificationController::class, 'read'])->name('notifications.read');
     Route::delete('/notifications/{id}', [NotificationController::class, 'destroy'])->name('notifications.destroy');
     Route::patch('/notifications/{id}/mark-as-read', [NotificationController::class, 'markAsRead'])->name('notifications.read_patch');
     Route::post('/comments/store_notification', [NotificationController::class, 'store'])->name('comments.store_notification');
 
-    // Группа для списков, создания и массовых действий
+
     Route::prefix('notifications')->name('notifications.')->group(function () {
         Route::get('/', [NotificationController::class, 'index'])->name('index');
         Route::get('/create', [NotificationController::class, 'create'])->name('create');
         Route::delete('/clear-all', [NotificationController::class, 'clearAll'])->name('clearAll');
 
-        // Массовое прочтение через контроллер
+
         Route::post('/read-all', [NotificationController::class, 'readAll'])->name('readAll');
     });
 

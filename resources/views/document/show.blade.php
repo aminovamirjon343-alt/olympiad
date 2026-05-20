@@ -1,8 +1,6 @@
 @extends('layouts.admin')
 
 @section('content')
-    {{-- Главный контейнер с принудительным светлым фоном --}}
-    {{-- Уведомление об ошибке --}}
     @if(session('error') || $errors->any())
         <div x-data="{ show: true }"
              x-init="setTimeout(() => show = false, 4000)"
@@ -33,8 +31,7 @@
     <div class="doc-page-v2 bg-[#f8fafc] min-h-[calc(100vh-64px)] py-6 px-4 md:px-8 relative font-inter">
         <div class="max-w-5xl mx-auto">
 
-            {{-- Верхняя панель --}}
-            <div class="flex items-center justify-between mb-6 pb-4 border-b border-slate-200">
+           <div class="flex items-center justify-between mb-6 pb-4 border-b border-slate-200">
                 <div class="flex items-center gap-4">
                     <a href="{{ route('documents.index') }}"
                        class="w-8 h-8 flex items-center justify-center rounded-lg bg-white border border-slate-200 text-black hover:bg-blue-600 hover:text-white shadow-sm transition-all">
@@ -46,8 +43,7 @@
                 </div>
 
                 <div class="flex gap-2 items-center">
-                    {{-- МОДАЛЬНОЕ ОКНО С ТРЕМЯ ЯЗЫКАМИ --}}
-                    <div x-data="{ open: false }" class="relative inline-block">
+                   <div x-data="{ open: false }" class="relative inline-block">
                         <button @click="open = true" type="button" class="p-1.5 rounded bg-red-700 text-white text-[11px] border border-red-900 flex items-center justify-center transition-all hover:bg-red-800 shadow-sm">
                             <i class="bi bi-trash3"></i>
                         </button>
@@ -107,7 +103,6 @@
 
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
 
-                {{-- Левая часть (Контент) --}}
                 <div class="lg:col-span-2 space-y-6">
                     <div class="bg-white rounded-lg border border-slate-200 p-6 md:p-8 shadow-sm">
                         <div class="flex items-center gap-3 mb-6">
@@ -145,13 +140,10 @@
                         </div>
                     </div>
 
-                    {{-- Файл (Обработка всех 4-х форматов) --}}
                     @if($document->file_path)
                         @php
                             $extension = strtolower(pathinfo($document->file_path, PATHINFO_EXTENSION));
-
-                            // Определяем стили, иконки и переводы под каждый из 4-х форматов
-                            if ($extension === 'docx' || $extension === 'doc') {
+                                if ($extension === 'docx' || $extension === 'doc') {
                                 $themeClass = 'bg-blue-50 text-blue-600 border-blue-100 group-hover:bg-blue-600';
                                 $btnClass = 'bg-blue-600';
                                 $iconClass = 'bi bi-file-earmark-word-fill';
@@ -169,7 +161,7 @@
                                 $iconClass = 'bi bi-file-earmark-richtext-fill';
                                 $i18nAssetKey = 'rtfAsset';
                                 $i18nDownloadKey = 'downloadRtf';
-                            } else { // pdf
+                            } else {
                                 $themeClass = 'bg-red-50 text-red-600 border-red-100 group-hover:bg-red-600';
                                 $btnClass = 'bg-green-600';
                                 $iconClass = 'bi bi-file-earmark-pdf-fill';
@@ -206,7 +198,7 @@
                             </a>
                         </div>
 
-                        {{-- КНОПКА СКАЧИВАНИЯ --}}
+
                         <a href="{{ asset('storage/' . $document->file_path) }}"
                            download="{{ $document->title }}.{{ $extension }}"
                            class="h-10 px-4 {{ $btnClass }} text-white rounded-xl font-semibold uppercase tracking-widest text-xs flex items-center justify-center hover:scale-[1.01] active:scale-95 transition shadow-lg">
@@ -217,7 +209,7 @@
                         </a>
                     @endif
 
-                    {{-- Комментарии --}}
+
                     <div class="space-y-4">
                         <h3 class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500 flex items-center gap-2">
                             <i class="bi bi-chat-left-text-fill text-orange-500"></i> <span data-i18n="systemNotes">SYSTEM NOTES</span>
@@ -276,7 +268,7 @@
                     </div>
                 </div>
 
-                {{-- Правая панель (Метаданные) --}}
+
                 <div class="space-y-6">
                     <div class="bg-white rounded-lg border border-slate-200 p-6 shadow-sm">
                         <p class="text-[10px] font-medium text-black uppercase mb-6 tracking-[0.2em] border-b border-slate-50 pb-2" data-i18n="details">Details</p>
@@ -349,10 +341,10 @@
         </div>
     </div>
 
-    {{-- Подключение библиотеки Alpine.js --}}
+
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 
-    {{-- SCRIPTS --}}
+
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const translations = {

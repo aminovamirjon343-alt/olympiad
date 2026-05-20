@@ -144,14 +144,12 @@ class AnalysisController extends Controller
 {
     public function index(Request $request)
     {
-        // 1. Настройка периода
         $month = (int)$request->get('month', Carbon::now()->month);
         $year = (int)$request->get('year', Carbon::now()->year);
 
         $startDate = Carbon::createFromDate($year, $month, 1)->startOfMonth();
         $endDate = Carbon::createFromDate($year, $month, 1)->endOfMonth();
 
-        // 2. Сбор активности документов
         $rawDocs = Document::select(
             DB::raw('DATE(created_at) as date'),
             DB::raw('COUNT(*) as count')
@@ -160,7 +158,7 @@ class AnalysisController extends Controller
             ->groupBy('date')
             ->pluck('count', 'date');
 
-        // 3. Статистика статусов
+
         $statusData = [
             'signed' => Document::whereBetween('created_at', [$startDate, $endDate])
                 ->where('status', 'active')
@@ -180,7 +178,7 @@ class AnalysisController extends Controller
                 ->where('status', 'rejected')->count(),
         ];
 
-        // 4. Активность пользователей
+
         $registrations = User::select(DB::raw('DATE(created_at) as date'), DB::raw('COUNT(*) as count'))
             ->whereBetween('created_at', [$startDate, $endDate])
             ->groupBy('date')->pluck('count', 'date');
@@ -189,7 +187,6 @@ class AnalysisController extends Controller
             ->whereBetween('deleted_at', [$startDate, $endDate])
             ->groupBy('date')->pluck('count', 'date');
 
-        // 5. Подготовка данных для JS-графиков
         $dailyActivity = collect();
         $userActivity = collect();
         $daysInMonth = $startDate->daysInMonth;
@@ -211,16 +208,14 @@ class AnalysisController extends Controller
             ]);
         }
 
-        // 6. Глобальные показатели
+
         $totalDocuments = Document::count();
         $totalUsers = User::count();
         $newThisMonth = User::whereBetween('created_at', [$startDate, $endDate])->count();
         $deletedThisMonth = User::onlyTrashed()->whereBetween('deleted_at', [$startDate, $endDate])->count();
 
         $churnRate = $totalUsers > 0 ? round(($deletedThisMonth / $totalUsers) * 100, 1) : 0;
-
-        // 7. ОПРЕДЕЛЕНИЕ VIEW (Важно: 'layouts.site' вместо 'site')
-        $viewName = $request->is('analysis*') ? 'analysis.index' : 'layouts.site';
+       $viewName = $request->is('analysis*') ? 'analysis.index' : 'layouts.site';
 
         return view($viewName, compact(
             'dailyActivity', 'statusData', 'userActivity', 'totalUsers',

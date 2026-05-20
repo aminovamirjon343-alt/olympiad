@@ -83,12 +83,24 @@
                             <table class="w-full text-left users-table border-collapse">
                                 <thead class="table-header-primary">
                                 <tr>
-                                    <th class="w-12 text-center py-2.5 px-3 text-[9px] font-black text-white/90 uppercase tracking-widest rounded-tl-xl">ID</th>
-                                    <th class="py-2.5 px-3 text-[9px] font-black text-white uppercase tracking-widest" data-i18n="thEmployee">Сотрудник</th>
-                                    <th class="py-2.5 px-3 text-[9px] font-black text-white uppercase tracking-widest" data-i18n="thEmail">Email / Контакты</th>
-                                    <th class="py-2.5 px-3 text-[9px] font-black text-white uppercase tracking-widest" data-i18n="thPhone">Телефон</th>
-                                    <th class="text-center py-2.5 px-3 text-[9px] font-black text-white uppercase tracking-widest" data-i18n="thRole">Роль</th>
-                                    <th class="text-right py-2.5 px-3 text-[9px] font-black text-white uppercase tracking-widest rounded-tr-xl" data-i18n="thActions">Управление</th>
+                                    <th class="w-12 text-center py-2 px-3 text-[10px] font-medium text-white/80 tracking-wide">
+                                        Id
+                                    </th>
+                                    <th class="py-2 px-3 text-[10px] font-semibold text-white/90 tracking-wide">
+                                        Сотрудник
+                                    </th>
+                                    <th class="py-2 px-3 text-[10px] font-normal text-white/70 tracking-wide">
+                                        Email / контакты
+                                    </th>
+                                    <th class="py-2 px-3 text-[10px] font-normal text-white/70 tracking-wide">
+                                        Телефон
+                                    </th>
+                                    <th class="text-center py-2 px-3 text-[10px] font-normal text-white/70 tracking-wide">
+                                        Роль
+                                    </th>
+                                    <th class="text-right py-2 px-3 text-[10px] font-normal text-white/70 tracking-wide">
+                                        Управление
+                                    </th>
                                 </tr>
                                 </thead>
                                 <tbody>
@@ -128,12 +140,19 @@
                                                     @endif
                                                 </div>
 
-                                                <div class="flex flex-col">
-                                                    <div class="font-bold text-slate-800 tracking-tight text-[11px] leading-none group-hover:text-blue-600 transition-colors">{{ $user->name }}</div>
-                                                    <span class="text-[7px] font-black uppercase tracking-widest mt-0.5 {{ $user->isOnline() ? 'text-green-600' : 'text-slate-400' }}"
+                                                <div class="flex flex-col leading-tight">
+                                                    {{-- ИМЯ --}}
+                                                    <div class="font-bold text-slate-800 text-[13px] leading-none group-hover:text-blue-600 transition-colors">
+                                                        {{ $user->name }}
+                                                    </div>
+
+                                                    {{-- СТАТУС --}}
+                                                    <span class="mt-1 text-[9px] font-medium tracking-wide
+        {{ $user->isOnline() ? 'text-green-600' : 'text-slate-400' }}"
                                                           data-i18n="{{ $user->isOnline() ? 'statusOnline' : 'statusOffline' }}">
-                                                        {{ $user->isOnline() ? 'Онлайн' : 'Офлайн' }}
-                                                    </span>
+
+        {{ $user->isOnline() ? 'онлайн' : 'офлайн' }}
+    </span>
                                                 </div>
                                             </div>
                                         </td>

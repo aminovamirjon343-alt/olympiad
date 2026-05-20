@@ -8,14 +8,13 @@ class SettingsController extends Controller
 {
     public function index()
     {
-        return view('settings'); // путь к твоему blade файлу
+        return view('settings');
     }
 
     public function updateGeneral(Request $request)
     {
         $user = auth()->user();
 
-        // Обновляем поля (убедись, что они есть в $fillable модели User)
         $user->update([
             'email_notifications' => $request->has('email_notifications'),
             'tg_notifications' => $request->has('tg_notifications'),
@@ -34,12 +33,10 @@ class SettingsController extends Controller
         $user = auth()->user();
 
         if ($request->hasFile('signature')) {
-            // Удаляем старую подпись, если она есть
-            if ($user->signature_path) {
+           if ($user->signature_path) {
                 Storage::disk('public')->delete($user->signature_path);
             }
 
-            // Сохраняем новую
             $path = $request->file('signature')->store('signatures', 'public');
             $user->update(['signature_path' => $path]);
         }
@@ -56,7 +53,6 @@ class SettingsController extends Controller
             'webhook_url' => 'nullable|url',
         ]);
 
-        // Сохранение настроек в БД (пример через модель Setting)
         foreach ($validated as $key => $value) {
             if ($key === 'certificate' && $request->hasFile('certificate')) {
                 // Сохранение файла

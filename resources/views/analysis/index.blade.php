@@ -43,7 +43,7 @@
         .badge-live i{font-size:10px}
         .legend-dot{width:10px;height:10px;border-radius:50%;display:inline-block}
 
-        /* ФИКС ДЛЯ ТУЛТИПОВ */
+
         .apexcharts-tooltip {
             box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.2) !important;
             border: 1px solid var(--border) !important;
@@ -64,7 +64,7 @@
     </style>
 
     <div class="container-fluid p-4 dash">
-        {{-- Документы --}}
+
         <div class="section-title mb-4"><div class="accent"></div><span data-i18n="docAnalytics">Аналитика документооборота</span></div>
 
         <div class="row g-3">
@@ -154,7 +154,7 @@
             </div>
         </div>
 
-        {{-- Статусы — Doughnut (как на image_62c6e3.png) --}}
+
         <div class="row g-3 mt-2">
             <div class="col-12">
                 <div class="acard">
@@ -176,7 +176,7 @@
         </div>
     </div>
 
-    {{-- Карточки под диаграммой --}}
+
     <div class="row g-3 mt-3 px-4">
         <div class="col-md-3">
             <div class="acard" style="padding: 24px; border-top: 4px solid #3b82f6;">
@@ -332,7 +332,7 @@
                 fill: { type: 'gradient', gradient: { opacityFrom: .35, opacityTo: 0 } }
             }).render();
 
-            // ФИКС ЦВЕТА ЧИСЛА ПО ЦЕНТРУ (как на image_62c6e3.png)
+
             const centerText = {
                 id: 'centerText',
                 afterDraw(c) {
@@ -341,16 +341,16 @@
                     ctx.textAlign = 'center';
                     ctx.textBaseline = 'middle';
 
-                    // Динамический выбор цвета в зависимости от темы
+
                     const textColor = isDark ? '#ffffff' : '#0f172a';
                     const subTextColor = isDark ? '#94a3b8' : '#64748b';
 
-                    // Рисуем число (напр. 52)
+
                     ctx.font = '800 48px Inter, sans-serif';
                     ctx.fillStyle = textColor;
                     ctx.fillText('', width / 2, height / 2 - 10);
 
-                    // Рисуем подпись (DOCUMENTS)
+
                     ctx.font = '800 11px Inter, sans-serif';
                     ctx.fillStyle = subTextColor;
                     ctx.fillText(t.documents || 'DOCUMENTS', width / 2, height / 2 + 25);

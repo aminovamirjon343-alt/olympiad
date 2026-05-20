@@ -10,11 +10,6 @@ use Illuminate\Database\Eloquent\Factories\Factory;
  */
 class DocumentFactory extends Factory
 {
-    /**
-     * Define the model's default state.
-     *
-     * @return array<string, mixed>
-     */
     public function definition(): array
     {
         return [
@@ -22,13 +17,8 @@ class DocumentFactory extends Factory
             'content' => $this->faker->paragraph(),
             'type' => $this->faker->randomElement(['order', 'contract', 'statement']),
             'status' => 'active',
-
-            // Используем created_by вместо user_id
             'created_by' => \App\Models\User::inRandomOrder()->first()->id,
-
-            // receiver_id можно оставить случайным пользователем или null
-            'receiver_id' => \App\Models\User::inRandomOrder()->first()->id,
-
+             'receiver_id' => \App\Models\User::inRandomOrder()->first()->id,
             'deadline' => now()->addDays(7),
         ];
     }

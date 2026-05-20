@@ -16,7 +16,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\DB;
-use setasign\Fpdi\Fpdi; // Стандартизированный импорт FPDI
+use setasign\Fpdi\Fpdi;
 use PhpOffice\PhpWord\PhpWord;
 use PhpOffice\PhpWord\IOFactory;
 use PhpOffice\PhpWord\Shared\Html;
@@ -41,9 +41,7 @@ class DocumentController extends Controller
         return view('signatures.index', compact('signatures'));
     }
 
-    /**
-     * Скачивание Word версии (.docx), сгенерированной из БД
-     */
+
     public function downloadWord($id)
     {
         $document = Document::with(['createdBy', 'receiver', 'signatures.user'])->findOrFail($id);
@@ -123,9 +121,6 @@ class DocumentController extends Controller
         return response()->download($tempFile, $fileName)->deleteFileAfterSend(true);
     }
 
-    /**
-     * Скачивание PDF версии (генерация из Blade)
-     */
     public function downloadPdf($id)
     {
         $document = Document::with(['createdBy', 'receiver', 'signatures'])->findOrFail($id);
@@ -150,9 +145,7 @@ class DocumentController extends Controller
         return $pdf->download('document_' . ($document->number ?? $id) . '.pdf');
     }
 
-    /**
-     * Чтение текста ИИ из PDF, Word или RTF
-     */
+
     public function storeFromPdf(Request $request)
     {
         $request->validate(['pdf_file' => 'required|mimes:pdf,docx,rtf|max:10240']);
@@ -204,9 +197,7 @@ class DocumentController extends Controller
         ]);
     }
 
-    /**
-     * Основной метод подписания документов (PDF, DOCX, XLSX, RTF)
-     */
+
     public function sign(Request $request, $id)
     {
         $document = Document::with('createdBy')->findOrFail($id);
@@ -216,7 +207,7 @@ class DocumentController extends Controller
 
         $signer = Auth::user();
 
-        // Проверка очереди Workflow
+
         $currentWorkflow = DocumentWorkflow::where('document_id', $document->id)
             ->where('status', 'pending')
             ->orderBy('step_order', 'asc')
@@ -227,7 +218,6 @@ class DocumentController extends Controller
         }
 
         try {
-            // Если перед нами текстовые/табличные форматы - подписываем на уровне БД без штампа на холст
             if (in_array($extension, ['docx', 'xlsx', 'rtf'])) {
                 DocumentSignature::updateOrCreate(
                     ['document_id' => $id, 'user_id' => $signer->id],
@@ -250,14 +240,12 @@ class DocumentController extends Controller
                 return redirect()->route('documents.show', $id)->with('success', strtoupper($extension) . ' успешно подписан!');
             }
 
-            // Обработка PDF (Визуальный штамп + QR)
             return DB::transaction(function () use ($document, $signer, $currentWorkflow, $signatureData, $fullPathToFile, $request, $id) {
 
                 if ($request->filled('qr_payload')) {
                     $qrPayload = $request->input('qr_payload');
                 } else {
-                    // ИСПРАВЛЕНО: Обращаемся к связи createdBy вместо несуществующей user
-                    $creator = $document->createdBy;
+                   $creator = $document->createdBy;
                     $senderName = $creator->name ?? 'System';
                     $senderEmail = $creator->email ?? '-';
                     $sentDate = $document->created_at ? $document->created_at->format('d.m.Y H:i') : now()->format('d.m.Y H:i');
@@ -290,8 +278,7 @@ class DocumentController extends Controller
                     if ($pageNo == $targetPage) {
                         $pdf->SetFillColor(255, 255, 255);
 
-                        // Рисуем подпись Canvas
-                        if ($signatureData) {
+                       if ($signatureData) {
                             $sigImage = base64_decode(preg_replace('#^data:image/\w+;base64,#i', '', $signatureData));
                             $tempSigPath = $tempDir . '/sig_' . uniqid() . '.png';
                             File::put($tempSigPath, $sigImage);
@@ -304,7 +291,6 @@ class DocumentController extends Controller
                             @unlink($tempSigPath);
                         }
 
-                        // Позиционирование штампа
                         $stampW = 35; $stampH = 35; $qrSize = 25;
 
                         if ($request->filled('qr_x') && $request->filled('qr_y')) {
@@ -471,9 +457,7 @@ class DocumentController extends Controller
         return view('document.create', ['users' => User::all()]);
     }
 
-    /**
-     * Создание нового документа (ИСПРАВЛЕНО: Запись строго в created_by)
-     */
+
     public function store(Request $request)
     {
         $request->validate([
@@ -502,17 +486,14 @@ class DocumentController extends Controller
             'deadline' => $request->deadline,
         ]);
 
-        // Логирование создания
-        DocumentLog::create([
+       DocumentLog::create([
             'document_id' => $document->id,
             'user_id' => Auth::id(),
             'action' => 'создание',
             'description' => "Документ создан в статусе: " . ($request->status === 'draft' ? 'Черновик' : 'Активный')
         ]);
 
-        // КРИТИЧЕСКАЯ ПРОВЕРКА:
-        // Только если статус 'active', мы создаем подписи и уведомляем
-        if ($request->status === 'active')  {
+       if ($request->status === 'active')  {
             DocumentSignature::create([
                 'document_id' => $document->id,
                 'user_id' => $receiver->id,
@@ -538,9 +519,6 @@ class DocumentController extends Controller
 
         return redirect()->route('documents.index')->with('success', 'Документ сохранен как ' . ($request->status === 'draft' ? 'Черновик' : 'Активный'));
     }
-    /**
-     * Скачивание прикрепленного файла
-     */
     public function pdf($id)
     {
         $document = Document::findOrFail($id);
@@ -587,16 +565,13 @@ class DocumentController extends Controller
 
     public function update(Request $request, Document $document)
     {
-        // 1. Исправленная проверка доступа:
-        // Используем 'created_by' и разрешаем администратору изменять любой документ
-        $isAdmin = auth()->user()->is_admin;
+          $isAdmin = auth()->user()->is_admin;
         $isOwner = (int)$document->created_by === (int)auth()->id();
 
         if (!$isOwner && !$isAdmin) {
             abort(403, 'У вас нет прав на изменение этого документа.');
         }
 
-        // 2. Валидация
         $request->validate([
             'number'   => 'nullable|string|max:100',
             'title'    => 'required|string|max:255',
@@ -608,22 +583,19 @@ class DocumentController extends Controller
         $oldStatus = $document->status;
         $newStatus = $request->input('status');
 
-        // 3. Подготовка данных
-        $data = $request->only(['number', 'title', 'content', 'status', 'deadline']);
+       $data = $request->only(['number', 'title', 'content', 'status', 'deadline']);
 
-        // 4. Безопасная обработка файла
-        if ($request->hasFile('file_path')) {
-            // Удаляем старый файл, если он есть
-            if ($document->file_path && \Illuminate\Support\Facades\Storage::disk('public')->exists($document->file_path)) {
+       if ($request->hasFile('file_path')) {
+           if ($document->file_path && \Illuminate\Support\Facades\Storage::disk('public')->exists($document->file_path)) {
                 \Illuminate\Support\Facades\Storage::disk('public')->delete($document->file_path);
             }
             $data['file_path'] = $request->file('file_path')->store('documents', 'public');
         }
 
-        // 5. Обновление документа
+
         $document->update($data);
 
-        // 6. Логирование изменений
+
         DocumentLog::create([
             'document_id' => $document->id,
             'user_id'     => Auth::id(),
@@ -631,9 +603,9 @@ class DocumentController extends Controller
             'description' => 'Параметры документа обновлены'
         ]);
 
-        // 7. Логика перехода из Черновика -> Активен
+
         if ($oldStatus === 'draft' && $newStatus === 'active') {
-            // Создаем запись для подписи, если её еще нет
+
             DocumentSignature::updateOrCreate(
                 ['document_id' => $document->id, 'user_id' => $document->receiver_id],
                 ['signature' => '']

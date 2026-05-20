@@ -2,10 +2,9 @@
 
 @section('content')
     <div class="min-h-[calc(100vh-64px)] bg-slate-50 py-10 px-4 md:px-8 font-inter text-slate-900">
-        <div class="max-w-2xl mx-auto">
+       <div class="max-w-5xl mx-auto">
 
-            {{-- BACK --}}
-            <div class="flex items-center gap-3 mb-6">
+           <div class="flex items-center gap-3 mb-6">
                 <a href="{{ route('documents.index') }}"
                    class="w-11 h-11 flex items-center justify-center rounded-xl bg-white border border-slate-200 shadow-sm hover:bg-black hover:text-white transition">
                     <i class="bi bi-arrow-left text-base"></i>
@@ -15,7 +14,7 @@
                 </div>
             </div>
 
-            {{-- CARD --}}
+
             <div class="bg-white rounded-3xl border border-slate-200 shadow-xl overflow-hidden">
                 <div class="p-9 md:p-11">
 
@@ -36,66 +35,65 @@
                           onsubmit="let btn = this.querySelector('button[type=submit]'); btn.disabled = true; btn.style.opacity = '0.7';">
                         @csrf
 
-                        {{-- Number --}}
                         <div>
-                            <label class="label">🔢 <span data-i18n="docNumberLabel">Номер документа</span></label>
+                            <label class="label"> <span data-i18n="docNumberLabel">Номер документа</span></label>
                             <input type="text" id="doc_number" name="number"
                                    value="{{ old('number', '№ ') }}"
                                    class="input font-[1000] !text-black"
                                    required>
                         </div>
 
-                        {{-- Type & Deadline --}}
+
                         <div class="grid md:grid-cols-2 gap-5">
                             <div>
-                                <label class="label">📌 <span data-i18n="docType">Тип документа</span></label>
+                                <label class="label"><span data-i18n="docType">Тип документа</span></label>
                                 <input type="text" name="type" class="input"
                                        data-i18n-placeholder="typePlaceholder"
                                        placeholder="Например: Договор"
                                        value="{{ old('type') }}" required>
                             </div>
                             <div>
-                                <label class="label">📅 <span data-i18n="deadline">Дедлайн</span></label>
+                                <label class="label"> <span data-i18n="deadline">Дедлайн</span></label>
                                 <input type="date" name="deadline" class="input" value="{{ old('deadline') }}">
                             </div>
                         </div>
 
-                        {{-- Title --}}
+
                         <div>
-                            <label class="label">✏️ <span data-i18n="titleLabel">Заголовок</span></label>
+                            <label class="label"> <span data-i18n="titleLabel">Заголовок</span></label>
                             <input type="text" name="title" class="input"
                                    data-i18n-placeholder="titlePlaceholder"
                                    placeholder="Введите название..."
                                    value="{{ old('title') }}" required>
                         </div>
 
-                        {{-- Description --}}
+
                         <div>
-                            <label class="label">💬 <span data-i18n="descriptionLabel">Описание</span></label>
+                            <label class="label"> <span data-i18n="descriptionLabel">Описание</span></label>
                             <textarea name="content" rows="5" class="input"
                                       data-i18n-placeholder="descriptionPlaceholder"
                                       placeholder="Добавьте описание...">{{ old('content') }}</textarea>
                         </div>
 
-                        {{-- Recipient --}}
+
                         <div>
-                            <label class="label">📧 <span data-i18n="recipientEmail">Email получателя</span></label>
+                            <label class="label"> <span data-i18n="recipientEmail">Email получателя</span></label>
                             <input type="email" id="receiver_email" name="receiver_email" class="input font-bold"
                                    placeholder="user@email.com" value="{{ old('receiver_email') }}" required>
                         </div>
 
-                        {{-- Status & File --}}
+
                         <div class="grid md:grid-cols-2 gap-5">
                             <div>
-                                <label class="label">⚙️ <span data-i18n="status">Статус</span></label>
+                                <label class="label">️ <span data-i18n="status">Статус</span></label>
                                 <select name="status" class="input">
-                                    <option value="draft" {{ old('status') == 'draft' ? 'selected' : '' }}>Черновик</option>
-                                    <option value="active" {{ old('status', 'active') == 'active' ? 'selected' : '' }}>Активен</option>
+                                    <option value="draft" {{ old('status') == 'draft' ? 'selected' : '' }} data-i18n="draft">Черновик</option>
+                                    <option value="active" {{ old('status') !== 'draft' ? 'selected' : '' }} data-i18n="active">Активен</option>
                                 </select>
                             </div>
                             <div>
-                                {{-- Добавлен .rtf в текст и в accept --}}
-                                <label class="label">📎 <span data-i18n="fileLabel">Файл (PDF, DOCX, XLSX, RTF)</span></label>
+
+                                <label class="label"><span data-i18n="fileLabel">Файл (PDF, DOCX, XLSX, RTF)</span></label>
                                 <input type="file" name="file_path" id="file" accept=".pdf,.docx,.xlsx,.rtf" class="hidden" required>
                                 <label for="file" class="flex items-center justify-between px-6 h-12 border border-slate-200 rounded-2xl bg-white cursor-pointer shadow-sm hover:border-black transition">
                                     <span id="file-name" data-is-custom="false" class="text-[10px] font-[1000] uppercase tracking-[0.2em] text-black truncate pr-2" data-i18n="chooseFile">
@@ -109,7 +107,7 @@
                         <div class="flex justify-center w-full pt-8">
                             <button type="submit" class="w-80 h-14 bg-black rounded-full font-[1000] uppercase text-[14px] tracking-[0.25em] text-white hover:opacity-90 active:scale-95 transition-all flex items-center justify-center gap-3">
                                 <span data-i18n="send">Отправить</span>
-                                <span class="text-xl">🚀</span>
+                                <span class="text-xl"></span>
                             </button>
                         </div>
                     </form>
@@ -118,7 +116,7 @@
         </div>
     </div>
 
-    {{-- SCRIPTS --}}
+
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const translations = {

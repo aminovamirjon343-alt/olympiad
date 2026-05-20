@@ -17,7 +17,6 @@ class User extends Authenticatable
 {
     use HasFactory, Notifiable;
     use SoftDeletes;
-    // В начало файла внутри класса User
     public function isOnline()
     {
         return \Illuminate\Support\Facades\Cache::has('user-is-online-' . $this->id);
@@ -47,9 +46,6 @@ class User extends Authenticatable
         'password' => 'hashed',
     ];
 
-    /**
-     * Инициалы пользователя (например, Иван Иванов -> ИИ)
-     */
     public function getInitialsAttribute(): string
     {
         $words = explode(' ', $this->name);
@@ -58,23 +54,15 @@ class User extends Authenticatable
         return $first . $second;
     }
 
-    /**
-     * Связь с документами (созданными этим пользователем)
-     * Используем 'created_by', так как в миграции поле называется именно так.
-     */
+
     public function documents()
     {
-        // Связь один-ко-многим: один пользователь создает много документов
         return $this->hasMany(\App\Models\Document::class, 'created_by');
     }
-    /**
-     * Метод для отправки уведомления (исправленный под стандарт Laravel)
-     */
+
     public function sendDocumentNotification($document)
     {
-        // Вместо ручного Notification::create используем системный метод
-        // Это автоматически запишет данные в таблицу notifications через morphs
-        return $this->notify(new DocumentAssigned($document));
+       return $this->notify(new DocumentAssigned($document));
     }
 
 }

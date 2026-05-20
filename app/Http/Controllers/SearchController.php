@@ -19,17 +19,17 @@ class SearchController extends Controller
             return view('search.results', compact('results', 'query'));
         }
 
-        // 1. Поиск по пользователям
+
         $users = User::where('name', 'LIKE', "%{$query}%")
             ->orWhere('email', 'LIKE', "%{$query}%")
             ->get();
 
-        // 2. Поиск по документам
+
         $documents = Document::where('title', 'LIKE', "%{$query}%")
             ->orWhere('content', 'LIKE', "%{$query}%")
             ->get();
 
-        // 3. Поиск по подписям (DocumentSignature)
+
         $signatures = Signature::with(['document', 'user'])
             ->where('id', 'LIKE', "%{$query}%")
             ->orWhereHas('document', function($q) use ($query) {
@@ -37,7 +37,7 @@ class SearchController extends Controller
             })
             ->get();
 
-        // Объединяем всё в одну коллекцию для единой таблицы
+
         $results = collect()
             ->concat($users)
             ->concat($documents)
