@@ -598,7 +598,7 @@
                 <h3 class="text-xl font-bold text-white mb-3" data-i18n="qr_title">Электронная подпись</h3>
                 <p class="text-slate-400 text-sm leading-relaxed mb-4" data-i18n="qr_desc">Система генерирует уникальный QR-код для каждого документа. Любой проверяющий может мгновенно подтвердить легитимность файла через камеру смартфона.</p>
                 <div class="code-block rounded-xl p-4 text-xs font-mono bg-black/30 border border-white/5">
-                    <span class="text-purple-400">$pdf</span><span class="text-slate-500">-></span><span class="text-blue-400">addQRCode</span><span class="text-slate-500">(</span><span class="text-green-400">'https://docsign.tj/verify/ID'</span><span class="text-slate-500">);</span>
+                    <span class="text-purple-400">$pdf</span><span class="text-slate-500">-></span><span class="text-blue-400">addQRCode</span><span class="text-slate-500">(</span><span class="text-green-400">'https://docsign.tj/verify/ID'</span><span class="text-slate-500">)</span>
                 </div>
             </div>
 
@@ -643,8 +643,7 @@
                 <p class="text-slate-400 text-sm leading-relaxed mb-4" data-i18n="f4_desc">Интеллектуальные алгоритмы анализируют данные, автоматизируют рутинные процессы и выводят информацию в удобном визуальном виде.</p>
                 <div class="flex items-center gap-3">
                     <div class="flex-1 h-2 bg-slate-700 rounded-full overflow-hidden"><div class="h-full bg-gradient-to-r from-amber-400 to-orange-500 rounded-full" style="width: 94%"></div></div>
-                    <span class="text-xs font-mono text-amber-400">94%</span>
-                </div>
+               </div>
                 <div class="text-xs text-slate-500 mt-1" data-i18n="f4_accuracy">Точность анализа</div>
             </div>
 
@@ -658,7 +657,7 @@
                 <p class="text-slate-400 text-sm leading-relaxed mb-4" data-i18n="f5_desc">Логика загрузки, хранения и вывода документов. Поддержка облачного хранения с перспективой масштабирования.</p>
                 <div class="flex items-center gap-2 text-xs text-slate-500">
                     <svg class="w-4 h-4 text-green-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
-                    <span>PDF, DOCX, Excel</span>
+                    <span>PDF, DOCX</span>
                 </div>
             </div>
 

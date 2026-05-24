@@ -716,7 +716,6 @@
                         <option value="" disabled selected data-i18n="rolePlaceholder" style="background: #0f172a; color: rgba(148, 163, 184, 0.4);">Выберите вашу роль в компании</option>
                         <option value="user" style="background: #0f172a; color: #f1f5f9;" data-i18n="roleUser">Сотрудник</option>
                         <option value="employee" style="background: #0f172a; color: #f1f5f9;" data-i18n="roleManager">Менеджер</option> {{-- Изменено на value="employee" под твой enum --}}
-                        <option value="director" style="background: #0f172a; color: #f1f5f9;" data-i18n="roleDirector">Директор</option>
                         <option value="admin" style="background: #0f172a; color: #f1f5f9;" data-i18n="roleAdmin">Администратор</option>
                     </select>
 

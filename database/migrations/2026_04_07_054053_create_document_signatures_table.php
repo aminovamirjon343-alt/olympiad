@@ -13,7 +13,7 @@ return new class extends Migration {
             $table->foreignId('user_id')->constrained('users')->cascadeOnDelete();
 
             $table->longText('signature')->nullable();
-            $table->timestamp('expires_at')->nullable(); // Сюда будет копироваться deadline
+            $table->timestamp('expires_at')->nullable();
             $table->timestamp('signed_at')->nullable();
 
             $table->timestamps();

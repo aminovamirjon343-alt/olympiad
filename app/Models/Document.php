@@ -40,7 +40,7 @@ class Document extends Model
     {
         $user = Auth::user();
 
-        if (!$user) return $query->whereRaw('1 = 0'); // Если не залогинен — ничего не показывать
+        if (!$user) return $query->whereRaw('1 = 0');
 
         if ($user->is_admin) {
             return $query;
@@ -107,7 +107,7 @@ class Document extends Model
         $user = Auth::user();
         if (!$user) return false;
 
-        // Админ может всё, либо автор может управлять своим
+
         return $user->is_admin || $this->created_by === $user->id;
     }
 
