@@ -6,23 +6,45 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
+        // 1. СНАЧАЛА создаём users БЕЗ внешнего ключа на companies
         Schema::create('users', function (Blueprint $table) {
             $table->id();
             $table->string('name');
             $table->string('email')->unique();
             $table->string('password');
+            $table->boolean('is_admin')->default(false);
+            $table->string('avatar')->nullable();
+            $table->string('phone')->nullable();
+            $table->string('role')->default('employee');
             $table->string('company')->nullable();
-            $table->enum('role', ['admin', 'employee', 'director', 'user'])->default('user');
+            $table->unsignedBigInteger('company_id')->nullable();
+            $table->unsignedBigInteger('created_by')->nullable();
+            $table->integer('level')->default(1);
             $table->timestamp('email_verified_at')->nullable();
             $table->rememberToken();
             $table->timestamps();
+            $table->softDeletes();
         });
 
+        // 2. Создаём companies с ВСЕМИ полями (добавил address, phone, email)
+        Schema::create('companies', function (Blueprint $table) {
+            $table->id();
+            $table->string('name');
+            $table->string('address')->nullable();  // <-- Добавил
+            $table->string('phone')->nullable();    // <-- Добавил
+            $table->string('email')->nullable();    // <-- Добавил
+            $table->foreignId('owner_id')->nullable()->constrained('users')->nullOnDelete();
+            $table->timestamps();
+        });
+
+        // 3. ТЕПЕРЬ добавляем внешний ключ от users к companies
+        Schema::table('users', function (Blueprint $table) {
+            $table->foreign('company_id')->references('id')->on('companies')->nullOnDelete();
+        });
+
+        // 4. Остальные таблицы
         Schema::create('password_reset_tokens', function (Blueprint $table) {
             $table->string('email')->primary();
             $table->string('token');
@@ -39,13 +61,11 @@ return new class extends Migration
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
-        Schema::dropIfExists('users');
-        Schema::dropIfExists('password_reset_tokens');
         Schema::dropIfExists('sessions');
+        Schema::dropIfExists('password_reset_tokens');
+        Schema::dropIfExists('companies');
+        Schema::dropIfExists('users');
     }
 };

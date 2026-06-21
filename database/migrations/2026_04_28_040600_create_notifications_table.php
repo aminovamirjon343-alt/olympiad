@@ -15,7 +15,7 @@ return new class extends Migration
 
             $table->morphs('notifiable');
             $table->foreignId('user_id')->nullable()->constrained()->onDelete('cascade');
-            $table->text('message')->nullable();
+            $table->text('messages')->nullable();
             $table->text('data')->nullable();
 
             $table->timestamp('read_at')->nullable();

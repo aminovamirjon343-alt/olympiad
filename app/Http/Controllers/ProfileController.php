@@ -9,19 +9,19 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Redirect;
-use Illuminate\Validation\Rules\Password; // ИСПРАВЛЕНО: правильный класс для defaults()
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rules\Password;
 use Illuminate\View\View;
 use Carbon\Carbon;
 
 class ProfileController extends Controller
 {
-
     public function show(Request $request): View
     {
         $user = $request->user();
         $year = (int) $request->get('year', now()->year);
 
-       $firstDayOfYear = Carbon::create($year, 1, 1);
+        $firstDayOfYear = Carbon::create($year, 1, 1);
         $startDate = $firstDayOfYear->copy()->startOfWeek(Carbon::MONDAY);
         $endDate = Carbon::create($year, 12, 31)->endOfWeek(Carbon::SUNDAY);
 
@@ -49,7 +49,7 @@ class ProfileController extends Controller
         $user = auth()->user();
 
         $data = $request->validate([
-            'email_notifications' => 'nullable|string', // чекбоксы приходят как "on" или отсутствуют
+            'email_notifications' => 'nullable|string',
             'tg_notifications'    => 'nullable|string',
             'language'            => 'required|string|in:ru,tg',
         ]);
@@ -63,7 +63,6 @@ class ProfileController extends Controller
         return back()->with('success', 'Настройки успешно обновлены!');
     }
 
-
     public function edit(Request $request): View
     {
         return view('profile.edit', [
@@ -76,13 +75,41 @@ class ProfileController extends Controller
         $user = $request->user();
 
         $validated = $request->validate([
-            'name'    => ['required', 'string', 'max:255'],
-            'company' => ['nullable', 'string', 'max:255'], // Валидация для названия компании
-            'email'   => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:users,email,' . $user->id],
-            'phone'   => ['nullable', 'string', 'max:20'],
+            'name'          => ['required', 'string', 'max:255'],
+            'company'       => ['nullable', 'string', 'max:255'],
+            'email'         => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:users,email,' . $user->id],
+            'phone'         => ['nullable', 'string', 'max:20'],
+            'avatar'        => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
+            'remove_avatar' => ['nullable', 'string', 'in:0,1'],
         ]);
 
-       $user->fill($validated);
+        // ===== ОБРАБОТКА УДАЛЕНИЯ АВАТАРА =====
+        if ($request->input('remove_avatar') === '1') {
+            // Удаляем старый файл с диска
+            if ($user->avatar) {
+                Storage::disk('public')->delete($user->avatar);
+            }
+            // Обнуляем поле в БД
+            $user->avatar = null;
+        }
+
+        // ===== ОБРАБОТКА ЗАГРУЗКИ НОВОГО АВАТАРА =====
+        if ($request->hasFile('avatar')) {
+            // Удаляем старый аватар если есть
+            if ($user->avatar) {
+                Storage::disk('public')->delete($user->avatar);
+            }
+
+            // Сохраняем новый
+            $path = $request->file('avatar')->store('avatars', 'public');
+            $user->avatar = $path;
+        }
+
+        // Обновляем остальные поля
+        $user->name = $validated['name'];
+        $user->email = $validated['email'];
+        $user->company = $validated['company'] ?? null;
+        $user->phone = $validated['phone'] ?? null;
 
         if ($user->isDirty('email')) {
             $user->email_verified_at = null;
@@ -92,7 +119,6 @@ class ProfileController extends Controller
 
         return Redirect::route('profile.edit')->with('status', 'profile-updated');
     }
-
 
     public function updatePassword(Request $request): RedirectResponse
     {

@@ -330,6 +330,12 @@
     }
 
     document.getElementById('email')?.addEventListener('input', function() { this.classList.remove('error'); });
+@if (session('status'))
+    document.addEventListener('DOMContentLoaded', () => {
+        // Можно создать стиль для успеха, или просто показать статус
+        showNotification("{{ session('status') }}", 'success');
+    });
+@endif
 </script>
 </body>
 </html>

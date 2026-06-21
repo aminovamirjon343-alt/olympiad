@@ -27,7 +27,7 @@ class DocumentAssigned extends Notification
     public function toDatabase($notifiable)
     {
         return [
-            'message' => 'Вам назначен документ: ' . $this->document->title,
+            'messages' => 'Вам назначен документ: ' . $this->document->title,
             'url' => route('documents.show', $this->document->id),
             // Мы явно передаем user_id в массив для базы
             'user_id' => $notifiable->id,
@@ -39,7 +39,7 @@ class DocumentAssigned extends Notification
     public function toArray($notifiable)
     {
         return [
-            'message' => 'Вам назначен документ: ' . $this->document->title,
+            'messages' => 'Вам назначен документ: ' . $this->document->title,
             'url' => route('documents.show', $this->document->id),
         ];
     }

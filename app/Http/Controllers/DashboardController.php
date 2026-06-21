@@ -2,64 +2,62 @@
 
 namespace App\Http\Controllers;
 
+use Illuminate\Http\Request;
 use App\Models\Document;
-use App\Models\DocumentLog;
+use App\Models\DocumentSignature;
 use App\Models\User;
-use App\Models\DocumentSignature; // Не забудь импортировать модель подписей!
-use Illuminate\Support\Facades\Auth;
 
 class DashboardController extends Controller
 {
     public function index()
     {
-        $user = Auth::user();
-
-
-        $totalDocs = Document::visibleToAuth()->count();
-
-        $prevTotalDocs = Document::visibleToAuth()
-            ->where('created_at', '<', now()->startOfMonth())
-            ->count();
-
-        $docsGrowth = $prevTotalDocs > 0
-            ? round((($totalDocs - $prevTotalDocs) / $prevTotalDocs) * 100, 1)
-            : ($totalDocs > 0 ? 100 : 0);
-
-
-        $signedCount = DocumentSignature::whereHas('document', function($q) {
-            $q->visibleToAuth();
-        })->count();
-
-        $prevSigned = DocumentSignature::whereHas('document', function($q) {
-            $q->visibleToAuth();
-        })->where('created_at', '<', now()->startOfMonth())->count();
-
-        $signedGrowth = $prevSigned > 0
-            ? round((($signedCount - $prevSigned) / $prevSigned) * 100, 1)
-            : ($signedCount > 0 ? 100 : 0);
-
-
+        // Общая статистика
+        $totalDocs = Document::count();
         $stats = [
-            'total'    => $totalDocs,
-            'active'   => Document::visibleToAuth()->whereIn('status', ['active', 'Active'])->count(),
-            'signed'   => $signedCount,
-            'rejected' => Document::visibleToAuth()->whereIn('status', ['rejected', 'Rejected'])->count(),
-            'pending'  => Document::visibleToAuth()->whereIn('status', ['pending', 'Pending'])->count(),
-            'users'    => User::count(),
+            'signed' => Document::where('status', 'signed')->count(),
+            'users' => User::count(),
         ];
 
+        // Рост документов за последний месяц
+        $lastMonthDocs = Document::where('created_at', '>=', now()->subMonth())->count();
+        $previousMonthDocs = Document::whereBetween('created_at', [
+            now()->subMonths(2),
+            now()->subMonth()
+        ])->count();
 
-        $documents = Document::visibleToAuth()->latest()->take(6)->get();
+        $docsGrowth = $previousMonthDocs > 0
+            ? round((($lastMonthDocs - $previousMonthDocs) / $previousMonthDocs) * 100)
+            : 0;
 
-       $activities = DocumentLog::where('user_id', $user->id)->latest()->take(5)->get();
+        // Рост подписей за последний месяц
+        $lastMonthSigned = DocumentSignature::where('created_at', '>=', now()->subMonth())->count();
+        $previousMonthSigned = DocumentSignature::whereBetween('created_at', [
+            now()->subMonths(2),
+            now()->subMonth()
+        ])->count();
+
+        $signedGrowth = $previousMonthSigned > 0
+            ? round((($lastMonthSigned - $previousMonthSigned) / $previousMonthSigned) * 100)
+            : 0;
+
+        // Последние документы
+        $documents = Document::with('user')->latest()->take(5)->get();
+
+        // Активность (используем документы как активность)
+        $activities = Document::with('user')->latest()->take(10)->get()->map(function($doc) {
+            $doc->status = 'created';
+            $doc->title = $doc->title;
+            $doc->content = $doc->description ?? '';
+            return $doc;
+        });
 
         return view('dashboard', compact(
+            'totalDocs',
+            'docsGrowth',
+            'signedGrowth',
             'stats',
             'documents',
-            'totalDocs',
-            'activities',
-            'docsGrowth',
-            'signedGrowth'
+            'activities'
         ));
     }
 }

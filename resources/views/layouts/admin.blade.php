@@ -392,6 +392,11 @@
     <a href="/analysis" class="nav-link" data-page="analysis" onclick="showPage('analysis', this)">
         <i class="bi bi-bar-chart-line"></i> <span data-i18n="analysis">Analysis</span>
     </a>
+
+<!--    <a href="{{ route('messages.index') }}" class="nav-link" data-page="messages" onclick="showPage('messages', this)">-->
+<!--        <i class="bi bi-chat-dots"></i>-->
+<!--        <span data-i18n="messages">Сообщения</span>-->
+<!--    </a>-->
     <div class="nav-section" data-i18n="admin">Admin</div>
     <a href="/users" class="nav-link" data-page="users" onclick="showPage('users', this)">
         <i class="bi bi-people"></i> <span data-i18n="users">Users</span>
@@ -917,7 +922,7 @@
                                     // Собираем текст динамически, если в data есть поля sender_name и document_name
                                     $sender = $notification->data['sender_name'] ?? 'Система';
                                     $docName = $notification->data['document_name'] ?? ($notification->data['title'] ?? 'Документ');
-                                    $message = $notification->data['message'] ?? '';
+                                    $message = $notification->data['messages'] ?? '';
 
                                     // Определяем действие (назначил или прокомментировал)
                                     $isComment = str_contains(strtolower($message), 'коммент') || str_contains(strtolower($message), 'оставил');

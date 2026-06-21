@@ -75,7 +75,7 @@ class NotificationController extends Controller
             Notification::create([
                 'user_id'         => $userId,
                 'type'            => 'comment',
-                'message'         => ($userId == $document->created_by)
+                'messages'         => ($userId == $document->created_by)
                     ? 'Новый ответ в вашем документе'
                     : 'Новый комментарий в обсуждении, где вы участвуете',
                 'is_read'         => false,

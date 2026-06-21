@@ -184,7 +184,7 @@
                 if (t[key]) el.textContent = t[key];
             });
 
-            // Update confirm message in forms
+            // Update confirm messages in forms
             document.querySelectorAll('form[onsubmit]').forEach(form => {
                 form.onsubmit = function() {
                     return confirm(t.confirmDelete);

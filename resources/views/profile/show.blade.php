@@ -75,10 +75,16 @@
                 {{-- ЛЕВАЯ КАРТОЧКА (ИНФО ОБ АККАУНТЕ) --}}
                 <div class="lg:col-span-1">
                     <div class="glass-profile-card p-10 text-center flex flex-col items-center justify-center h-full force-black-text">
-                        <div class="w-32 h-32 avatar-box mb-6 no-black">
+                        <div class="w-32 h-32 avatar-box mb-6 no-black overflow-hidden">
+                            @if($user->avatar)
+                            <img src="{{ asset('storage/' . $user->avatar) }}"
+                                 alt="{{ $user->name }}"
+                                 class="w-full h-full object-cover">
+                            @else
                             <span class="text-white text-6xl font-black italic">
-                                {{ Str::upper(Str::substr($user->name, 0, 1)) }}
-                            </span>
+            {{ Str::upper(Str::substr($user->name, 0, 1)) }}
+        </span>
+                            @endif
                         </div>
 
                         <h2 class="text-2xl font-black mb-1 leading-tight">{{ $user->name }}</h2>

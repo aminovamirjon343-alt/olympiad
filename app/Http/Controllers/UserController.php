@@ -3,48 +3,123 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Models\Company;
 use App\Models\Document;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 use Carbon\Carbon;
 
 class UserController extends Controller
 {
     public function index()
     {
-        $users = User::all();
-        return view('users.index', compact('users'));
-    }
+        $authUser = auth()->user();
 
+        // Находим админа компании (level = 1)
+        $admin = User::where('level', 1)
+            ->where('company_id', $authUser->company_id)
+            ->first();
+
+        // Если админ не найден, ищем любого админа
+        if (!$admin) {
+            $admin = User::where('level', 1)->first();
+        }
+
+        // Название компании берём от админа
+        $companyName = $admin ? $admin->company : ($authUser->company ?? __('users.my_team'));
+
+        // Получаем пользователей компании
+        if ($authUser->company_id) {
+            $users = User::where('company_id', $authUser->company_id)->get()->keyBy('id');
+        } else {
+            $users = User::all()->keyBy('id');
+        }
+
+        $groupedByLevel = $users->groupBy('level')->sortKeys();
+
+        return view('users.index', compact('users', 'groupedByLevel', 'authUser', 'companyName'));
+    }
     public function create()
     {
+        $authUser = auth()->user();
+
+        // Только админ (level 1) может добавлять пользователей
+        if (!$authUser->isAdmin()) {
+            return redirect()->route('users.index')->with('error', __('users.only_admin_can_add'));
+        }
+
         return view('users.create');
     }
 
     public function store(Request $request)
     {
+        $authUser = auth()->user();
+
+        // Только админ может добавлять
+        if (!$authUser->isAdmin()) {
+            return redirect()->route('users.index')->with('error', __('users.only_admin_can_add'));
+        }
+
         $data = $request->validate([
             'name'     => 'required|string|max:255',
             'email'    => 'required|email|unique:users,email',
             'password' => 'required|min:6',
             'phone'    => 'nullable|string',
-            'company'  => 'nullable|string|max:255',
-            'role'     => 'required|in:admin,employee,director,user',
+            'role'     => 'required|string|max:50',
+            'level'    => 'required|integer|min:2|max:20',
+            'avatar'   => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
         ]);
 
+        // Получаем компанию админа
+        $companyId = $authUser->company_id;
+        $companyName = $authUser->company;
+
+        // Если у админа нет company_id, но есть название компании
+        if (!$companyId && $companyName) {
+            $company = Company::where('name', $companyName)->first();
+
+            if (!$company) {
+                $company = Company::create([
+                    'name' => $companyName,
+                    'owner_id' => $authUser->id,
+                ]);
+            }
+
+            $companyId = $company->id;
+
+            $authUser->update([
+                'company_id' => $companyId,
+            ]);
+        }
+
+        // Хешируем пароль
         $data['password'] = Hash::make($data['password']);
 
-        $data['created_by'] = auth()->id();
+        // Работник автоматически получает компанию админа
+        $data['created_by'] = $authUser->id;
+        $data['company_id'] = $companyId;
+        $data['company'] = $companyName;
+
+        if ($request->hasFile('avatar')) {
+            $data['avatar'] = $request->file('avatar')->store('avatars', 'public');
+        }
 
         User::create($data);
 
-        return redirect()->route('users.index')->with('success', 'Пользователь создан!');
+        return redirect()->route('users.index')->with('success', __('users.created_success'));
     }
-
     public function show(User $user)
     {
+        $authUser = auth()->user();
+
+        // Проверка: пользователь должен быть из той же компании
+        if ($authUser->company_id && $user->company_id !== $authUser->company_id) {
+            abort(403);
+        }
+
         $year = now()->year;
         $firstDayOfYear = Carbon::create($year, 1, 1);
         $startDate = $firstDayOfYear->copy()->startOfWeek(Carbon::MONDAY);
@@ -68,107 +143,105 @@ class UserController extends Controller
 
     public function edit(User $user)
     {
-        $authId = (int)auth()->id();
         $authUser = auth()->user();
-        $myRole = strtolower(trim($authUser->role ?? ''));
-        $targetRole = strtolower(trim($user->role));
 
-       if ($targetRole === 'user') {
-            return redirect()->route('users.index')->with('error', 'Пользователи с ролью USER неприкасаемы.');
+        // Проверка компании
+        if ($authUser->company_id && $user->company_id !== $authUser->company_id) {
+            return redirect()->route('users.index')->with('error', __('users.not_in_team'));
         }
 
-        // Защита создателя системы (ID 10)
-        if ($user->id === 10 && $authId !== 10) {
-            return redirect()->route('users.index')->with('error', 'Вы не можете редактировать Создателя системы.');
-        }
+        // Админ может редактировать всех, обычный пользователь только себя
+        $canEdit = $authUser->isAdmin() || ($user->id === $authUser->id);
 
-        $isMe = ($user->id === $authId);
-        $isMainAdmin = ($authId === 10);
-        $isCreator = ((int)$user->created_by === $authId);
-
-        // Разрешено, если это мой профиль, я Главный админ, или я админ, который создал этого юзера
-        if ($isMe || $isMainAdmin || ($myRole === 'admin' && $isCreator)) {
+        if ($canEdit) {
             return view('users.edit', compact('user'));
         }
 
-        return redirect()->route('users.index')->with('error', 'Вы можете редактировать только тех, кого добавили сами.');
+        return redirect()->route('users.index')->with('error', __('users.cannot_edit'));
     }
 
     public function update(Request $request, User $user)
     {
-        $authId = (int)Auth::id();
-        $authUser = Auth::user();
-        $myRole = strtolower(trim($authUser->role ?? ''));
-        $targetRole = strtolower(trim($user->role));
+        $authUser = auth()->user();
 
-        // 🛑 ЗАЩИТА РОЛИ USER на сохранение
-        if ($targetRole === 'user') {
-            return redirect()->route('users.index')->with('error', 'Изменение пользователей с ролью USER запрещено.');
+        // Проверка компании
+        if ($authUser->company_id && $user->company_id !== $authUser->company_id) {
+            return redirect()->route('users.index')->with('error', __('users.not_in_team'));
         }
 
-        if ($user->id === 10 && $authId !== 10) {
-            return redirect()->route('users.index')->with('error', 'Изменение данных Создателя системы запрещено.');
-        }
+        // Админ может редактировать всех, обычный пользователь только себя
+        $canEdit = $authUser->isAdmin() || ($user->id === $authUser->id);
 
-        $isMe = ($user->id === $authId);
-        $isMainAdmin = ($authId === 10);
-        $isCreator = ((int)$user->created_by === $authId);
-
-        if (!$isMe && !$isMainAdmin && !($myRole === 'admin' && $isCreator)) {
-            return redirect()->route('users.index')->with('error', 'У вас нет прав на обновление этого профиля.');
+        if (!$canEdit) {
+            return redirect()->route('users.index')->with('error', __('users.cannot_edit'));
         }
 
         $rules = [
-            'name'    => 'required|string|max:255',
-            'email'   => 'required|email|unique:users,email,' . $user->id,
-            'phone'   => 'nullable|string',
-            'company' => 'nullable|string|max:255',
+            'name'          => 'required|string|max:255',
+            'email'         => 'required|email|unique:users,email,' . $user->id,
+            'phone'         => 'nullable|string',
+            'avatar'        => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
+            'remove_avatar' => 'nullable|string|in:0,1',
         ];
 
-        // Менять роль могут только авторы записи или главный админ
-        if (($isMainAdmin || $isCreator) && !$isMe) {
-            $rules['role'] = 'required|in:admin,employee,director,user';
+        // Только админ может менять роль и уровень
+        if ($authUser->isAdmin()) {
+            $rules['role'] = 'required|string|max:50';
+            $rules['level'] = 'required|integer|min:1|max:20';
         }
 
         $data = $request->validate($rules);
 
-        if ($isMe || (!$isMainAdmin && !$isCreator)) {
+        // Если не админ, сохраняем старые значения роли и уровня
+        if (!$authUser->isAdmin()) {
             $data['role'] = $user->role;
+            $data['level'] = $user->level;
+        }
+
+        if ($request->input('remove_avatar') === '1') {
+            if ($user->avatar) {
+                Storage::disk('public')->delete($user->avatar);
+            }
+            $data['avatar'] = null;
+        }
+
+        if ($request->hasFile('avatar')) {
+            if ($user->avatar) {
+                Storage::disk('public')->delete($user->avatar);
+            }
+            $data['avatar'] = $request->file('avatar')->store('avatars', 'public');
         }
 
         $user->update($data);
 
-        return redirect()->route('users.index')->with('success', 'Данные обновлены ✅');
+        return redirect()->route('users.index')->with('success', __('users.updated_success'));
     }
 
     public function destroy(User $user)
     {
-        $authId = (int)Auth::id();
-        $authUser = Auth::user();
-        $myRole = strtolower(trim($authUser->role ?? ''));
-        $targetRole = strtolower(trim($user->role ?? ''));
+        $authUser = auth()->user();
 
-        // Защита клиентов системы от удаления обычными админами
-        if (in_array($targetRole, ['user', 'корбар']) && $authId !== 10) {
-            return back()->with('error', 'Вы не можете удалять зарегистрированных клиентов.');
+        // Проверка компании
+        if ($authUser->company_id && $user->company_id !== $authUser->company_id) {
+            return back()->with('error', __('users.not_in_team'));
         }
 
-        if ($user->id === $authId) {
-            return back()->with('error', 'Вы не можете удалить самого себя.');
+        // Нельзя удалить себя
+        if ($user->id === $authUser->id) {
+            return back()->with('error', __('users.cannot_delete_self'));
         }
 
-        if ($user->id === 10) {
-            return back()->with('error', 'Этот аккаунт защищен от удаления.');
+        // Только админ может удалять
+        if (!$authUser->isAdmin()) {
+            return back()->with('error', __('users.only_admin_can_delete'));
         }
 
-        $isMainAdmin = ($authId === 10);
-        $isCreator = ((int)$user->created_by === $authId);
-
-        if ($isMainAdmin || ($myRole === 'admin' && $isCreator)) {
-            $user->delete();
-            return redirect()->route('users.index')->with('success', 'Пользователь успешно удален.');
+        if ($user->avatar) {
+            Storage::disk('public')->delete($user->avatar);
         }
 
-        return back()->with('error', 'Вы можете удалять только тех сотрудников, которых добавили сами.');
+        $user->delete();
+
+        return redirect()->route('users.index')->with('success', __('users.deleted_success'));
     }
 }

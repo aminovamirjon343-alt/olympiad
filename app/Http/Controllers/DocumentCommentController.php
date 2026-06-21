@@ -64,7 +64,7 @@ class DocumentCommentController extends Controller
             Notification::create([
                 'id' => (string) Str::uuid(),
                 'user_id' => $document->created_by,
-                'message' => 'Новый комментарий к вашему документу: "' . $document->title . '"',
+                'messages' => 'Новый комментарий к вашему документу: "' . $document->title . '"',
                 'type' => 'comment',
                 'is_read' => false,
                 'notifiable_type' => User::class,

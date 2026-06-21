@@ -26,7 +26,7 @@ class DocumentStatusChanged extends Notification
     public function toArray($notifiable)
     {
         return [
-            'message' => "Статус документа изменён на {$this->status}",
+            'messages' => "Статус документа изменён на {$this->status}",
             'url' => route('documents.show', $this->document->id),
         ];
     }

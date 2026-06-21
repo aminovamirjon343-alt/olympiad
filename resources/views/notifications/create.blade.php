@@ -72,7 +72,7 @@
                             {{-- Сообщение --}}
                             <div class="mb-4">
                                 <label class="form-label fw-bold">Текст уведомления</label>
-                                <textarea name="message" class="form-control shadow-sm" rows="4" placeholder="Введите текст сообщения..." required>{{ old('message') }}</textarea>
+                                <textarea name="message" class="form-control shadow-sm" rows="4" placeholder="Введите текст сообщения..." required>{{ old('messages') }}</textarea>
                             </div>
 
                             <div class="d-grid gap-2 d-md-flex justify-content-md-end border-top pt-3">

@@ -62,7 +62,7 @@ class DocumentWorkflowController extends Controller
         ]);
         Notification::create([
             'user_id' => $request->user_id,
-            'message' => 'Вам назначен документ на подпись',
+            'messages' => 'Вам назначен документ на подпись',
             'type' => 'sign',
             'is_read' => false,
         ]);

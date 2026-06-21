@@ -267,7 +267,6 @@
         .form-group:nth-child(1) { animation-delay: 0.3s; }
         .form-group:nth-child(2) { animation-delay: 0.4s; }
         .form-group:nth-child(3) { animation-delay: 0.5s; }
-        .form-group:nth-child(4) { animation-delay: 0.6s; }
 
         @keyframes formAppear {
             0% { opacity: 0; transform: translateX(-15px); }
@@ -416,7 +415,7 @@
             overflow: hidden;
             transition: all 0.3s ease;
             letter-spacing: 0.3px;
-            animation: formAppear 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.7s both;
+            animation: formAppear 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.6s both;
         }
 
         .submit-btn::before {
@@ -475,7 +474,7 @@
         .login-link-section {
             text-align: center;
             margin-top: 24px;
-            animation: formAppear 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.8s both;
+            animation: formAppear 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.7s both;
         }
 
         .login-text {
@@ -500,7 +499,7 @@
             justify-content: center;
             gap: 24px;
             margin-top: 28px;
-            animation: footerAppear 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.9s both;
+            animation: footerAppear 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.8s both;
         }
 
         @keyframes footerAppear {
@@ -530,7 +529,7 @@
             font-size: 12px;
             color: rgba(148, 163, 184, 0.4);
             font-weight: 500;
-            animation: footerAppear 0.8s cubic-bezier(0.16, 1, 0.3, 1) 1s both;
+            animation: footerAppear 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.9s both;
         }
 
         .notification {
@@ -641,9 +640,9 @@
         <!-- Logo -->
         <div class="logo-section">
             <img
-                src="https://image.qwenlm.ai/public_source/5fabf35d-788a-476d-8837-6431dd4fb2c8/1bb634345-5339-4471-924b-764b665ee39d.png"
-                alt="DocSign Logo"
-                class="logo-img"
+                    src="https://image.qwenlm.ai/public_source/5fabf35d-788a-476d-8837-6431dd4fb2c8/1bb634345-5339-4471-924b-764b665ee39d.png"
+                    alt="DocSign Logo"
+                    class="logo-img"
             >
             <div class="logo-title">Doc<span>Sign</span></div>
             <div class="logo-subtitle" data-i18n="subtitle">Создайте аккаунт</div>
@@ -658,16 +657,16 @@
                 <label class="form-label" for="name" data-i18n="nameLabel">Полное имя</label>
                 <div class="input-wrapper">
                     <input
-                        type="text"
-                        name="name"
-                        id="name"
-                        class="form-input @error('name') error @enderror"
-                        value="{{ old('name') }}"
-                        data-i18n-placeholder="namePlaceholder"
-                        placeholder="Иван Иванов"
-                        required
-                        autofocus
-                        autocomplete="name"
+                            type="text"
+                            name="name"
+                            id="name"
+                            class="form-input @error('name') error @enderror"
+                            value="{{ old('name') }}"
+                            data-i18n-placeholder="namePlaceholder"
+                            placeholder="Иван Иванов"
+                            required
+                            autofocus
+                            autocomplete="name"
                     >
                     <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
@@ -684,15 +683,15 @@
                 <label class="form-label" for="email" data-i18n="emailLabel">Электронная почта</label>
                 <div class="input-wrapper">
                     <input
-                        type="email"
-                        name="email"
-                        id="email"
-                        class="form-input @error('email') error @enderror"
-                        value="{{ old('email') }}"
-                        data-i18n-placeholder="emailPlaceholder"
-                        placeholder="name@company.com"
-                        required
-                        autocomplete="username"
+                            type="email"
+                            name="email"
+                            id="email"
+                            class="form-input @error('email') error @enderror"
+                            value="{{ old('email') }}"
+                            data-i18n-placeholder="emailPlaceholder"
+                            placeholder="name@company.com"
+                            required
+                            autocomplete="username"
                     >
                     <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <rect x="2" y="4" width="20" height="16" rx="2"/>
@@ -703,53 +702,21 @@
                 <div class="error-message">{{ $message }}</div>
                 @enderror
             </div>
-            <div class="form-group">
-                <label class="form-label" for="role" data-i18n="roleLabel">Выберите роль</label>
-                <div class="input-wrapper" style="position: relative;">
-                    <select
-                        name="role"
-                        id="role"
-                        class="form-input @error('role') error @enderror"
-                        style="appearance: none; -webkit-appearance: none; -moz-appearance: none; cursor: pointer; padding-right: 40px; width: 100%;"
-                        required
-                    >
-                        <option value="" disabled selected data-i18n="rolePlaceholder" style="background: #0f172a; color: rgba(148, 163, 184, 0.4);">Выберите вашу роль в компании</option>
-                        <option value="user" style="background: #0f172a; color: #f1f5f9;" data-i18n="roleUser">Сотрудник</option>
-                        <option value="employee" style="background: #0f172a; color: #f1f5f9;" data-i18n="roleManager">Менеджер</option> {{-- Изменено на value="employee" под твой enum --}}
-                        <option value="admin" style="background: #0f172a; color: #f1f5f9;" data-i18n="roleAdmin">Администратор</option>
-                    </select>
 
-                    <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-                        <circle cx="9" cy="7" r="4" />
-                        <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
-                        <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-                    </svg>
-
-                    <div style="position: absolute; inset-y: 0; right: 16px; display: flex; align-items: center; pointer-events: none; color: #94a3b8;">
-                        <svg style="width: 12px; height: 12px;" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3">
-                            <path d="M19 9l-7 7-7-7"/>
-                        </svg>
-                    </div>
-                </div>
-                @error('role')
-                <div class="error-message visible">{{ $message }}</div>
-                @enderror
-            </div>
             <!-- Password -->
             <div class="form-group">
                 <label class="form-label" for="password" data-i18n="passwordLabel">Пароль</label>
                 <div class="input-wrapper">
                     <input
-                        type="password"
-                        name="password"
-                        id="password"
-                        class="form-input @error('password') error @enderror"
-                        data-i18n-placeholder="passwordPlaceholder"
-                        placeholder="••••••••••"
-                        required
-                        autocomplete="new-password"
-                        oninput="checkPasswordStrength(this.value)"
+                            type="password"
+                            name="password"
+                            id="password"
+                            class="form-input @error('password') error @enderror"
+                            data-i18n-placeholder="passwordPlaceholder"
+                            placeholder="••••••••••"
+                            required
+                            autocomplete="new-password"
+                            oninput="checkPasswordStrength(this.value)"
                     >
                     <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
@@ -779,14 +746,14 @@
                 <label class="form-label" for="password_confirmation" data-i18n="confirmLabel">Подтвердите пароль</label>
                 <div class="input-wrapper">
                     <input
-                        type="password"
-                        name="password_confirmation"
-                        id="password_confirmation"
-                        class="form-input @error('password_confirmation') error @enderror"
-                        data-i18n-placeholder="confirmPlaceholder"
-                        placeholder="••••••••••"
-                        required
-                        autocomplete="new-password"
+                            type="password"
+                            name="password_confirmation"
+                            id="password_confirmation"
+                            class="form-input @error('password_confirmation') error @enderror"
+                            data-i18n-placeholder="confirmPlaceholder"
+                            placeholder="••••••••••"
+                            required
+                            autocomplete="new-password"
                     >
                     <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
@@ -1064,4 +1031,3 @@
 </script>
 </body>
 </html>
-
