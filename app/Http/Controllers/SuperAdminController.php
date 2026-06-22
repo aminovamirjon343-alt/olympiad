@@ -6,14 +6,12 @@ use App\Models\User;
 use App\Models\Company;
 use App\Models\Document;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Auth;
 
 class SuperAdminController extends Controller
 {
-    // Главная панель
     public function index()
     {
         $stats = [
@@ -38,7 +36,6 @@ class SuperAdminController extends Controller
         return view('superadmin.dashboard', compact('stats', 'recentUsers', 'recentCompanies'));
     }
 
-    // Список всех пользователей
     public function usersIndex(Request $request)
     {
         $query = User::with('companyRelation');
@@ -73,7 +70,6 @@ class SuperAdminController extends Controller
         return view('superadmin.users.index', compact('users', 'companies'));
     }
 
-    // Создание пользователя
     public function create()
     {
         $companies = Company::orderBy('name')->get();
@@ -113,7 +109,6 @@ class SuperAdminController extends Controller
             ->with('success', 'Пользователь успешно создан');
     }
 
-    // Редактирование
     public function edit(User $user)
     {
         $companies = Company::orderBy('name')->get();
@@ -153,7 +148,6 @@ class SuperAdminController extends Controller
             ->with('success', 'Пользователь обновлён');
     }
 
-    // Удаление
     public function destroy(User $user)
     {
         if ($user->id === Auth::id()) {
@@ -169,31 +163,147 @@ class SuperAdminController extends Controller
         return back()->with('success', 'Пользователь удалён');
     }
 
-    // Список всех компаний
     public function companiesIndex()
     {
-        $companies = Company::withCount('users')
-            ->with('owner')
-            ->latest()
-            ->paginate(20);
+        try {
+            $companies = Company::withCount('users')
+                ->with('owner')
+                ->latest()
+                ->paginate(20);
+        } catch (\Exception $e) {
+            // Если с withCount проблема - пробуем без него
+            $companies = Company::with('owner')
+                ->latest()
+                ->paginate(20);
+
+            // Добавляем users_count вручную
+            foreach ($companies as $company) {
+                $company->users_count = $company->users()->count();
+            }
+        }
 
         return view('superadmin.companies.index', compact('companies'));
     }
 
-    // Активность
-    public function activityIndex()
+    public function activityIndex(Request $request)
     {
-        $activity = Document::with('creator')
-            ->latest()
-            ->take(50)
-            ->get()
-            ->groupBy(function ($doc) {
-                return $doc->created_at->format('Y-m-d');
-            });
+        // Получаем всех пользователей для фильтра
+        $users = User::orderBy('name')->get();
 
-        return view('superadmin.activity', compact('activity'));
+        // Получаем документы (активность)
+        $query = Document::with('creator');
+
+        // Фильтр по действию (если нужно)
+        if ($request->filled('action')) {
+            // Здесь можно добавить логику фильтрации по типу действия
+        }
+
+        // Фильтр по пользователю
+        if ($request->filled('user_id')) {
+            $query->where('created_by', $request->user_id);
+        }
+
+        // Фильтр по дате
+        if ($request->filled('date_from')) {
+            $query->whereDate('created_at', '>=', $request->date_from);
+        }
+
+        if ($request->filled('date_to')) {
+            $query->whereDate('created_at', '<=', $request->date_to);
+        }
+
+        $activities = $query->latest()->paginate(50);
+
+        return view('superadmin.activity', compact('activities', 'users'));
+    }
+// Мой профиль
+    public function profile()
+    {
+        $user = auth()->user();
+        return view('superadmin.profile', compact('user'));
     }
 
+    public function updateProfile(Request $request)
+    {
+        $user = auth()->user();
+
+        $data = $request->validate([
+            'name'  => 'required|string|max:255',
+            'email' => 'required|email|unique:users,email,' . $user->id,
+            'phone' => 'nullable|string',
+            'avatar' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
+            'password' => 'nullable|min:6|confirmed',
+        ]);
+
+        if ($request->hasFile('avatar')) {
+            if ($user->avatar) {
+                Storage::disk('public')->delete($user->avatar);
+            }
+            $data['avatar'] = $request->file('avatar')->store('avatars', 'public');
+        }
+
+        if ($request->filled('password')) {
+            $data['password'] = Hash::make($request->password);
+        } else {
+            unset($data['password']);
+        }
+
+        $user->update($data);
+
+        return back()->with('success', 'Профиль успешно обновлён');
+    }
+    // Редактирование компании
+    public function editCompany(Company $company)
+    {
+        $users = User::where('company_id', $company->id)->get();
+        return view('superadmin.companies.edit', compact('company', 'users'));
+    }
+// Просмотр компании
+    public function showCompany(Company $company)
+    {
+        $users = User::where('company_id', $company->id)
+            ->withCount('documents')
+            ->get();
+
+        $documents = Document::whereHas('creator', function ($q) use ($company) {
+            $q->where('company_id', $company->id);
+        })->latest()->take(20)->get();
+
+        $stats = [
+            'total_users' => $users->count(),
+            'online_users' => $users->filter(fn($u) => $u->isOnline())->count(),
+            'total_documents' => $documents->count(),
+            'admins' => $users->filter(fn($u) => $u->isAdmin())->count(),
+        ];
+
+        return view('superadmin.companies.show', compact('company', 'users', 'documents', 'stats'));
+    }
+    public function updateCompany(Request $request, Company $company)
+    {
+        $data = $request->validate([
+            'name'    => 'required|string|max:255',
+            'email'   => 'nullable|email|max:255',
+            'phone'   => 'nullable|string|max:50',
+            'address' => 'nullable|string|max:500',
+        ]);
+
+        $company->update($data);
+
+        return redirect()->route('superadmin.companies.index')
+            ->with('success', 'Компания обновлена');
+    }
+
+    public function destroyCompany(Company $company)
+    {
+        // Проверяем, есть ли пользователи в компании
+        if ($company->users()->count() > 0) {
+            return back()->with('error', 'Нельзя удалить компанию с пользователями');
+        }
+
+        $company->delete();
+
+        return back()->with('success', 'Компания удалена');
+    }
     public function userActivity(User $user)
     {
         $documents = Document::where('created_by', $user->id)

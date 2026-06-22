@@ -34,7 +34,7 @@ class DocumentSignatureController extends Controller
     public function index()
     {
         $user = Auth::user();
-        $query = DocumentSignature::with(['document', 'user']);
+        $query = DocumentSignature::with(['document', 'users']);
 
         if (!$user->is_admin) {
             $query->where('user_id', $user->id);

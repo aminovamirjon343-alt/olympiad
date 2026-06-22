@@ -4,21 +4,14 @@ namespace App\Http\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
-use Symfony\Component\HttpFoundation\Response;
 
 class IsSuperAdmin
 {
-    public function handle(Request $request, Closure $next): Response
+    public function handle(Request $request, Closure $next)
     {
-        if (!Auth::check()) {
-            return redirect()->route('login');
+        if (!auth()->check() || !auth()->user()->isSuperAdmin()) {
+            abort(403, 'Доступ запрещён. Требуются права супер-администратора.');
         }
-
-        if (!Auth::user()->is_super_admin) {
-            return redirect('/dashboard')->with('error', 'У вас нет прав супер администратора.');
-        }
-
         return $next($request);
     }
 }

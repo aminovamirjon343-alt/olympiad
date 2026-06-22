@@ -41,10 +41,10 @@ class DashboardController extends Controller
             : 0;
 
         // Последние документы
-        $documents = Document::with('user')->latest()->take(5)->get();
+        $documents = Document::with('users')->latest()->take(5)->get();
 
         // Активность (используем документы как активность)
-        $activities = Document::with('user')->latest()->take(10)->get()->map(function($doc) {
+        $activities = Document::with('users')->latest()->take(10)->get()->map(function($doc) {
             $doc->status = 'created';
             $doc->title = $doc->title;
             $doc->content = $doc->description ?? '';

@@ -35,20 +35,20 @@
 //            'name' => ['required', 'string', 'max:255'],
 //            'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class],
 //            'password' => ['required', 'confirmed', Rules\Password::defaults()],
-//            'role' => ['required', 'string', 'in:admin,employee,director,user'], // Проверяем, что пришло значение из твоего enum
+//            'role' => ['required', 'string', 'in:admin,employee,director,users'], // Проверяем, что пришло значение из твоего enum
 //        ]);
 //
 //        // 2. Сохраняем роль в базу данных
-//        $user = User::create([
+//        $users = User::create([
 //            'name' => $request->name,
 //            'email' => $request->email,
 //            'password' => Hash::make($request->password),
 //            'role' => $request->role, // <- ВОТ ЭТОГО НЕ ХВАТАЛО!
 //        ]);
 //
-//        event(new Registered($user));
+//        event(new Registered($users));
 //
-//        Auth::login($user);
+//        Auth::login($users);
 //
 //        return redirect(route('dashboard', absolute: false));
 //    }
@@ -90,7 +90,7 @@ class RegisteredUserController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:' . User::class],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
-            'role' => ['required', 'string', 'in:admin,employee,director,user'],
+            'role' => ['required', 'string', 'in:admin,employee,director,users'],
         ]);
 
         // Создаём компанию для нового пользователя

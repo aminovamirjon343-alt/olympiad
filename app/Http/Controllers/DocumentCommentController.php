@@ -16,7 +16,7 @@ class DocumentCommentController extends Controller
     {
         $document = Document::findOrFail($documentId);
 
-        $comments = DocumentComment::with('user')
+        $comments = DocumentComment::with('users')
             ->where('document_id', $documentId)
             ->latest()
             ->get();

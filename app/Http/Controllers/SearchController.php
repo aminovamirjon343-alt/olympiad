@@ -30,7 +30,7 @@ class SearchController extends Controller
             ->get();
 
 
-        $signatures = Signature::with(['document', 'user'])
+        $signatures = Signature::with(['document', 'users'])
             ->where('id', 'LIKE', "%{$query}%")
             ->orWhereHas('document', function($q) use ($query) {
                 $q->where('title', 'LIKE', "%{$query}%");

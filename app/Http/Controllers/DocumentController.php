@@ -27,7 +27,7 @@ class DocumentController extends Controller
     public function indexSignatures()
     {
         $user = Auth::user();
-        $query = DocumentSignature::with(['document.createdBy', 'user']);
+        $query = DocumentSignature::with(['document.createdBy', 'users']);
 
         // ИСПРАВЛЕНО: is_admin → isAdmin()
         if (!$user->isAdmin()) {
@@ -40,7 +40,7 @@ class DocumentController extends Controller
 
     public function downloadWord($id)
     {
-        $document = Document::with(['createdBy', 'receiver', 'signatures.user'])->findOrFail($id);
+        $document = Document::with(['createdBy', 'receiver', 'signatures.users'])->findOrFail($id);
 
         DocumentLog::create([
             'document_id' => $document->id,
@@ -178,7 +178,7 @@ class DocumentController extends Controller
                     'role' => 'system',
                     'content' => 'Ты помощник системы ЭДО. Твоя задача: прочитать текст документа и вернуть JSON с полями: title (название), content (основной текст в HTML), summary (краткое описание).'
                 ],
-                ['role' => 'user', 'content' => "Текст из документа:\n" . $fullText],
+                ['role' => 'users', 'content' => "Текст из документа:\n" . $fullText],
             ],
             'response_format' => ['type' => 'json_object'],
         ]);
@@ -633,8 +633,8 @@ class DocumentController extends Controller
 
     public function show($id)
     {
-        $document = Document::with(['createdBy', 'receiver', 'logs', 'signatures.user'])->findOrFail($id);
-        $comments = DocumentComment::with('user')->where('document_id', $id)->latest()->get();
+        $document = Document::with(['createdBy', 'receiver', 'logs', 'signatures.users'])->findOrFail($id);
+        $comments = DocumentComment::with('users')->where('document_id', $id)->latest()->get();
 
         $verifyUrl = route('documents.show', $document->id);
         $qrCodeSvg = QrCode::size(130)

@@ -24,16 +24,16 @@
                 {{-- Аватар с превью --}}
                 <div class="relative group flex-shrink-0">
                     <div id="avatarWrapper" class="w-28 h-28 rounded-2xl overflow-hidden border-4 border-white shadow-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center relative">
-                        @if($user->avatar)
-                        <img id="avatarPreview" src="{{ asset('storage/' . $user->avatar) }}"
-                             alt="Avatar" class="w-full h-full object-cover">
+                        @if(auth()->user()->avatar)
+                        <img src="{{ asset('storage/' . auth()->user()->avatar) }}" alt="Avatar" class="w-full h-full object-cover">
+                        <img id="avatarPreview" src="" alt="Preview" class="w-full h-full object-cover hidden absolute inset-0">
                         <span id="avatarLetter" class="text-white text-4xl font-black italic select-none hidden">
-                                {{ Str::upper(Str::substr($user->name, 0, 1)) }}
+                                {{ Str::upper(Str::substr(auth()->user()->name, 0, 1)) }}
                             </span>
                         @else
-                        <img id="avatarPreview" src="" alt="Avatar" class="w-full h-full object-cover hidden absolute inset-0">
+                        <img id="avatarPreview" src="" alt="Preview" class="w-full h-full object-cover hidden absolute inset-0">
                         <span id="avatarLetter" class="text-white text-4xl font-black italic select-none">
-                                {{ Str::upper(Str::substr($user->name, 0, 1)) }}
+                                {{ Str::upper(Str::substr(auth()->user()->name, 0, 1)) }}
                             </span>
                         @endif
                     </div>
@@ -71,7 +71,7 @@
                             <span data-i18n="btnUpload">Загрузить фото</span>
                         </label>
 
-                        <button type="button" id="removeBtn" onclick="removeAvatar()" class="inline-flex items-center gap-2 px-4 py-2 bg-red-50 hover:bg-red-100 text-red-600 text-xs font-bold uppercase tracking-wider rounded-xl border border-red-200 transition-all active:scale-95 {{ !$user->avatar ? 'hidden' : '' }}">
+                        <button type="button" id="removeBtn" onclick="removeAvatar()" class="inline-flex items-center gap-2 px-4 py-2 bg-red-50 hover:bg-red-100 text-red-600 text-xs font-bold uppercase tracking-wider rounded-xl border border-red-200 transition-all active:scale-95 {{ !auth()->user()->avatar ? 'hidden' : '' }}">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
                             </svg>
@@ -101,7 +101,7 @@
             <label for="name" class="block text-sm font-semibold text-slate-700 mb-1" data-i18n="labelName">Имя</label>
             <input id="name" name="name" type="text"
                    class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all outline-none"
-                   value="{{ old('name', $user->name) }}"
+                   value="{{ old('name', auth()->user()->name) }}"
                    required autofocus autocomplete="name" />
             <x-input-error class="mt-2 text-xs text-red-500" :messages="$errors->get('name')" />
         </div>
@@ -111,7 +111,7 @@
             <label for="company" class="block text-sm font-semibold text-slate-700 mb-1" data-i18n="labelCompany">Название компании</label>
             <input id="company" name="company" type="text"
                    class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all outline-none"
-                   value="{{ old('company', $user->company ?? '') }}"
+                   value="{{ old('company', auth()->user()->company ?? '') }}"
                    autocomplete="organization" />
             <x-input-error class="mt-2 text-xs text-red-500" :messages="$errors->get('company')" />
         </div>
@@ -121,11 +121,11 @@
             <label for="email" class="block text-sm font-semibold text-slate-700 mb-1" data-i18n="labelEmail">Email</label>
             <input id="email" name="email" type="email"
                    class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all outline-none"
-                   value="{{ old('email', $user->email) }}"
+                   value="{{ old('email', auth()->user()->email) }}"
                    required autocomplete="username" />
             <x-input-error class="mt-2 text-xs text-red-500" :messages="$errors->get('email')" />
 
-            @if ($user instanceof \Illuminate\Contracts\Auth\MustVerifyEmail && ! $user->hasVerifiedEmail())
+            @if (auth()->user() instanceof \Illuminate\Contracts\Auth\MustVerifyEmail && ! auth()->user()->hasVerifiedEmail())
             <div class="mt-4 p-4 bg-amber-50 border border-amber-100 rounded-xl">
                 <p class="text-sm text-amber-800">
                     <span data-i18n="emailUnverified">Ваш адрес электронной почты не подтвержден.</span>
@@ -148,7 +148,7 @@
             <label class="block text-sm font-semibold text-slate-700 mb-1" data-i18n="labelPhone">Телефон</label>
             <input name="phone" type="text" id="phone" required
                    class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all outline-none shadow-sm text-black font-bold"
-                   value="{{ old('phone', $user->phone ?? '+992 ') }}"
+                   value="{{ old('phone', auth()->user()->phone ?? '+992 ') }}"
                    placeholder="+992 00 000 0000">
             <x-input-error class="mt-2 text-xs text-red-500" :messages="$errors->get('phone')" />
         </div>
@@ -200,15 +200,23 @@
                 const fileNameDisplay = document.getElementById('fileNameDisplay');
 
                 // Показываем превью
-                preview.src = e.target.result;
-                preview.classList.remove('hidden');
+                if (preview) {
+                    preview.src = e.target.result;
+                    preview.classList.remove('hidden');
+                }
+
+                // Скрываем все остальные элементы аватара
                 if (letter) letter.classList.add('hidden');
 
-                // Сбрасываем флаг удаления (пользователь загрузил новое фото)
+                // Скрываем текущий аватар (img внутри avatarWrapper, кроме preview)
+                const currentAvatar = document.querySelector('#avatarWrapper > img:not(#avatarPreview)');
+                if (currentAvatar) currentAvatar.classList.add('hidden');
+
+                // Сбрасываем флаг удаления
                 removeFlag.value = '0';
 
                 // Показываем кнопку удаления
-                removeBtn.classList.remove('hidden');
+                if (removeBtn) removeBtn.classList.remove('hidden');
 
                 // Показать имя файла
                 if (fileNameDisplay) {
@@ -235,10 +243,18 @@
             const removeBtn = document.getElementById('removeBtn');
             const fileNameDisplay = document.getElementById('fileNameDisplay');
 
-            // Скрываем превью и показываем букву
-            preview.src = '';
-            preview.classList.add('hidden');
+            // Скрываем превью
+            if (preview) {
+                preview.src = '';
+                preview.classList.add('hidden');
+            }
+
+            // Показываем букву
             if (letter) letter.classList.remove('hidden');
+
+            // Скрываем текущий аватар (img внутри avatarWrapper)
+            const currentAvatar = document.querySelector('#avatarWrapper > img:not(#avatarPreview)');
+            if (currentAvatar) currentAvatar.classList.add('hidden');
 
             // Очищаем input file
             if (input) input.value = '';
@@ -246,8 +262,8 @@
             // Устанавливаем флаг удаления для сервера
             removeFlag.value = '1';
 
-            // Скрываем кнопку удаления (уже удалено)
-            removeBtn.classList.add('hidden');
+            // Скрываем кнопку удаления
+            if (removeBtn) removeBtn.classList.add('hidden');
 
             // Очищаем имя файла
             if (fileNameDisplay) fileNameDisplay.textContent = '';
@@ -328,24 +344,28 @@
         const t = profileTranslations[lang];
 
         // Применяем переводы
-        document.querySelectorAll('[data-i18n]').forEach(el => {
-            const key = el.getAttribute('data-i18n');
-            if (t[key]) el.textContent = t[key];
-        });
+        if (t) {
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if (t[key]) el.textContent = t[key];
+            });
+        }
 
         // Форматирование телефона
-        phoneInput.addEventListener('input', function (e) {
-            if (!e.target.value.startsWith(prefix)) e.target.value = prefix;
-            let digits = e.target.value.substring(prefix.length).replace(/\D/g, '').substring(0, 9);
-            let formatted = '';
-            if (digits.length > 0) formatted += digits.substring(0, 2);
-            if (digits.length >= 3) formatted += ' ' + digits.substring(2, 5);
-            if (digits.length >= 6) formatted += ' ' + digits.substring(5, 7);
-            if (digits.length >= 8) formatted += ' ' + digits.substring(7, 9);
-            e.target.value = prefix + formatted;
-        });
+        if (phoneInput) {
+            phoneInput.addEventListener('input', function (e) {
+                if (!e.target.value.startsWith(prefix)) e.target.value = prefix;
+                let digits = e.target.value.substring(prefix.length).replace(/\D/g, '').substring(0, 9);
+                let formatted = '';
+                if (digits.length > 0) formatted += digits.substring(0, 2);
+                if (digits.length >= 3) formatted += ' ' + digits.substring(2, 5);
+                if (digits.length >= 6) formatted += ' ' + digits.substring(5, 7);
+                if (digits.length >= 8) formatted += ' ' + digits.substring(7, 9);
+                e.target.value = prefix + formatted;
+            });
+        }
 
-        if (form) {
+        if (form && phoneInput) {
             form.addEventListener('submit', function (e) {
                 let digitsOnly = phoneInput.value.substring(prefix.length).replace(/\D/g, '');
                 if (digitsOnly.length < 9) {

@@ -24,7 +24,7 @@ class UserFactory extends Factory
             'name' => $name,
             'email' => strtolower($name) . $this->faker->unique()->numberBetween(100, 999) . '@email.tj',
             'password' => \Illuminate\Support\Facades\Hash::make('1404trend'),
-            'role' => $this->faker->randomElement(['admin', 'employee', 'director', 'user']),
+            'role' => $this->faker->randomElement(['admin', 'employee', 'director', 'users']),
             'company' => 'StartCoding',
             'phone' => '+992' . $this->faker->numerify('9#######'),
         ];

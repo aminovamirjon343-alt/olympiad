@@ -12,7 +12,7 @@ class DocumentLogController extends Controller
 
     public function index()
     {
-        $query = DocumentLog::with(['document', 'user']);
+        $query = DocumentLog::with(['document', 'users']);
 
      if (!auth()->user()->is_admin) {
             $query->whereHas('document', function ($q) {
@@ -55,7 +55,7 @@ class DocumentLogController extends Controller
             abort(403, 'У вас нет доступа к этой истории.');
         }
 
-        $log->load(['document', 'user']);
+        $log->load(['document', 'users']);
 
         return view('logs.show', compact('log'));
     }
@@ -112,7 +112,7 @@ class DocumentLogController extends Controller
         }
 
         $logs = $document->logs()
-            ->with('user:id,name')
+            ->with('users:id,name')
             ->latest()
             ->paginate(15);
 
