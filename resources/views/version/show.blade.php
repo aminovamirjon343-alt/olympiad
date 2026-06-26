@@ -121,76 +121,131 @@
         </div>
     </div>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            const translations = {
-                ru: {
-                    backBtn: "Назад",
-                    versionTitle: "Версия",
-                    detailsSubtitle: "ФАЙЛ И ДАННЫЕ РЕВИЗИИ",
-                    editBtn: "Редактировать",
-                    deleteBtn: "Удалить",
-                    viewFileBtn: "СКАЧАТЬ",
-                    labelDoc: "Документ",
-                    openOriginal: "ОТКРЫТЬ",
-                    labelUploaded: "Дата загрузки",
-                    labelVersionId: "ID версии",
-                    labelStatus: "Статус",
-                    statusActive: "Активен",
-                    confirmDelete: "Вы уверены, что хотите безвозвратно удалить эту версию документа?"
-                },
-                tj: {
-                    backBtn: "Бозгашт",
-                    versionTitle: "Нусха",
-                    detailsSubtitle: "ТАФСИЛОТИ ТАҲРИРИ ҲУҶҶАТ",
-                    editBtn: "Таҳрир",
-                    deleteBtn: "Ҳазф",
-                    viewFileBtn: "БОРГИРИИ",
-                    labelDoc: "Ҳуҷҷат",
-                    openOriginal: "АСЛӢ",
-                    labelUploaded: "Санаи боргузорӣ",
-                    labelVersionId: "ID-и нусха",
-                    labelStatus: "Статус",
-                    statusActive: "Фаъол",
-                    confirmDelete: "Шумо боварӣ доред, ки ин нусхаи ҳуҷҷатро комилан ҳазф мекунед?"
-                },
-                en: {
-                    backBtn: "Back",
-                    versionTitle: "Version",
-                    detailsSubtitle: "FILE AND REVISION DETAILS",
-                    editBtn: "Edit",
-                    deleteBtn: "Delete",
-                    viewFileBtn: "DOWNLOAD",
-                    labelDoc: "Document",
-                    openOriginal: "OPEN",
-                    labelUploaded: "Uploaded",
-                    labelVersionId: "Version ID",
-                    labelStatus: "Status",
-                    statusActive: "Active",
-                    confirmDelete: "Are you sure you want to permanently delete this document version?"
-                }
-            };
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // ============================================================
+        // ЛОКАЛЬНЫЙ СЛОВАРЬ СТРАНИЦЫ ПРОСМОТРА ВЕРСИИ
+        // ============================================================
+        const VERSION_SHOW_TRANSLATIONS = {
+            ru: {
+                backBtn: 'Назад',
+                versionTitle: 'Версия',
+                detailsSubtitle: 'ФАЙЛ И ДАННЫЕ РЕВИЗИИ',
+                editBtn: 'Редактировать',
+                deleteBtn: 'Удалить',
+                viewFileBtn: 'СКАЧАТЬ',
+                labelDoc: 'Документ',
+                openOriginal: 'ОТКРЫТЬ',
+                labelUploaded: 'Дата загрузки',
+                labelVersionId: 'ID версии',
+                labelStatus: 'Статус',
+                statusActive: 'Активен',
+                confirmDelete: 'Вы уверены, что хотите безвозвратно удалить эту версию документа?'
+            },
+            tj: {
+                backBtn: 'Бозгашт',
+                versionTitle: 'Нусха',
+                detailsSubtitle: 'ТАФСИЛОТИ ТАҲРИРИ ҲУҶҶАТ',
+                editBtn: 'Таҳрир',
+                deleteBtn: 'Ҳазф',
+                viewFileBtn: 'БОРГИРИИ',
+                labelDoc: 'Ҳуҷҷат',
+                openOriginal: 'АСЛӢ',
+                labelUploaded: 'Санаи боргузорӣ',
+                labelVersionId: 'ID-и нусха',
+                labelStatus: 'Статус',
+                statusActive: 'Фаъол',
+                confirmDelete: 'Шумо боварӣ доред, ки ин нусхаи ҳуҷҷатро комилан ҳазф мекунед?'
+            },
+            en: {
+                backBtn: 'Back',
+                versionTitle: 'Version',
+                detailsSubtitle: 'FILE AND REVISION DETAILS',
+                editBtn: 'Edit',
+                deleteBtn: 'Delete',
+                viewFileBtn: 'DOWNLOAD',
+                labelDoc: 'Document',
+                openOriginal: 'OPEN',
+                labelUploaded: 'Uploaded',
+                labelVersionId: 'Version ID',
+                labelStatus: 'Status',
+                statusActive: 'Active',
+                confirmDelete: 'Are you sure you want to permanently delete this document version?'
+            }
+        };
 
-            const lang = localStorage.getItem('app-lang') || 'ru';
-            const t = translations[lang] || translations['ru'];
+        // ============================================================
+        // ФУНКЦИЯ ПРИМЕНЕНИЯ ПЕРЕВОДОВ
+        // ============================================================
+        function applyVersionShowTranslations(lang) {
+            const dict = VERSION_SHOW_TRANSLATIONS[lang] || VERSION_SHOW_TRANSLATIONS.ru;
 
-            // Локализация текстов
+            // 1) Переводим все элементы с data-i18n
             document.querySelectorAll('[data-i18n]').forEach(el => {
                 const key = el.getAttribute('data-i18n');
-                if (t[key]) el.textContent = t[key];
+                if (dict[key] !== undefined) el.textContent = dict[key];
             });
 
-            // Подключение окна confirm() к форме удаления
-            document.querySelectorAll('[data-confirm-i18n]').forEach(form => {
-                const key = form.getAttribute('data-confirm-i18n');
-                form.onsubmit = function(e) {
-                    if (t[key]) {
-                        if (!confirm(t[key])) {
-                            e.preventDefault();
-                        }
-                    }
-                };
+            // 2) Переводим placeholder
+            document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+                const key = el.getAttribute('data-i18n-placeholder');
+                if (dict[key] !== undefined) el.setAttribute('placeholder', dict[key]);
             });
+
+            // 3) Переводим title (подсказки)
+            document.querySelectorAll('[data-i18n-title]').forEach(el => {
+                const key = el.getAttribute('data-i18n-title');
+                if (dict[key] !== undefined) el.setAttribute('title', dict[key]);
+            });
+
+            // 4) Обновляем обработчики confirm для форм удаления
+            document.querySelectorAll('[data-confirm-i18n]').forEach(el => {
+                const key = el.getAttribute('data-confirm-i18n');
+                const message = dict[key] || 'Are you sure?';
+
+                // Клонируем элемент, чтобы сбросить старые обработчики
+                const newEl = el.cloneNode(true);
+                el.parentNode.replaceChild(newEl, el);
+
+                // Если дата-атрибут на форме
+                if (newEl.tagName === 'FORM') {
+                    newEl.onsubmit = (e) => {
+                        if (!confirm(message)) e.preventDefault();
+                    };
+                } else {
+                    // Если на кнопке
+                    const form = newEl.closest('form');
+                    if (form) {
+                        form.onsubmit = (e) => {
+                            if (!confirm(message)) e.preventDefault();
+                        };
+                    }
+                }
+            });
+        }
+
+        // ============================================================
+        // 1. Применяем сразу при загрузке
+        // ============================================================
+        const initialLang = localStorage.getItem('docsign_lang') || 'ru';
+        applyVersionShowTranslations(initialLang);
+
+        // ============================================================
+        // 2. Слушаем событие смены языка от layouts/admin.blade.php
+        // ============================================================
+        window.addEventListener('docsign:lang-changed', (e) => {
+            const lang = e.detail?.lang || 'ru';
+            applyVersionShowTranslations(lang);
         });
-    </script>
+
+        // ============================================================
+        // 3. Синхронизация между вкладками браузера
+        // ============================================================
+        window.addEventListener('storage', (e) => {
+            if (e.key === 'docsign_lang' && e.newValue) {
+                applyVersionShowTranslations(e.newValue);
+            }
+        });
+    });
+</script>
 @endsection

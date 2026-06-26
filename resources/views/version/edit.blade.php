@@ -94,71 +94,124 @@
         </div>
     </div>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            const translations = {
-                ru: {
-                    backBtn: "Назад",
-                    editTitle: "Редактирование версии",
-                    editSubTitle: "ОБНОВИТЕ ФАЙЛ ИЛИ ИЗМЕНИТЕ ДАННЫЕ",
-                    labelDoc: "Документ",
-                    labelCurrentFile: "Текущий файл",
-                    btnDownload: "СКАЧАТЬ ТЕКУЩИЙ PDF",
-                    labelNewFile: "ЗАМЕНИТЬ ФАЙЛ (НЕОБЯЗАТЕЛЬНО)",
-                    labelSummary: "ОПИСАНИЕ ИЗМЕНЕНИЙ",
-                    placeholderSummary: "Что именно изменилось в этой версии?",
-                    btnCancel: "ОТМЕНА",
-                    btnSave: "СОХРАНИТЬ ИЗМЕНЕНИЯ",
-                    confirmMsg: "Вы уверены, что хотите сохранить изменения?"
-                },
-                tj: {
-                    backBtn: "Бозгашт",
-                    editTitle: "Таҳрири нусха",
-                    editSubTitle: "ТАЪРИХИ ТАҒЙИРОТИ ФАЙЛҲО",
-                    labelDoc: "Ҳуҷҷат",
-                    labelCurrentFile: "Файли ҷорӣ",
-                    btnDownload: "БОРГИРИИ PDF",
-                    labelNewFile: "ИВАЗИ ФАЙЛ (ИХТИЁРӢ)",
-                    labelSummary: "ТАВСИФИ ТАҒЙИРОТ",
-                    placeholderSummary: "Дар ин нусха чӣ тағйир ёфт?",
-                    btnCancel: "БЕКОР КАРДАН",
-                    btnSave: "ЗАХИРА КАРДАН",
-                    confirmMsg: "Шумо мутмаин ҳастед?"
-                },
-                en: {
-                    backBtn: "Back",
-                    editTitle: "Edit Version",
-                    editSubTitle: "FILE CHANGE HISTORY",
-                    labelDoc: "Document",
-                    labelCurrentFile: "Current File",
-                    btnDownload: "DOWNLOAD CURRENT PDF",
-                    labelNewFile: "REPLACE FILE (OPTIONAL)",
-                    labelSummary: "CHANGE SUMMARY",
-                    placeholderSummary: "What changed?",
-                    btnCancel: "CANCEL",
-                    btnSave: "SAVE CHANGES",
-                    confirmMsg: "Are you sure?"
-                }
-            };
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // ============================================================
+        // ЛОКАЛЬНЫЙ СЛОВАРЬ СТРАНИЦЫ РЕДАКТИРОВАНИЯ ВЕРСИИ
+        // ============================================================
+        const VERSION_EDIT_TRANSLATIONS = {
+            ru: {
+                backBtn: 'Назад',
+                editTitle: 'Редактирование версии',
+                editSubTitle: 'ОБНОВИТЕ ФАЙЛ ИЛИ ИЗМЕНИТЕ ДАННЫЕ',
+                labelDoc: 'Документ',
+                labelCurrentFile: 'Текущий файл',
+                btnDownload: 'СКАЧАТЬ ТЕКУЩИЙ PDF',
+                labelNewFile: 'ЗАМЕНИТЬ ФАЙЛ (НЕОБЯЗАТЕЛЬНО)',
+                labelSummary: 'ОПИСАНИЕ ИЗМЕНЕНИЙ',
+                placeholderSummary: 'Что именно изменилось в этой версии?',
+                btnCancel: 'ОТМЕНА',
+                btnSave: 'СОХРАНИТЬ ИЗМЕНЕНИЯ',
+                confirmMsg: 'Вы уверены, что хотите сохранить изменения?'
+            },
+            tj: {
+                backBtn: 'Бозгашт',
+                editTitle: 'Таҳрири нусха',
+                editSubTitle: 'ТАЪРИХИ ТАҒЙИРОТИ ФАЙЛҲО',
+                labelDoc: 'Ҳуҷҷат',
+                labelCurrentFile: 'Файли ҷорӣ',
+                btnDownload: 'БОРГИРИИ PDF',
+                labelNewFile: 'ИВАЗИ ФАЙЛ (ИХТИЁРӢ)',
+                labelSummary: 'ТАВСИФИ ТАҒЙИРОТ',
+                placeholderSummary: 'Дар ин нусха чӣ тағйир ёфт?',
+                btnCancel: 'БЕКОР КАРДАН',
+                btnSave: 'ЗАХИРА КАРДАН',
+                confirmMsg: 'Шумо мутмаин ҳастед?'
+            },
+            en: {
+                backBtn: 'Back',
+                editTitle: 'Edit Version',
+                editSubTitle: 'FILE CHANGE HISTORY',
+                labelDoc: 'Document',
+                labelCurrentFile: 'Current File',
+                btnDownload: 'DOWNLOAD CURRENT PDF',
+                labelNewFile: 'REPLACE FILE (OPTIONAL)',
+                labelSummary: 'CHANGE SUMMARY',
+                placeholderSummary: 'What changed?',
+                btnCancel: 'CANCEL',
+                btnSave: 'SAVE CHANGES',
+                confirmMsg: 'Are you sure?'
+            }
+        };
 
-            const lang = localStorage.getItem('app-lang') || 'ru';
-            const t = translations[lang];
+        // ============================================================
+        // ФУНКЦИЯ ПРИМЕНЕНИЯ ПЕРЕВОДОВ
+        // ============================================================
+        function applyVersionEditTranslations(lang) {
+            const dict = VERSION_EDIT_TRANSLATIONS[lang] || VERSION_EDIT_TRANSLATIONS.ru;
 
+            // 1) Переводим все элементы с data-i18n
             document.querySelectorAll('[data-i18n]').forEach(el => {
                 const key = el.getAttribute('data-i18n');
-                if (t[key]) el.textContent = t[key];
+                if (dict[key] !== undefined) el.textContent = dict[key];
             });
 
+            // 2) Переводим placeholder
+            document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+                const key = el.getAttribute('data-i18n-placeholder');
+                if (dict[key] !== undefined) el.setAttribute('placeholder', dict[key]);
+            });
+
+            // 3) Переводим title (подсказки)
+            document.querySelectorAll('[data-i18n-title]').forEach(el => {
+                const key = el.getAttribute('data-i18n-title');
+                if (dict[key] !== undefined) el.setAttribute('title', dict[key]);
+            });
+
+            // 4) Обновляем placeholder для textarea (если есть)
             const textarea = document.getElementById('change_summary');
-            if (textarea && t.placeholderSummary) {
-                textarea.placeholder = t.placeholderSummary;
+            if (textarea && dict.placeholderSummary) {
+                textarea.placeholder = dict.placeholderSummary;
             }
 
-            document.getElementById('editVersionForm').addEventListener('submit', function(e) {
-                if (!confirm(t.confirmMsg)) {
-                    e.preventDefault();
-                }
-            });
+            // 5) Обновляем обработчик confirm для формы
+            const form = document.getElementById('editVersionForm');
+            if (form) {
+                // Клонируем форму, чтобы сбросить старые обработчики
+                const newForm = form.cloneNode(true);
+                form.parentNode.replaceChild(newForm, form);
+
+                // Вешаем новый обработчик с актуальным переводом
+                newForm.addEventListener('submit', function(e) {
+                    if (!confirm(dict.confirmMsg)) {
+                        e.preventDefault();
+                    }
+                });
+            }
+        }
+
+        // ============================================================
+        // 1. Применяем сразу при загрузке
+        // ============================================================
+        const initialLang = localStorage.getItem('docsign_lang') || 'ru';
+        applyVersionEditTranslations(initialLang);
+
+        // ============================================================
+        // 2. Слушаем событие смены языка от layouts/admin.blade.php
+        // ============================================================
+        window.addEventListener('docsign:lang-changed', (e) => {
+            const lang = e.detail?.lang || 'ru';
+            applyVersionEditTranslations(lang);
         });
-    </script>
+
+        // ============================================================
+        // 3. Синхронизация между вкладками браузера
+        // ============================================================
+        window.addEventListener('storage', (e) => {
+            if (e.key === 'docsign_lang' && e.newValue) {
+                applyVersionEditTranslations(e.newValue);
+            }
+        });
+    });
+</script>
 @endsection

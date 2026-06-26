@@ -193,75 +193,124 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', function () {
-        const translations = {
+        // ============================================================
+        // ЛОКАЛЬНЫЙ СЛОВАРЬ СТРАНИЦЫ РЕДАКТИРОВАНИЯ ПОДПИСИ
+        // ============================================================
+        const SIGN_EDIT_TRANSLATIONS = {
             ru: {
-                backBtn: "Назад",
-                pageTitle: "Обновление QR-защиты",
-                labelDoc: "Документ",
-                labelNewSig: "Новый QR-код Верификации",
-                submitBtn: "Обновить документ",
-                labelCurrent: "Предыдущий QR Штамп",
-                noStamp: "Файл штампа не найден",
-                infoTitle: "Внимание",
-                infoTextPdf: "При обновлении штампа система полностью перегенерирует документ. Текущий QR-код будет замещён актуальной версией, а старый файл удалён из системы для оптимизации памяти.",
-                infoTextWord: "Для документов Word (.docx) штамп защиты перезапишется в структуре файла. Убедитесь, что исходный макет не содержит конфликтов.",
-                infoTextExcel: "Для таблиц Excel (.xlsx) защитный QR-код будет обновлен непосредственно внутри структуры листа метаданных без потери ваших формул.",
-                infoTextRtf: "Для документов формата RTF структура разметки будет перекомпилирована с интеграцией нового бинарного контейнера штампа."
-            },
-            en: {
-                backBtn: "Back",
-                pageTitle: "Update QR Protection",
-                labelDoc: "Document",
-                labelNewSig: "New QR Verification Code",
-                submitBtn: "Update Document",
-                labelCurrent: "Previous QR Stamp",
-                noStamp: "Stamp file not found",
-                infoTitle: "Attention",
-                infoTextPdf: "When updating the stamp, the system completely regenerates document. The current QR code will be replaced with the updated version, and the old file will be deleted to optimize storage.",
-                infoTextWord: "For Word documents (.docx), the protection stamp will be overwritten within the file structure. Please ensure the file format is valid.",
-                infoTextExcel: "For Excel spreadsheets (.xlsx), the secure QR code will be updated right inside the sheet structure without breaking formulas.",
-                infoTextRtf: "For RTF files, the layout markup will be recompiled to natively integrate the new stamp binary container."
+                backBtn: 'Назад',
+                pageTitle: 'Обновление QR-защиты',
+                labelDoc: 'Документ',
+                labelNewSig: 'Новый QR-код Верификации',
+                submitBtn: 'Обновить документ',
+                labelCurrent: 'Предыдущий QR Штамп',
+                noStamp: 'Файл штампа не найден',
+                infoTitle: 'Внимание',
+                infoTextPdf: 'При обновлении штампа система полностью перегенерирует документ. Текущий QR-код будет замещён актуальной версией, а старый файл удалён из системы для оптимизации памяти.',
+                infoTextWord: 'Для документов Word (.docx) штамп защиты перезапишется в структуре файла. Убедитесь, что исходный макет не содержит конфликтов.',
+                infoTextExcel: 'Для таблиц Excel (.xlsx) защитный QR-код будет обновлен непосредственно внутри структуры листа метаданных без потери ваших формул.',
+                infoTextRtf: 'Для документов формата RTF структура разметки будет перекомпилирована с интеграцией нового бинарного контейнера штампа.'
             },
             tj: {
-                backBtn: "Бозгашт",
-                pageTitle: "Навсозии муҳофизати QR",
-                labelDoc: "Ҳуҷҷат",
-                labelNewSig: "QR-коди нави тасдиқкунанда",
-                submitBtn: "Навсозии ҳуҷҷат",
-                labelCurrent: "Муҳри QR-и қаблӣ",
-                noStamp: "Файли муҳр ёфт нашуд",
-                infoTitle: "Диққат",
-                infoTextPdf: "Ҳангоми навсозии муҳр система ҳуҷҷати комилан аз нав месозад. QR-коди ҷорӣ бо нусхаи нав иваз карда шуда, файли кӯҳна барои сарфаи хотира нест карда мешавад.",
-                infoTextWord: "Барои ҳуҷҷатҳои Word (.docx) муҳри муҳофизатӣ дар сохтори файл аз нав навишта мешавад. Боварӣ ҳосил кунед, ки формати файл дуруст аст.",
-                infoTextExcel: "Барои ҷадвалҳои Excel (.xlsx) коди муҳофизатии QR бевосита дар дохили сохтори варақ бидуни вайрон кардани формулаҳо нав карда мешавад.",
-                infoTextRtf: "Барои ҳуҷҷатҳои формати RTF сохтори маркап аз нав компилятсия шуда, контейнери бинарии нав ворид карда мешавад."
+                backBtn: 'Бозгашт',
+                pageTitle: 'Навсозии муҳофизати QR',
+                labelDoc: 'Ҳуҷҷат',
+                labelNewSig: 'QR-коди нави тасдиқкунанда',
+                submitBtn: 'Навсозии ҳуҷҷат',
+                labelCurrent: 'Муҳри QR-и қаблӣ',
+                noStamp: 'Файли муҳр ёфт нашуд',
+                infoTitle: 'Диққат',
+                infoTextPdf: 'Ҳангоми навсозии муҳр система ҳуҷҷати комилан аз нав месозад. QR-коди ҷорӣ бо нусхаи нав иваз карда шуда, файли кӯҳна барои сарфаи хотира нест карда мешавад.',
+                infoTextWord: 'Барои ҳуҷҷатҳои Word (.docx) муҳри муҳофизатӣ дар сохтори файл аз нав навишта мешавад. Боварӣ ҳосил кунед, ки формати файл дуруст аст.',
+                infoTextExcel: 'Барои ҷадвалҳои Excel (.xlsx) коди муҳофизатии QR бевосита дар дохили сохтори варақ бидуни вайрон кардани формулаҳо нав карда мешавад.',
+                infoTextRtf: 'Барои ҳуҷҷатҳои формати RTF сохтори маркап аз нав компилятсия шуда, контейнери бинарии нав ворид карда мешавад.'
+            },
+            en: {
+                backBtn: 'Back',
+                pageTitle: 'Update QR Protection',
+                labelDoc: 'Document',
+                labelNewSig: 'New QR Verification Code',
+                submitBtn: 'Update Document',
+                labelCurrent: 'Previous QR Stamp',
+                noStamp: 'Stamp file not found',
+                infoTitle: 'Attention',
+                infoTextPdf: 'When updating the stamp, the system completely regenerates document. The current QR code will be replaced with the updated version, and the old file will be deleted to optimize storage.',
+                infoTextWord: 'For Word documents (.docx), the protection stamp will be overwritten within the file structure. Please ensure the file format is valid.',
+                infoTextExcel: 'For Excel spreadsheets (.xlsx), the secure QR code will be updated right inside the sheet structure without breaking formulas.',
+                infoTextRtf: 'For RTF files, the layout markup will be recompiled to natively integrate the new stamp binary container.'
             }
         };
 
-        const lang = localStorage.getItem('app-lang') || 'ru';
-        const t = translations[lang] || translations['ru'];
+        // ============================================================
+        // ФУНКЦИЯ ПРИМЕНЕНИЯ ПЕРЕВОДОВ
+        // ============================================================
+        function applySignatureEditTranslations(lang) {
+            const dict = SIGN_EDIT_TRANSLATIONS[lang] || SIGN_EDIT_TRANSLATIONS.ru;
 
-        // Применяем переводы атрибутов data-i18n
-        document.querySelectorAll('[data-i18n]').forEach(el => {
-            const key = el.getAttribute('data-i18n');
-            if (t && t[key]) el.textContent = t[key];
-        });
+            // 1) Переводим все элементы с data-i18n
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if (dict[key] !== undefined) el.textContent = dict[key];
+            });
 
-        // Динамическое определение типа документа во фронтенде
-        const ext = "{{ $extension }}";
-        const infoContainer = document.getElementById('infoTextContainer');
+            // 2) Переводим placeholder
+            document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+                const key = el.getAttribute('data-i18n-placeholder');
+                if (dict[key] !== undefined) el.setAttribute('placeholder', dict[key]);
+            });
 
-        if (infoContainer) {
+            // 3) Переводим title (подсказки)
+            document.querySelectorAll('[data-i18n-title]').forEach(el => {
+                const key = el.getAttribute('data-i18n-title');
+                if (dict[key] !== undefined) el.setAttribute('title', dict[key]);
+            });
+
+            // 4) Обновляем динамический infoTextContainer в зависимости от типа документа
+            updateInfoText(dict);
+        }
+
+        // ============================================================
+        // ФУНКЦИЯ ОБНОВЛЕНИЯ ИНФОРМАЦИОННОГО ТЕКСТА
+        // ============================================================
+        function updateInfoText(dict) {
+            const ext = "{{ $extension }}";
+            const infoContainer = document.getElementById('infoTextContainer');
+
+            if (!infoContainer) return;
+
             if (['doc', 'docx'].includes(ext)) {
-                infoContainer.textContent = t.infoTextWord;
+                infoContainer.textContent = dict.infoTextWord;
             } else if (['xls', 'xlsx'].includes(ext)) {
-                infoContainer.textContent = t.infoTextExcel;
+                infoContainer.textContent = dict.infoTextExcel;
             } else if (ext === 'rtf') {
-                infoContainer.textContent = t.infoTextRtf;
+                infoContainer.textContent = dict.infoTextRtf;
             } else {
-                infoContainer.textContent = t.infoTextPdf;
+                infoContainer.textContent = dict.infoTextPdf;
             }
         }
+
+        // ============================================================
+        // 1. Применяем сразу при загрузке
+        // ============================================================
+        const initialLang = localStorage.getItem('docsign_lang') || 'ru';
+        applySignatureEditTranslations(initialLang);
+
+        // ============================================================
+        // 2. Слушаем событие смены языка от layouts/admin.blade.php
+        // ============================================================
+        window.addEventListener('docsign:lang-changed', (e) => {
+            const lang = e.detail?.lang || 'ru';
+            applySignatureEditTranslations(lang);
+        });
+
+        // ============================================================
+        // 3. Синхронизация между вкладками браузера
+        // ============================================================
+        window.addEventListener('storage', (e) => {
+            if (e.key === 'docsign_lang' && e.newValue) {
+                applySignatureEditTranslations(e.newValue);
+            }
+        });
     });
 </script>
 @endsection

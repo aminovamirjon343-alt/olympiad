@@ -63,46 +63,87 @@
     </form>
 </section>
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const translations = {
+    document.addEventListener('DOMContentLoaded', function () {
+        // ============================================================
+        // ЛОКАЛЬНЫЙ СЛОВАРЬ ФОРМЫ ОБНОВЛЕНИЯ ПАРОЛЯ
+        // (дополняет глобальный TRANSLATIONS из layouts/admin.blade.php)
+        // ============================================================
+        const PASSWORD_TRANSLATIONS = {
             ru: {
-                updatePasswordTitle: "Обновление пароля",
-                updatePasswordDesc: "Используйте длинный случайный пароль, чтобы ваш аккаунт оставался в безопасности.",
-                currentPasswordLabel: "Текущий пароль",
-                newPasswordLabel: "Новый пароль",
-                confirmPasswordLabel: "Подтвердите пароль",
-                btnSave: "Сохранить изменения",
-                statusUpdated: "Обновлено"
+                updatePasswordTitle: 'Обновление пароля',
+                updatePasswordDesc: 'Используйте длинный случайный пароль, чтобы ваш аккаунт оставался в безопасности.',
+                currentPasswordLabel: 'Текущий пароль',
+                newPasswordLabel: 'Новый пароль',
+                confirmPasswordLabel: 'Подтвердите пароль',
+                btnSave: 'Сохранить изменения',
+                statusUpdated: 'Обновлено'
             },
             tj: {
-                updatePasswordTitle: "Навсозии рамз",
-                updatePasswordDesc: "Барои бехатарии аккаунти худ рамзи дароз ва тасодуфиро истифода баред.",
-                currentPasswordLabel: "Рамзи ҷорӣ",
-                newPasswordLabel: "Рамзи нав",
-                confirmPasswordLabel: "Тасдиқи рамз",
-                btnSave: "Захира кардани тағйирот",
-                statusUpdated: "Навсозӣ шуд"
+                updatePasswordTitle: 'Навсозии рамз',
+                updatePasswordDesc: 'Барои бехатарии аккаунти худ рамзи дароз ва тасодуфиро истифода баред.',
+                currentPasswordLabel: 'Рамзи ҷорӣ',
+                newPasswordLabel: 'Рамзи нав',
+                confirmPasswordLabel: 'Тасдиқи рамз',
+                btnSave: 'Захира кардани тағйирот',
+                statusUpdated: 'Навсозӣ шуд'
             },
             en: {
-                updatePasswordTitle: "Update Password",
-                updatePasswordDesc: "Ensure your account is using a long, random password to stay secure.",
-                currentPasswordLabel: "Current Password",
-                newPasswordLabel: "New Password",
-                confirmPasswordLabel: "Confirm Password",
-                btnSave: "Save Changes",
-                statusUpdated: "Saved"
+                updatePasswordTitle: 'Update Password',
+                updatePasswordDesc: 'Ensure your account is using a long, random password to stay secure.',
+                currentPasswordLabel: 'Current Password',
+                newPasswordLabel: 'New Password',
+                confirmPasswordLabel: 'Confirm Password',
+                btnSave: 'Save Changes',
+                statusUpdated: 'Saved'
             }
         };
 
-        // Получаем текущий язык (по умолчанию RU)
-        const currentLang = localStorage.getItem('app-lang') || 'ru';
-        const t = translations[currentLang];
+        // ============================================================
+        // ФУНКЦИЯ ПРИМЕНЕНИЯ ПЕРЕВОДОВ
+        // ============================================================
+        function applyPasswordTranslations(lang) {
+            const dict = PASSWORD_TRANSLATIONS[lang] || PASSWORD_TRANSLATIONS.ru;
 
-        // Находим все элементы с атрибутом data-i18n и заменяем текст
-        document.querySelectorAll('[data-i18n]').forEach(el => {
-            const key = el.getAttribute('data-i18n');
-            if (t[key]) {
-                el.textContent = t[key];
+            // 1) Переводим все элементы с data-i18n
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if (dict[key] !== undefined) el.textContent = dict[key];
+            });
+
+            // 2) Переводим placeholder
+            document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+                const key = el.getAttribute('data-i18n-placeholder');
+                if (dict[key] !== undefined) el.setAttribute('placeholder', dict[key]);
+            });
+
+            // 3) Переводим title (подсказки)
+            document.querySelectorAll('[data-i18n-title]').forEach(el => {
+                const key = el.getAttribute('data-i18n-title');
+                if (dict[key] !== undefined) el.setAttribute('title', dict[key]);
+            });
+        }
+
+        // ============================================================
+        // 1. Применяем сразу при загрузке
+        // ============================================================
+        const initialLang = localStorage.getItem('docsign_lang') || 'ru';
+        applyPasswordTranslations(initialLang);
+
+        // ============================================================
+        // 2. Слушаем событие смены языка от layouts/admin.blade.php
+        //    (когда юзер кликает на 🇷🇺/🇹🇯/🇬🇧 в админке)
+        // ============================================================
+        window.addEventListener('docsign:lang-changed', (e) => {
+            const lang = e.detail?.lang || 'ru';
+            applyPasswordTranslations(lang);
+        });
+
+        // ============================================================
+        // 3. Синхронизация между вкладками браузера
+        // ============================================================
+        window.addEventListener('storage', (e) => {
+            if (e.key === 'docsign_lang' && e.newValue) {
+                applyPasswordTranslations(e.newValue);
             }
         });
     });

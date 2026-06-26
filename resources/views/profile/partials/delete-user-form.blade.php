@@ -77,54 +77,97 @@
 </section>
 
 <script>
-    document.addEventListener('DOMContentLoaded', () => {
-        const translations = {
+    document.addEventListener('DOMContentLoaded', function () {
+        // ============================================================
+        // ЛОКАЛЬНЫЙ СЛОВАРЬ DANGER ZONE
+        // (дополняет глобальный TRANSLATIONS из layouts/admin.blade.php)
+        // ============================================================
+        const DANGER_ZONE_TRANSLATIONS = {
             ru: {
-                deleteWarning: "Удаление аккаунта сотрет все данные безвозвратно.",
-                btnDeleteAccount: "УДАЛИТЬ АККАУНТ",
-                confirmPassTitle: "Подтвердите пароль",
-                confirmPassDesc: "Это действие необратимо. Введите пароль для удаления.",
-                placeholderPass: "Ваш пароль",
-                btnCancel: "Отмена",
-                btnConfirmDelete: "Удалить",
-                errorPassword: "❌ Неверный пароль. Попробуйте еще раз."
+                deleteWarning: 'Удаление аккаунта сотрет все данные безвозвратно.',
+                btnDeleteAccount: 'УДАЛИТЬ АККАУНТ',
+                confirmPassTitle: 'Подтвердите пароль',
+                confirmPassDesc: 'Это действие необратимо. Введите пароль для удаления.',
+                placeholderPass: 'Ваш пароль',
+                btnCancel: 'Отмена',
+                btnConfirmDelete: 'Удалить',
+                errorPassword: '❌ Неверный пароль. Попробуйте еще раз.'
             },
             tj: {
-                deleteWarning: "Нест кардани аккаунт ҳамаи маълумотро ба таври ҳамешагӣ нест мекунад.",
-                btnDeleteAccount: "НЕСТ КАРДАНИ АККАУНТ",
-                confirmPassTitle: "Рамзро тасдиқ кунед",
-                confirmPassDesc: "Ин амал бозгашт надорад. Барои нест кардан рамзро ворид кунед.",
-                placeholderPass: "Рамзи шумо",
-                btnCancel: "Бекор кардан",
-                btnConfirmDelete: "Нест кардан",
-                errorPassword: "❌ Рамз нодуруст аст. Дубора кӯшиш кунед."
+                deleteWarning: 'Нест кардани аккаунт ҳамаи маълумотро ба таври ҳамешагӣ нест мекунад.',
+                btnDeleteAccount: 'НЕСТ КАРДАНИ АККАУНТ',
+                confirmPassTitle: 'Рамзро тасдиқ кунед',
+                confirmPassDesc: 'Ин амал бозгашт надорад. Барои нест кардан рамзро ворид кунед.',
+                placeholderPass: 'Рамзи шумо',
+                btnCancel: 'Бекор кардан',
+                btnConfirmDelete: 'Нест кардан',
+                errorPassword: '❌ Рамз нодуруст аст. Дубора кӯшиш кунед.'
             },
             en: {
-                deleteWarning: "Deleting your account will erase all data permanently.",
-                btnDeleteAccount: "DELETE ACCOUNT",
-                confirmPassTitle: "Confirm Password",
-                confirmPassDesc: "This action is irreversible. Enter your password to delete.",
-                placeholderPass: "Your password",
-                btnCancel: "Cancel",
-                btnConfirmDelete: "Delete",
-                errorPassword: "❌ Incorrect password. Please try again."
+                deleteWarning: 'Deleting your account will erase all data permanently.',
+                btnDeleteAccount: 'DELETE ACCOUNT',
+                confirmPassTitle: 'Confirm Password',
+                confirmPassDesc: 'This action is irreversible. Enter your password to delete.',
+                placeholderPass: 'Your password',
+                btnCancel: 'Cancel',
+                btnConfirmDelete: 'Delete',
+                errorPassword: '❌ Incorrect password. Please try again.'
             }
         };
 
-        const lang = localStorage.getItem('app-lang') || 'ru';
-        const t = translations[lang];
+        // ============================================================
+        // ФУНКЦИЯ ПРИМЕНЕНИЯ ПЕРЕВОДОВ
+        // ============================================================
+        function applyDangerZoneTranslations(lang) {
+            const dict = DANGER_ZONE_TRANSLATIONS[lang] || DANGER_ZONE_TRANSLATIONS.ru;
 
-        document.querySelectorAll('[data-i18n]').forEach(el => {
-            const key = el.getAttribute('data-i18n');
-            if (t[key]) el.textContent = t[key];
+            // 1) Переводим все элементы с data-i18n
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if (dict[key] !== undefined) el.textContent = dict[key];
+            });
+
+            // 2) Переводим placeholder
+            document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+                const key = el.getAttribute('data-i18n-placeholder');
+                if (dict[key] !== undefined) el.setAttribute('placeholder', dict[key]);
+            });
+
+            // 3) Переводим title (подсказки)
+            document.querySelectorAll('[data-i18n-title]').forEach(el => {
+                const key = el.getAttribute('data-i18n-title');
+                if (dict[key] !== undefined) el.setAttribute('title', dict[key]);
+            });
+        }
+
+        // ============================================================
+        // 1. Применяем сразу при загрузке
+        // ============================================================
+        const initialLang = localStorage.getItem('docsign_lang') || 'ru';
+        applyDangerZoneTranslations(initialLang);
+
+        // ============================================================
+        // 2. Слушаем событие смены языка от layouts/admin.blade.php
+        //    (когда юзер кликает на 🇷🇺/🇹🇯/🇬🇧 в админке)
+        // ============================================================
+        window.addEventListener('docsign:lang-changed', (e) => {
+            const lang = e.detail?.lang || 'ru';
+            applyDangerZoneTranslations(lang);
         });
 
-        document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
-            const key = el.getAttribute('data-i18n-placeholder');
-            if (t[key]) el.placeholder = t[key];
+        // ============================================================
+        // 3. Синхронизация между вкладками браузера
+        // ============================================================
+        window.addEventListener('storage', (e) => {
+            if (e.key === 'docsign_lang' && e.newValue) {
+                applyDangerZoneTranslations(e.newValue);
+            }
         });
     });
 
+    // ============================================================
+    // МОДАЛЬНОЕ ОКНО УДАЛЕНИЯ АККАУНТА
+    // ============================================================
     function openCustomDeleteModal() {
         const m = document.getElementById('customDeleteModal');
         m.style.display = 'flex';
@@ -136,6 +179,7 @@
         const m = document.getElementById('customDeleteModal');
         m.style.display = 'none';
         m.classList.add('hidden');
+        document.getElementById('customPasswordInput').value = '';
     }
 
     function submitLaravelDeletion(e) {

@@ -12,11 +12,11 @@ class DocumentLogController extends Controller
 
     public function index()
     {
-        $query = DocumentLog::with(['document', 'users']);
+        $query = DocumentLog::with(['document', 'user']);
 
-     if (!auth()->user()->is_admin) {
+        if (!auth()->user()->is_admin) {
             $query->whereHas('document', function ($q) {
-               $q->where('created_by', auth()->id());
+                $q->where('created_by', auth()->id());
             });
         }
 
@@ -27,7 +27,7 @@ class DocumentLogController extends Controller
 
     public function create(): View
     {
-       if (auth()->user()->is_admin) {
+        if (auth()->user()->is_admin) {
             $documents = Document::pluck('title', 'id');
         } else {
             $documents = Document::where('created_by', auth()->id())->pluck('title', 'id');
@@ -55,7 +55,7 @@ class DocumentLogController extends Controller
             abort(403, 'У вас нет доступа к этой истории.');
         }
 
-        $log->load(['document', 'users']);
+        $log->load(['document', 'user']);
 
         return view('logs.show', compact('log'));
     }
@@ -107,12 +107,12 @@ class DocumentLogController extends Controller
 
     public function documentLogs(Document $document): View
     {
-       if (!auth()->user()->is_admin && $document->created_by !== auth()->id()) {
+        if (!auth()->user()->is_admin && $document->created_by !== auth()->id()) {
             abort(403);
         }
 
         $logs = $document->logs()
-            ->with('users:id,name')
+            ->with('user:id,name')
             ->latest()
             ->paginate(15);
 
@@ -124,7 +124,6 @@ class DocumentLogController extends Controller
         if (!auth()->user()->is_admin) {
             return back()->with('error', 'У вас нет прав на очистку журнала истории');
         }
-
 
         \App\Models\DocumentLog::truncate();
 

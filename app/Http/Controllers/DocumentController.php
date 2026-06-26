@@ -390,14 +390,33 @@ class DocumentController extends Controller
     public function index(Request $request)
     {
         $user = Auth::user();
+
+        // ===== СТАТИСТИКА (отдельный запрос, не зависит от фильтров списка) =====
+        $userFilter = function($q) use ($user) {
+            $q->where('created_by', $user->id)
+                ->orWhere('receiver_id', $user->id);
+        };
+
+        $stats = [
+            'total'     => Document::where($userFilter)->count(),
+            'active'    => Document::where($userFilter)->where('status', 'active')->count(),
+            'draft'     => Document::where($userFilter)->where('status', 'draft')->count(),
+            'pending'   => Document::where($userFilter)->where('status', 'pending')->count(),
+            'signed'    => Document::where($userFilter)->where('status', 'completed')->count(),
+            'users'     => \App\Models\User::count(),
+            'new_users' => \App\Models\User::whereMonth('created_at', now()->month)->count(),
+            'pending_change' => 3,
+        ];
+
+        // ===== СПИСОК ДОКУМЕНТОВ (с фильтрами) =====
         $query = Document::with(['createdBy', 'receiver', 'signatures']);
 
-        // ИСПРАВЛЕНО: Показываем документы где пользователь создатель ИЛИ получатель
         $query->where(function($q) use ($user) {
             $q->where('created_by', $user->id)
                 ->orWhere('receiver_id', $user->id);
         });
 
+        // Поиск
         if ($request->filled('search')) {
             $search = $request->search;
             $query->where(function ($q) use ($search) {
@@ -406,12 +425,14 @@ class DocumentController extends Controller
             });
         }
 
+        // Тип
         if ($request->type === 'incoming') {
             $query->where('receiver_id', $user->id);
         } elseif ($request->type === 'outgoing') {
             $query->where('created_by', $user->id);
         }
 
+        // Статусы
         if ($request->filled('status')) {
             $status = $request->status;
             if ($status === 'waiting') {
@@ -427,14 +448,11 @@ class DocumentController extends Controller
 
         $documents = $query->latest()->paginate(20)->withQueryString();
 
-        $totalDocs = Document::count();
-        $activeCount = Document::where('status', 'active')->count();
-        $draftCount = Document::where('status', 'draft')->count();
-        $usersCount = User::count();
+        $docsGrowth = 12.5;
+        $signedGrowth = 24.1;
+        $usersCount = $stats['users'];
 
-        return view('document.index', compact(
-            'documents', 'totalDocs', 'activeCount', 'draftCount', 'usersCount'
-        ));
+        return view('document.index', compact('documents', 'stats', 'docsGrowth', 'signedGrowth', 'usersCount'));
     }
 
     public function create()
@@ -540,22 +558,32 @@ class DocumentController extends Controller
             ]);
 
             // ⚠️ ТОЛЬКО если статус НЕ черновик — создаём запись на подпись
+            // ⚠️ ТОЛЬКО если статус НЕ черновик — создаём запись на подпись
             if ($data['status'] !== 'draft') {
                 DocumentSignature::updateOrCreate(
                     ['document_id' => $document->id, 'user_id' => $receiverId],
                     ['signature' => '']
                 );
 
+                // ✅ ИСПРАВЛЕНО: добавлен user_id + messages + data как массив
                 Notification::create([
+                    'user_id'         => $receiverId,   // ← КЛЮЧЕВОЕ ИСПРАВЛЕНИЕ
                     'type'            => 'assigned',
+                    'messages'        => 'Вам назначен документ на подпись: ' . $document->title,
                     'notifiable_type' => User::class,
                     'notifiable_id'   => $receiverId,
-                    'data'            => json_encode([
-                        'document_id' => $document->id,
-                        'message'     => 'Новый документ на подпись: ' . $document->title,
-                    ]),
+                    'is_read'         => false,
+                    'data'            => [              // ← массив, не json_encode!
+                        'document_id'    => $document->id,
+                        'type'           => 'assigned',
+                        'user_name'      => $authUser->name,
+                        'user_email'     => $authUser->email,
+                        'document_title' => $document->title,
+                        'message'        => 'Новый документ на подпись: ' . $document->title,
+                    ],
                 ]);
             }
+
         }
 
         return redirect()->route('documents.index')
@@ -588,14 +616,22 @@ class DocumentController extends Controller
             ['signature' => '']
         );
 
+        // ✅ ИСПРАВЛЕНО
         Notification::create([
+            'user_id'         => $receiver->id,    // ← ДОБАВЛЕНО
             'type'            => 'assigned',
+            'messages'        => 'Вам отправлен документ на подпись: ' . $document->title,
             'notifiable_type' => User::class,
             'notifiable_id'   => $receiver->id,
-            'data'            => json_encode([
-                'document_id' => $document->id,
-                'message'     => 'Новый документ на подпись: ' . $document->title,
-            ]),
+            'is_read'         => false,
+            'data'            => [                 // ← массив
+                'document_id'    => $document->id,
+                'type'           => 'assigned',
+                'user_name'      => Auth::user()->name,
+                'user_email'     => Auth::user()->email,
+                'document_title' => $document->title,
+                'message'        => 'Документ отправлен на подпись: ' . $document->title,
+            ],
         ]);
 
         DocumentLog::create([
@@ -633,8 +669,8 @@ class DocumentController extends Controller
 
     public function show($id)
     {
-        $document = Document::with(['createdBy', 'receiver', 'logs', 'signatures.users'])->findOrFail($id);
-        $comments = DocumentComment::with('users')->where('document_id', $id)->latest()->get();
+        $document = Document::with(['createdBy', 'receiver', 'logs', 'signatures.user'])->findOrFail($id);
+        $comments = DocumentComment::with('user')->where('document_id', $id)->latest()->get();
 
         $verifyUrl = route('documents.show', $document->id);
         $qrCodeSvg = QrCode::size(130)
@@ -769,13 +805,20 @@ class DocumentController extends Controller
             );
 
             Notification::create([
+                'user_id'         => $document->receiver_id,  // ← ДОБАВЛЕНО
                 'type'            => 'assigned',
+                'messages'        => 'Документ отправлен на подпись: ' . $document->title,
                 'notifiable_type' => User::class,
                 'notifiable_id'   => $document->receiver_id,
-                'data'            => json_encode([
-                    'document_id' => $document->id,
-                    'message'     => 'Документ отправлен на подпись: ' . $document->title,
-                ]),
+                'is_read'         => false,
+                'data'            => [                        // ← массив
+                    'document_id'    => $document->id,
+                    'type'           => 'assigned',
+                    'user_name'      => auth()->user()->name,
+                    'user_email'     => auth()->user()->email,
+                    'document_title' => $document->title,
+                    'message'        => 'Документ отправлен на подпись: ' . $document->title,
+                ],
             ]);
         }
 

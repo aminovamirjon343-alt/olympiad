@@ -12,6 +12,41 @@ use Illuminate\Support\Facades\Auth;
 
 class NotificationController extends Controller
 {
+    // В NotificationController.php
+
+    public function checkNew()
+    {
+        $user = auth()->user();
+
+        $unreadCount = Notification::where('user_id', $user->id)
+            ->where('is_read', false)
+            ->count();
+
+        $notifications = Notification::where('user_id', $user->id)
+            ->latest()
+            ->take(10)
+            ->get()
+            ->map(function($n) {
+                $data = is_string($n->data) ? json_decode($n->data, true) : ($n->data ?? []);
+
+                return [
+                    'id' => $n->id,
+                    'sender' => $data['sender_name'] ?? $data['user_name'] ?? 'Система',
+                    'docName' => $data['document_name'] ?? $data['document_title'] ?? 'Документ',
+                    'message' => $n->messages ?? '',
+                    'type' => $n->type ?? 'comment',
+                    'isUnread' => !$n->is_read,
+                    'url' => $data['url'] ?? (isset($data['document_id']) ? route('documents.show', $data['document_id']) : '#'),
+                    'time' => $n->created_at->diffForHumans(),
+                    'createdAt' => $n->created_at->timestamp,
+                ];
+            });
+
+        return response()->json([
+            'unreadCount' => $unreadCount,
+            'notifications' => $notifications,
+        ]);
+    }
     public function readAll()
     {
         Notification::where('user_id', auth()->id())
@@ -23,9 +58,17 @@ class NotificationController extends Controller
 
         return back()->with('success', 'Все уведомления прочитаны');
     }
-    public function index() {
-        $notifications = Notification::where('user_id', auth()->id())->latest()->paginate(25);
-        $unreadCount = Notification::where('user_id', auth()->id())->where('is_read', false)->count();
+
+    public function index()
+    {
+        $notifications = Notification::where('user_id', auth()->id())
+            ->latest()
+            ->paginate(25);
+
+        $unreadCount = Notification::where('user_id', auth()->id())
+            ->where('is_read', false)
+            ->count();
+
         return view('notifications.index', compact('notifications', 'unreadCount'));
     }
 
@@ -37,7 +80,7 @@ class NotificationController extends Controller
             'read_at' => now()
         ]);
 
-        return back()->with('success', 'Прочитано');
+        return response()->json(['success' => true]);
     }
 
     public function destroy($id)
@@ -47,7 +90,6 @@ class NotificationController extends Controller
 
         return back()->with('success', 'Удалено');
     }
-
 
     public function store(Request $request)
     {
@@ -67,32 +109,34 @@ class NotificationController extends Controller
         $document = Document::findOrFail($request->document_id);
         $participantIds = DocumentComment::where('document_id', $document->id)
             ->pluck('user_id')
-            ->push($document->created_by) // Добавляем автора документа
-            ->unique()                    // Убираем дубликаты
-            ->filter(fn($id) => $id != $currentUser->id); // Исключаем того, кто пишет сейчас
+            ->push($document->created_by)
+            ->unique()
+            ->filter(fn($id) => $id != $currentUser->id);
 
-       foreach ($participantIds as $userId) {
+        foreach ($participantIds as $userId) {
             Notification::create([
                 'user_id'         => $userId,
                 'type'            => 'comment',
-                'messages'         => ($userId == $document->created_by)
+                'messages'        => ($userId == $document->created_by)
                     ? 'Новый ответ в вашем документе'
                     : 'Новый комментарий в обсуждении, где вы участвуете',
                 'is_read'         => false,
                 'notifiable_type' => User::class,
                 'notifiable_id'   => $userId,
-                'data' => [
+                'data' => json_encode([
                     'document_id'     => $document->id,
                     'type'            => 'comment',
-                    'user_name'       => auth()->user()->name, // Оставили один, чистый ключ
-                    'document_title'  => $document->title,
-                    'comment_preview' => Str::limit($request->comment, 50),
-                ],
+                    'sender_name'     => $currentUser->name,
+                    'document_name'   => $document->title,
+                    'url'             => route('documents.show', $document->id),
+                    'messages'        => 'оставил комментарий к',
+                ]),
             ]);
         }
 
         return back()->with('success', 'Комментарий добавлен, участники уведомлены!');
     }
+
     public function read($id)
     {
         return $this->markAsRead($id);

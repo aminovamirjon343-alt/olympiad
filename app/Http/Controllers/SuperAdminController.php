@@ -79,34 +79,68 @@ class SuperAdminController extends Controller
     public function store(Request $request)
     {
         $data = $request->validate([
-            'name'       => 'required|string|max:255',
-            'email'      => 'required|email|unique:users,email',
-            'password'   => 'required|min:6',
-            'phone'      => 'nullable|string',
-            'role'       => 'required|string|max:50',
-            'level'      => 'required|integer|min:1|max:20',
-            'company_id' => 'nullable|exists:companies,id',
-            'is_admin'   => 'nullable|boolean',
-            'avatar'     => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
+            'name'              => 'required|string|max:255',
+            'email'             => 'required|email|unique:users,email',
+            'password'          => 'required|min:6',
+            'phone'             => 'nullable|string',
+            'role'              => 'required|string|max:50',
+            'level'             => 'required|integer|min:1|max:20',
+            'company_id'        => 'nullable|exists:companies,id',
+            'new_company_name'  => 'nullable|string|max:255',
+            'is_admin'          => 'nullable|boolean',
+            'avatar'            => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
         ]);
 
-        $data['password'] = Hash::make($data['password']);
-        $data['created_by'] = Auth::id();
-        $data['is_admin'] = $request->boolean('is_admin');
+        $companyId = null;
+        $companyName = null;
 
-        if ($data['company_id']) {
+        // Вариант 1: Выбрана существующая компания
+        if (!empty($data['company_id'])) {
             $company = Company::find($data['company_id']);
-            $data['company'] = $company->name;
+            if ($company) {
+                $companyId = $company->id;
+                $companyName = $company->name;
+            }
+        }
+        // Вариант 2: Введено название новой компании
+        elseif (!empty($data['new_company_name'])) {
+            $company = Company::create([
+                'name' => $data['new_company_name'],
+            ]);
+            $companyId = $company->id;
+            $companyName = $company->name;
         }
 
+        // Формируем данные пользователя
+        $userData = [
+            'name'           => $data['name'],
+            'email'          => $data['email'],
+            'password'       => Hash::make($data['password']),
+            'phone'          => $data['phone'] ?? null,
+            'role'           => $data['role'],
+            'level'          => $data['level'],
+            'company_id'     => $companyId,
+            'company'        => $companyName,
+            'is_admin'       => $request->boolean('is_admin'),
+            'is_super_admin' => false,
+            'created_by'     => Auth::id(),
+        ];
+
+        // Загрузка аватара
         if ($request->hasFile('avatar')) {
-            $data['avatar'] = $request->file('avatar')->store('avatars', 'public');
+            $userData['avatar'] = $request->file('avatar')->store('avatars', 'public');
         }
 
-        User::create($data);
+        // Создаём пользователя
+        $user = User::create($userData);
+
+        // Если создана новая компания - назначаем пользователя владельцем
+        if ($companyId && empty($data['company_id'])) {
+            Company::where('id', $companyId)->update(['owner_id' => $user->id]);
+        }
 
         return redirect()->route('superadmin.users.index')
-            ->with('success', 'Пользователь успешно создан');
+            ->with('success', '✅ Пользователь "' . $user->name . '" создан успешно!');
     }
 
     public function edit(User $user)
@@ -133,6 +167,8 @@ class SuperAdminController extends Controller
         if ($data['company_id']) {
             $company = Company::find($data['company_id']);
             $data['company'] = $company->name;
+        } else {
+            $data['company'] = null;
         }
 
         if ($request->hasFile('avatar')) {
@@ -171,12 +207,10 @@ class SuperAdminController extends Controller
                 ->latest()
                 ->paginate(20);
         } catch (\Exception $e) {
-            // Если с withCount проблема - пробуем без него
             $companies = Company::with('owner')
                 ->latest()
                 ->paginate(20);
 
-            // Добавляем users_count вручную
             foreach ($companies as $company) {
                 $company->users_count = $company->users()->count();
             }
@@ -187,23 +221,13 @@ class SuperAdminController extends Controller
 
     public function activityIndex(Request $request)
     {
-        // Получаем всех пользователей для фильтра
         $users = User::orderBy('name')->get();
-
-        // Получаем документы (активность)
         $query = Document::with('creator');
 
-        // Фильтр по действию (если нужно)
-        if ($request->filled('action')) {
-            // Здесь можно добавить логику фильтрации по типу действия
-        }
-
-        // Фильтр по пользователю
         if ($request->filled('user_id')) {
             $query->where('created_by', $request->user_id);
         }
 
-        // Фильтр по дате
         if ($request->filled('date_from')) {
             $query->whereDate('created_at', '>=', $request->date_from);
         }
@@ -216,7 +240,7 @@ class SuperAdminController extends Controller
 
         return view('superadmin.activity', compact('activities', 'users'));
     }
-// Мой профиль
+
     public function profile()
     {
         $user = auth()->user();
@@ -228,13 +252,14 @@ class SuperAdminController extends Controller
         $user = auth()->user();
 
         $data = $request->validate([
-            'name'  => 'required|string|max:255',
-            'email' => 'required|email|unique:users,email,' . $user->id,
-            'phone' => 'nullable|string',
-            'avatar' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
+            'name'     => 'required|string|max:255',
+            'email'    => 'required|email|unique:users,email,' . $user->id,
+            'phone'    => 'nullable|string',
+            'avatar'   => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
             'password' => 'nullable|min:6|confirmed',
         ]);
 
+        // Обновляем аватар
         if ($request->hasFile('avatar')) {
             if ($user->avatar) {
                 Storage::disk('public')->delete($user->avatar);
@@ -242,23 +267,25 @@ class SuperAdminController extends Controller
             $data['avatar'] = $request->file('avatar')->store('avatars', 'public');
         }
 
+        // Обновляем пароль
         if ($request->filled('password')) {
             $data['password'] = Hash::make($request->password);
         } else {
             unset($data['password']);
         }
 
+        // Обновляем пользователя
         $user->update($data);
 
-        return back()->with('success', 'Профиль успешно обновлён');
+        return back()->with('success', '✅ Профиль успешно обновлён');
     }
-    // Редактирование компании
+
     public function editCompany(Company $company)
     {
         $users = User::where('company_id', $company->id)->get();
         return view('superadmin.companies.edit', compact('company', 'users'));
     }
-// Просмотр компании
+
     public function showCompany(Company $company)
     {
         $users = User::where('company_id', $company->id)
@@ -278,6 +305,7 @@ class SuperAdminController extends Controller
 
         return view('superadmin.companies.show', compact('company', 'users', 'documents', 'stats'));
     }
+
     public function updateCompany(Request $request, Company $company)
     {
         $data = $request->validate([
@@ -295,7 +323,6 @@ class SuperAdminController extends Controller
 
     public function destroyCompany(Company $company)
     {
-        // Проверяем, есть ли пользователи в компании
         if ($company->users()->count() > 0) {
             return back()->with('error', 'Нельзя удалить компанию с пользователями');
         }
@@ -304,6 +331,7 @@ class SuperAdminController extends Controller
 
         return back()->with('success', 'Компания удалена');
     }
+
     public function userActivity(User $user)
     {
         $documents = Document::where('created_by', $user->id)
@@ -311,5 +339,32 @@ class SuperAdminController extends Controller
             ->paginate(30);
 
         return view('superadmin.user-activity', compact('user', 'documents'));
+    }
+    // Добавь эти методы в SuperAdminController
+
+    /**
+     * Форма создания компании
+     */
+    public function createCompany()
+    {
+        return view('superadmin.companies.create');
+    }
+
+    /**
+     * Сохранение новой компании
+     */
+    public function storeCompany(Request $request)
+    {
+        $data = $request->validate([
+            'name'    => 'required|string|max:255|unique:companies,name',
+            'email'   => 'nullable|email|max:255',
+            'phone'   => 'nullable|string|max:50',
+            'address' => 'nullable|string|max:500',
+        ]);
+
+        $company = Company::create($data);
+
+        return redirect()->route('superadmin.companies.index')
+            ->with('success', '✅ Компания "' . $company->name . '" создана успешно!');
     }
 }

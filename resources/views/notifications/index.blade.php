@@ -262,88 +262,133 @@
         .notif-pagination { margin-top: 20px; display: flex; justify-content: center; }
     </style>
 
-    <script>
-        window.applyDocLang = function() {
-            const translations = {
-                ru: {
-                    notifTitle: "Уведомления",
-                    newNotifs: "У вас новые:",
-                    notifAssigned: " назначил вам документ",
-                    notifCommented: " оставил комментарий к ",
-                    notifSigned: " подписал документ",
-                    notifCreated: " создал документ",
-                    notifDefault: " отправил уведомление",
-                    btnMarkRead: "Прочитать",
-                    btnReadAll: "Прочитать все",
-                    btnDelete: "Удалить",
-                    noNotifs: "У вас пока нет уведомлений",
-                    confirmDelete: "Удалить?",
-                    confirmReadAll: "Вы уверены, что хотите отметить все уведомления как прочитанные?"
-                },
-                tj: {
-                    notifTitle: "Огоҳиномаҳо",
-                    newNotifs: "Нав доред:",
-                    notifAssigned: " ҳуҷҷатро ба шумо супорид",
-                    notifCommented: " шарҳ гузошт ба ",
-                    notifSigned: " ҳуҷҷатро имзо кард",
-                    notifCreated: " ҳуҷҷат сохт",
-                    notifDefault: " огоҳинома фиристод",
-                    btnMarkRead: "Хондан",
-                    btnReadAll: "Ҳамаро хондан",
-                    btnDelete: "Нест кардан",
-                    noNotifs: "Шумо огоҳинома надоред",
-                    confirmDelete: "Нест кунем?",
-                    confirmReadAll: "Шумо мутмаин ҳастед, ки мехоҳед ҳамаи огоҳиномаҳоро ҳамчун хондашуда қайд кунед?"
-                },
-                en: {
-                    notifTitle: "Notifications",
-                    newNotifs: "New ones:",
-                    notifAssigned: " assigned a document",
-                    notifCommented: " commented on ",
-                    notifSigned: " signed the document",
-                    notifCreated: " created a document",
-                    notifDefault: " sent a notification",
-                    btnMarkRead: "Read",
-                    btnReadAll: "Read all",
-                    btnDelete: "Delete",
-                    noNotifs: "No notifications",
-                    confirmDelete: "Delete?",
-                    confirmReadAll: "Are you sure you want to mark all notifications as read?"
-                }
-            };
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // ============================================================
+        // ЛОКАЛЬНЫЙ СЛОВАРЬ СТРАНИЦЫ УВЕДОМЛЕНИЙ
+        // (дополняет глобальный TRANSLATIONS из layouts/admin.blade.php)
+        // ============================================================
+        const NOTIF_TRANSLATIONS = {
+            ru: {
+                notifTitle: 'Уведомления',
+                newNotifs: 'У вас новые:',
+                notifAssigned: ' назначил вам документ',
+                notifCommented: ' оставил комментарий к ',
+                notifSigned: ' подписал документ',
+                notifCreated: ' создал документ',
+                notifDefault: ' отправил уведомление',
+                btnMarkRead: 'Прочитать',
+                btnReadAll: 'Прочитать все',
+                btnDelete: 'Удалить',
+                noNotifs: 'У вас пока нет уведомлений',
+                confirmDelete: 'Удалить?',
+                confirmReadAll: 'Вы уверены, что хотите отметить все уведомления как прочитанные?'
+            },
+            tj: {
+                notifTitle: 'Огоҳиномаҳо',
+                newNotifs: 'Нав доред:',
+                notifAssigned: ' ҳуҷҷатро ба шумо супорид',
+                notifCommented: ' шарҳ гузошт ба ',
+                notifSigned: ' ҳуҷҷатро имзо кард',
+                notifCreated: ' ҳуҷҷат сохт',
+                notifDefault: ' огоҳинома фиристод',
+                btnMarkRead: 'Хондан',
+                btnReadAll: 'Ҳамаро хондан',
+                btnDelete: 'Нест кардан',
+                noNotifs: 'Шумо огоҳинома надоред',
+                confirmDelete: 'Нест кунем?',
+                confirmReadAll: 'Шумо мутмаин ҳастед, ки мехоҳед ҳамаи огоҳиномаҳоро ҳамчун хондашуда қайд кунед?'
+            },
+            en: {
+                notifTitle: 'Notifications',
+                newNotifs: 'New ones:',
+                notifAssigned: ' assigned a document',
+                notifCommented: ' commented on ',
+                notifSigned: ' signed the document',
+                notifCreated: ' created a document',
+                notifDefault: ' sent a notification',
+                btnMarkRead: 'Read',
+                btnReadAll: 'Read all',
+                btnDelete: 'Delete',
+                noNotifs: 'No notifications',
+                confirmDelete: 'Delete?',
+                confirmReadAll: 'Are you sure you want to mark all notifications as read?'
+            }
+        };
 
-            const lang = localStorage.getItem('app-lang') || 'ru';
-            const t = translations[lang] || translations['ru'];
+        // ============================================================
+        // ФУНКЦИЯ ПРИМЕНЕНИЯ ПЕРЕВОДОВ НА ЭТОЙ СТРАНИЦЕ
+        // ============================================================
+        function applyNotifTranslations(lang) {
+            const dict = NOTIF_TRANSLATIONS[lang] || NOTIF_TRANSLATIONS.ru;
 
+            // 1) Переводим все элементы с data-i18n
             document.querySelectorAll('[data-i18n]').forEach(el => {
                 const key = el.getAttribute('data-i18n');
-                if (t[key]) el.textContent = t[key];
+                if (dict[key] !== undefined) el.textContent = dict[key];
             });
 
-            // ИСПРАВЛЕНО: Скрипт теперь вешает онсабмит и на кнопки, и на форму «Прочитать все»
+            // 2) Переводим placeholder
+            document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+                const key = el.getAttribute('data-i18n-placeholder');
+                if (dict[key] !== undefined) el.setAttribute('placeholder', dict[key]);
+            });
+
+            // 3) Переводим title
+            document.querySelectorAll('[data-i18n-title]').forEach(el => {
+                const key = el.getAttribute('data-i18n-title');
+                if (dict[key] !== undefined) el.setAttribute('title', dict[key]);
+            });
+
+            // 4) Обработка confirm-диалогов (и на формах, и на кнопках)
             document.querySelectorAll('[data-confirm-i18n]').forEach(el => {
                 const key = el.getAttribute('data-confirm-i18n');
-                if (t[key]) {
-                    // Если дата-атрибут висит на самой форме
-                    if (el.tagName === 'FORM') {
-                        el.onsubmit = (e) => {
-                            if (!confirm(t[key])) e.preventDefault();
+                const message = dict[key] || 'Are you sure?';
+
+                // Клонируем элемент, чтобы сбросить старые обработчики
+                const newEl = el.cloneNode(true);
+                el.parentNode.replaceChild(newEl, el);
+
+                // Если дата-атрибут висит на самой форме
+                if (newEl.tagName === 'FORM') {
+                    newEl.onsubmit = (e) => {
+                        if (!confirm(message)) e.preventDefault();
+                    };
+                } else {
+                    // Если висит на кнопке внутри формы
+                    const form = newEl.closest('form');
+                    if (form) {
+                        form.onsubmit = (e) => {
+                            if (!confirm(message)) e.preventDefault();
                         };
-                    } else {
-                        // Если висит на кнопке внутри формы (как было на кнопке удаления)
-                        const form = el.closest('form');
-                        if(form) {
-                            form.onsubmit = (e) => {
-                                if (!confirm(t[key])) e.preventDefault();
-                            };
-                        }
                     }
                 }
             });
-        };
+        }
 
-        document.addEventListener('DOMContentLoaded', () => {
-            window.applyDocLang();
+        // ============================================================
+        // 1. Применяем сразу при загрузке
+        // ============================================================
+        const initialLang = localStorage.getItem('docsign_lang') || 'ru';
+        applyNotifTranslations(initialLang);
+
+        // ============================================================
+        // 2. Слушаем событие смены языка от layouts/admin.blade.php
+        //    (когда юзер кликает на 🇷🇺/🇹🇯/🇬🇧 в админке)
+        // ============================================================
+        window.addEventListener('docsign:lang-changed', (e) => {
+            const lang = e.detail?.lang || 'ru';
+            applyNotifTranslations(lang);
         });
-    </script>
+
+        // ============================================================
+        // 3. Синхронизация между вкладками браузера
+        // ============================================================
+        window.addEventListener('storage', (e) => {
+            if (e.key === 'docsign_lang' && e.newValue) {
+                applyNotifTranslations(e.newValue);
+            }
+        });
+    });
+</script>
 @endsection

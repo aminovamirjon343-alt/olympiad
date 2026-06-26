@@ -17,15 +17,13 @@ class Company extends Model
         'owner_id',
     ];
 
-    // ✅ Связь с пользователями компании
-    public function users()
-    {
-        return $this->hasMany(User::class, 'company_id');
-    }
-
-    // ✅ Связь с владельцем (админом)
     public function owner()
     {
         return $this->belongsTo(User::class, 'owner_id');
+    }
+
+    public function users()
+    {
+        return $this->hasMany(User::class);
     }
 }

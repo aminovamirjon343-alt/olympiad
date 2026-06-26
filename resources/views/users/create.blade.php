@@ -1,294 +1,728 @@
-{{-- ===== CREATE (users/create.blade.php) ===== --}}
 @extends('layouts.admin')
 
 @section('content')
-<div class="min-h-screen py-6 relative overflow-hidden" style="background: #fafaf9;">
-    {{-- Фоновый SVG паттерн --}}
-    <div class="fixed inset-0 pointer-events-none" style="z-index: 0; opacity: 0.5;">
-        <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
-            <defs>
-                <pattern id="dotPatternCreate" x="0" y="0" width="24" height="24" patternUnits="userSpaceOnUse">
-                    <circle cx="1" cy="1" r="0.8" fill="#a1a1aa" opacity="0.35"/>
-                </pattern>
-            </defs>
-            <rect width="100%" height="100%" fill="url(#dotPatternCreate)"/>
-        </svg>
-    </div>
-    <div class="fixed top-0 left-0 w-[600px] h-[600px] rounded-full pointer-events-none" style="z-index: 0; background: radial-gradient(circle, rgba(59,130,246,0.08) 0%, transparent 70%); filter: blur(60px);"></div>
-    <div class="fixed bottom-0 right-0 w-[600px] h-[600px] rounded-full pointer-events-none" style="z-index: 0; background: radial-gradient(circle, rgba(168,85,247,0.07) 0%, transparent 70%); filter: blur(60px);"></div>
 
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
-        * { font-family: 'Inter', system-ui, -apple-system, sans-serif !important; }
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
 
-        .page-wrap { position: relative; z-index: 1; }
+<style>
+    .create-user-page {
+        min-height: 100vh;
+        padding: 40px 24px 60px;
+        color: var(--text);
+        font-family: 'Inter', sans-serif;
+        position: relative;
 
-        .top-bar {
-            background: rgba(255, 255, 255, 0.85);
-            backdrop-filter: blur(20px) saturate(180%);
-            -webkit-backdrop-filter: blur(20px) saturate(180%);
-            border: 1px solid rgba(228, 228, 231, 0.6);
-            border-radius: 14px;
-            padding: 1rem 1.25rem;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            flex-wrap: wrap;
-            gap: 1rem;
-            box-shadow: 0 1px 2px rgba(0,0,0,0.04), 0 4px 16px rgba(0,0,0,0.02);
-        }
-        .top-bar-left { display: flex; align-items: center; gap: 0.85rem; }
-        .top-bar-icon {
-            width: 42px; height: 42px; border-radius: 10px;
-            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-            display: flex; align-items: center; justify-content: center; flex-shrink: 0;
-            box-shadow: 0 4px 12px rgba(15, 23, 42, 0.25);
-        }
-        .top-bar-icon svg { width: 20px; height: 20px; color: #ffffff; }
-        .top-bar-title { font-size: 1.05rem; font-weight: 700; color: #0f172a; letter-spacing: -0.02em; line-height: 1.2; }
-        .top-bar-subtitle { font-size: 0.7rem; color: #71717a; font-weight: 500; margin-top: 1px; }
+    }
 
-        .btn-back {
-            display: inline-flex; align-items: center; gap: 0.35rem;
-            padding: 0.45rem 0.9rem;
-            background: #ffffff;
-            color: #52525b;
-            border-radius: 8px;
-            font-size: 0.7rem;
-            font-weight: 600;
-            transition: all 0.2s;
-            border: 1px solid #e4e4e7;
-        }
-        .btn-back:hover {
-            border-color: #a1a1aa;
-            color: #0f172a;
-            transform: translateY(-1px);
-            box-shadow: 0 4px 10px rgba(0,0,0,0.06);
-        }
-        .btn-back svg { width: 12px; height: 12px; }
+    /* Фоновые blob-ы */
+    .create-blob {
+        position: absolute;
+        border-radius: 50%;
+        pointer-events: none;
+        z-index: 0;
+        filter: blur(100px);
+        opacity: 0.35;
+    }
 
-        .form-card {
-            background: rgba(255, 255, 255, 0.85);
-            backdrop-filter: blur(24px) saturate(180%);
-            -webkit-backdrop-filter: blur(24px) saturate(180%);
-            border: 1px solid rgba(228, 228, 231, 0.6);
-            border-radius: 14px;
-            padding: 2rem;
-            margin-top: 0.75rem;
-            box-shadow:
-                0 1px 2px rgba(0,0,0,0.04),
-                0 8px 24px rgba(0,0,0,0.04);
-        }
+    .create-blob-1 {
+        top: -120px;
+        left: -120px;
+        width: 500px;
+        height: 500px;
+        background: radial-gradient(circle, rgba(var(--glow), 0.35) 0%, transparent 70%);
+        animation: blobFloat 20s ease-in-out infinite;
+    }
 
-        .field-label {
-            display: block;
-            text-transform: uppercase;
-            letter-spacing: 0.08em;
-            font-size: 0.65rem;
-            font-weight: 700;
-            color: #52525b;
-            margin-bottom: 0.4rem;
-        }
-        .input-custom {
-            background-color: #ffffff !important;
-            border: 1px solid #e4e4e7 !important;
-            color: #0f172a !important;
-            font-size: 0.9rem !important;
-            padding: 0.75rem 0.9rem !important;
-            border-radius: 8px !important;
-            transition: all 0.2s ease;
-            width: 100%;
-        }
-        .input-custom:focus {
-            border-color: #2563eb !important;
-            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1) !important;
-            outline: none;
-        }
-        .input-custom::placeholder { color: #a1a1aa !important; }
+    .create-blob-2 {
+        bottom: -120px;
+        right: -120px;
+        width: 600px;
+        height: 600px;
+        background: radial-gradient(circle, rgba(168, 85, 247, 0.28) 0%, transparent 70%);
+        animation: blobFloat 25s ease-in-out infinite reverse;
+    }
 
-        .avatar-block {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            padding: 1.25rem;
-            background: #fafafa;
-            border-radius: 12px;
-            border: 1px solid #e4e4e7;
-        }
-        .avatar-preview-box {
-            width: 96px; height: 96px; border-radius: 14px;
-            background: linear-gradient(135deg, #e4e4e7 0%, #d4d4d8 100%);
-            display: flex; align-items: center; justify-content: center;
-            font-size: 2rem; font-weight: 800; color: #71717a;
-            overflow: hidden; position: relative; flex-shrink: 0;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.06);
-        }
-        .avatar-preview-box img {
-            width: 100%; height: 100%; object-fit: cover;
-            position: absolute; inset: 0;
-        }
-        .avatar-upload-btn {
-            position: absolute; bottom: -6px; right: -6px;
-            width: 30px; height: 30px;
-            background: #0f172a;
-            border-radius: 8px;
-            display: flex; align-items: center; justify-content: center;
-            cursor: pointer;
-            box-shadow: 0 2px 6px rgba(15, 23, 42, 0.3);
-            transition: all 0.2s;
-        }
-        .avatar-upload-btn:hover { background: #1e293b; transform: scale(1.05); }
-        .avatar-upload-btn svg { width: 14px; height: 14px; color: #ffffff; }
+    .create-blob-3 {
+        top: 40%;
+        left: 60%;
+        width: 400px;
+        height: 400px;
+        background: radial-gradient(circle, rgba(236, 72, 153, 0.22) 0%, transparent 70%);
+        animation: blobFloat3 30s ease-in-out infinite;
+    }
 
-        .avatar-info h3 { font-size: 0.85rem; font-weight: 700; color: #0f172a; margin-bottom: 0.2rem; }
-        .avatar-info p { font-size: 0.7rem; color: #71717a; }
-        .avatar-file-name { font-size: 0.7rem; color: #2563eb; margin-top: 0.3rem; font-weight: 600; }
+    @keyframes blobFloat {
+        0%, 100% { transform: translate(0, 0); }
+        50% { transform: translate(30px, -30px); }
+    }
 
-        .btn-save {
-            display: inline-flex; align-items: center; gap: 0.5rem;
-            padding: 0.75rem 1.75rem;
-            background: #0f172a;
-            color: #ffffff;
-            border-radius: 8px;
-            font-size: 0.8rem;
-            font-weight: 700;
-            transition: all 0.2s;
-            border: 1px solid #0f172a;
-            box-shadow: 0 2px 8px rgba(15, 23, 42, 0.2);
-        }
-        .btn-save:hover {
-            background: #1e293b;
-            transform: translateY(-1px);
-            box-shadow: 0 6px 16px rgba(15, 23, 42, 0.3);
-        }
-        .btn-save svg { width: 16px; height: 16px; }
+    @keyframes blobFloat3 {
+        0%, 100% { transform: translate(0, 0); }
+        50% { transform: translate(-30px, 30px); }
+    }
 
-        .info-banner {
-            background: #eff6ff;
-            border: 1px solid #bfdbfe;
-            border-radius: 10px;
-            padding: 0.85rem 1rem;
-            display: flex; align-items: flex-start; gap: 0.7rem;
-            font-size: 0.75rem;
-            color: #1e40af;
-        }
-        .info-banner svg { width: 18px; height: 18px; color: #2563eb; flex-shrink: 0; margin-top: 1px; }
-        .info-banner strong { color: #0f172a; }
+    .create-wrap {
+        max-width: 720px;
+        margin: 0 auto;
+        position: relative;
+        z-index: 1;
+    }
 
-        .note-text { font-size: 0.65rem; color: #a1a1aa; margin-top: 0.3rem; }
+    /* === TOP BAR === */
+    .create-topbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        flex-wrap: wrap;
+        margin-bottom: 24px;
+        background: linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02));
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        padding: 18px 22px;
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        position: relative;
+    }
 
-        @media (max-width: 640px) {
-            .form-card { padding: 1.25rem; }
-            .avatar-block { flex-direction: column; text-align: center; }
-        }
-    </style>
+    .create-topbar::before {
+        content: "";
+        position: absolute;
+        inset: -1px;
+        border-radius: var(--radius);
+        padding: 1px;
+        background: linear-gradient(135deg, rgba(var(--glow),0.4), transparent 40%, transparent 60%, rgba(var(--glow),0.2));
+        -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+        -webkit-mask-composite: xor;
+        mask-composite: exclude;
+        opacity: 0.6;
+        pointer-events: none;
+    }
 
-    <div class="container mx-auto px-4 max-w-3xl page-wrap">
-        {{-- Верхняя панель --}}
-        <div class="top-bar">
-            <div class="top-bar-left">
-                <div class="top-bar-icon">
-                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+    .create-topbar-left {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+    }
+
+    .create-topbar-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 13px;
+        background: linear-gradient(135deg, rgba(var(--glow), 0.95), rgba(var(--glow), 0.4));
+        display: grid;
+        place-items: center;
+        flex-shrink: 0;
+        box-shadow: 0 0 24px rgba(var(--glow), 0.5), inset 0 0 12px rgba(255,255,255,0.2);
+    }
+
+    .create-topbar-icon svg {
+        width: 24px;
+        height: 24px;
+        color: #0a0d14;
+    }
+
+    .create-topbar-title {
+        font-size: 20px;
+        font-weight: 800;
+        color: var(--text);
+        letter-spacing: -0.3px;
+        line-height: 1.2;
+        margin: 0;
+    }
+
+    .create-topbar-subtitle {
+        font-size: 12px;
+        color: var(--muted);
+        font-weight: 600;
+        margin-top: 3px;
+    }
+
+    .create-topbar-subtitle strong {
+        color: rgba(var(--glow), 1);
+        font-weight: 700;
+    }
+
+    .btn-back {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 18px;
+        background: rgba(255,255,255,0.04);
+        color: var(--muted);
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        font-size: 12px;
+        font-weight: 700;
+        text-decoration: none;
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+        transition: all 0.25s ease;
+    }
+
+    .btn-back:hover {
+        color: rgba(var(--glow), 1);
+        border-color: rgba(var(--glow), 0.5);
+        background: rgba(var(--glow), 0.08);
+        box-shadow: 0 0 18px rgba(var(--glow), 0.25);
+        transform: translateX(-2px);
+    }
+
+    .btn-back svg {
+        width: 14px;
+        height: 14px;
+    }
+
+    /* === FORM CARD === */
+    .form-card {
+        background: linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02));
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        padding: 36px 32px;
+        position: relative;
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+    }
+
+    .form-card::before {
+        content: "";
+        position: absolute;
+        inset: -1px;
+        border-radius: var(--radius);
+        padding: 1px;
+        background: linear-gradient(135deg, rgba(var(--glow),0.5), transparent 40%, transparent 60%, rgba(var(--glow),0.25));
+        -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+        -webkit-mask-composite: xor;
+        mask-composite: exclude;
+        opacity: 0.7;
+        pointer-events: none;
+    }
+
+    .form-section {
+        margin-bottom: 28px;
+    }
+
+    .form-section:last-child {
+        margin-bottom: 0;
+    }
+
+    .section-title {
+        font-size: 11px;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 1.5px;
+        color: var(--muted);
+        margin-bottom: 16px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .section-title::before {
+        content: "";
+        width: 4px;
+        height: 14px;
+        border-radius: 2px;
+        background: linear-gradient(180deg, rgba(var(--glow), 1), rgba(var(--glow), 0.4));
+        box-shadow: 0 0 10px rgba(var(--glow), 0.6);
+    }
+
+    /* === AVATAR BLOCK === */
+    .avatar-block {
+        display: flex;
+        align-items: center;
+        gap: 20px;
+        padding: 22px;
+        background: rgba(255,255,255,0.03);
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        transition: all 0.3s ease;
+        position: relative;
+
+
+    }
+    .avatar-block::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 1px;
+        background: linear-gradient(90deg, transparent, rgba(var(--glow), 0.5), transparent);
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    }
+
+    .avatar-block:hover::before {
+        opacity: 1;
+    }
+
+    .avatar-block:hover {
+        border-color: rgba(var(--glow), 0.3);
+        background: rgba(255,255,255,0.05);
+    }
+
+    .avatar-preview-wrap {
+        position: relative;
+        flex-shrink: 0;
+    }
+
+    .avatar-preview-box {
+        width: 100px;
+        height: 100px;
+        border-radius: 16px;
+        background: linear-gradient(135deg, rgba(var(--glow), 0.4), rgba(168, 85, 247, 0.3));
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 42px;
+        font-weight: 900;
+        font-style: italic;
+        color: rgba(255,255,255,0.9);
+        overflow: hidden;
+        position: relative;
+        box-shadow: 0 8px 24px rgba(var(--glow), 0.3), inset 0 0 20px rgba(255,255,255,0.1);
+        border: 1px solid rgba(var(--glow), 0.3);
+        text-shadow: 0 4px 16px rgba(0,0,0,0.5);
+    }
+
+    .avatar-preview-box img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        position: absolute;
+        inset: 0;
+    }
+
+    .avatar-upload-btn {
+        position: absolute;
+        bottom: -6px;
+        right: -6px;
+        width: 34px;
+        height: 34px;
+        background: linear-gradient(135deg, rgba(var(--glow), 1), rgba(var(--glow), 0.7));
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        box-shadow: 0 4px 14px rgba(var(--glow), 0.5), inset 0 1px 0 rgba(255,255,255,0.3);
+        transition: all 0.2s ease;
+        border: 2px solid var(--bg-0, #06070b);
+    }
+
+    .avatar-upload-btn:hover {
+        transform: scale(1.1) rotate(90deg);
+        box-shadow: 0 6px 20px rgba(var(--glow), 0.7);
+    }
+
+    .avatar-upload-btn svg {
+        width: 16px;
+        height: 16px;
+        color: #0a0d14;
+    }
+
+    .avatar-info {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .avatar-info h3 {
+        font-size: 15px;
+        font-weight: 800;
+        color: var(--text);
+        margin: 0 0 4px;
+        letter-spacing: -0.2px;
+    }
+
+    .avatar-info p {
+        font-size: 12px;
+        color: var(--muted);
+        margin: 0;
+        font-weight: 500;
+    }
+
+    .avatar-file-name {
+        font-size: 12px;
+        color: rgba(var(--glow), 1);
+        margin-top: 8px;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    /* === FIELDS === */
+    .field-group {
+        margin-bottom: 18px;
+    }
+
+    .field-group:last-child {
+        margin-bottom: 0;
+    }
+
+    .field-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+    }
+
+    @media (max-width: 640px) {
+        .field-row { grid-template-columns: 1fr; }
+    }
+
+    .field-label {
+        display: block;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        font-size: 11px;
+        font-weight: 800;
+        color: var(--muted);
+        margin-bottom: 8px;
+    }
+
+    .field-label .required {
+        color: rgba(var(--glow), 1);
+        margin-left: 2px;
+    }
+
+    .input-custom {
+        width: 100%;
+        background: rgba(255,255,255,0.04) !important;
+        border: 1px solid var(--line) !important;
+        color: var(--text) !important;
+        font-size: 14px !important;
+        font-weight: 500;
+        padding: 13px 16px !important;
+        border-radius: 10px !important;
+        transition: all 0.25s ease;
+        font-family: 'Inter', sans-serif;
+    }
+
+    .input-custom:focus {
+        border-color: rgba(var(--glow), 0.6) !important;
+        background: rgba(var(--glow), 0.06) !important;
+        box-shadow: 0 0 0 3px rgba(var(--glow), 0.15), 0 0 20px rgba(var(--glow), 0.2) !important;
+        outline: none !important;
+    }
+
+    .input-custom::placeholder {
+        color: var(--muted) !important;
+        opacity: 0.6;
+    }
+
+    .input-custom option {
+        background: var(--bg-0, #06070b);
+        color: var(--text);
+    }
+
+    .note-text {
+        font-size: 11px;
+        color: var(--muted);
+        margin-top: 8px;
+        font-weight: 500;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .note-text::before {
+        content: "ⓘ";
+        color: rgba(var(--glow), 0.8);
+        font-size: 12px;
+    }
+
+    /* Password wrapper */
+    .password-wrap {
+        position: relative;
+    }
+
+    .password-toggle {
+        position: absolute;
+        top: 50%;
+        right: 12px;
+        transform: translateY(-50%);
+        background: transparent;
+        border: none;
+        color: var(--muted);
+        cursor: pointer;
+        padding: 6px;
+        border-radius: 6px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s ease;
+    }
+
+    .password-toggle:hover {
+        color: rgba(var(--glow), 1);
+        background: rgba(var(--glow), 0.1);
+    }
+
+    .password-toggle svg {
+        width: 18px;
+        height: 18px;
+    }
+
+    /* === INFO BANNER === */
+    .info-banner {
+        background: rgba(var(--glow), 0.08);
+        border: 1px solid rgba(var(--glow), 0.25);
+        border-radius: 12px;
+        padding: 16px 18px;
+        display: flex;
+        align-items: flex-start;
+        gap: 14px;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .info-banner::before {
+        content: "";
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: 3px;
+        background: linear-gradient(180deg, rgba(var(--glow), 1), rgba(var(--glow), 0.4));
+        box-shadow: 0 0 12px rgba(var(--glow), 0.6);
+    }
+
+    .info-banner-icon {
+        width: 36px;
+        height: 36px;
+        border-radius: 10px;
+        background: rgba(var(--glow), 0.18);
+        border: 1px solid rgba(var(--glow), 0.35);
+        display: grid;
+        place-items: center;
+        flex-shrink: 0;
+    }
+
+    .info-banner-icon svg {
+        width: 18px;
+        height: 18px;
+        color: rgba(var(--glow), 1);
+    }
+
+    .info-banner-text {
+        font-size: 13px;
+        color: var(--text);
+        font-weight: 500;
+        line-height: 1.5;
+    }
+
+    .info-banner-text strong {
+        color: rgba(var(--glow), 1);
+        font-weight: 700;
+    }
+
+    /* === SUBMIT === */
+    .submit-wrap {
+        padding-top: 24px;
+        margin-top: 28px;
+        border-top: 1px solid var(--line);
+        display: flex;
+        justify-content: center;
+    }
+
+    .btn-submit {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        padding: 14px 36px;
+        background: linear-gradient(180deg, rgba(var(--glow), 0.95), rgba(var(--glow), 0.65));
+        color: #0a0d14;
+        border-radius: 11px;
+        font-size: 13px;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 1.2px;
+        transition: all 0.3s ease;
+        box-shadow: 0 8px 28px rgba(var(--glow), 0.4), inset 0 1px 0 rgba(255,255,255,0.3);
+        border: 1px solid transparent;
+        cursor: pointer;
+    }
+
+    .btn-submit:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 14px 40px rgba(var(--glow), 0.6);
+        filter: brightness(1.08);
+    }
+
+    .btn-submit svg {
+        width: 18px;
+        height: 18px;
+    }
+
+    /* Responsive */
+    @media (max-width: 640px) {
+        .create-user-page { padding: 24px 16px 40px; }
+        .create-topbar { flex-direction: column; align-items: flex-start; }
+        .btn-back { width: 100%; justify-content: center; }
+        .form-card { padding: 24px 18px; }
+        .avatar-block { flex-direction: column; text-align: center; padding: 20px; }
+        .create-topbar-title { font-size: 18px; }
+    }
+</style>
+
+<div class="create-user-page">
+
+    {{-- Фоновые blob-ы --}}
+    <div class="create-blob create-blob-1"></div>
+    <div class="create-blob create-blob-2"></div>
+    <div class="create-blob create-blob-3"></div>
+
+    <div class="create-wrap">
+
+        {{-- TOP BAR --}}
+        <div class="create-topbar">
+            <div class="create-topbar-left">
+                <div class="create-topbar-icon">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/>
                     </svg>
                 </div>
                 <div>
-                    <div class="top-bar-title" data-i18n="newUser">{{ __('users.new_user') }}</div>
-                    <div class="top-bar-subtitle">
+                    <div class="create-topbar-title" data-i18n="newUser">{{ __('users.new_user') }}</div>
+                    <div class="create-topbar-subtitle">
                         <span data-i18n="companyLabel">{{ __('users.company') }}</span>:
-                        <strong style="color: #2563eb;">{{ auth()->user()->company ?? '—' }}</strong>
+                        <strong>{{ auth()->user()->company ?? '—' }}</strong>
                     </div>
                 </div>
             </div>
+
             <a href="{{ route('users.index') }}" class="btn-back">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
+                </svg>
                 <span data-i18n="backToList">{{ __('users.back_to_list') }}</span>
             </a>
         </div>
 
-        {{-- Форма --}}
+        {{-- FORM --}}
         <div class="form-card">
-            <form method="POST" action="{{ route('users.store') }}" enctype="multipart/form-data" class="space-y-5">
+            <form method="POST" action="{{ route('users.store') }}" enctype="multipart/form-data">
                 @csrf
 
                 {{-- АВАТАР --}}
-                <div class="avatar-block">
-                    <div class="relative">
-                        <div class="avatar-preview-box">
-                            <span id="avatarLetter">?</span>
-                            <img id="avatarPreview" src="" class="hidden">
+                <div class="form-section">
+                    <div class="section-title" data-i18n="photoSection">Фото профиля</div>
+                    <div class="avatar-block">
+                        <div class="avatar-preview-wrap">
+                            <div class="avatar-preview-box">
+                                <span id="avatarLetter">?</span>
+                                <img id="avatarPreview" src="" style="display: none;">
+                            </div>
+                            <label for="avatarInput" class="avatar-upload-btn" title="Upload">
+                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
+                                </svg>
+                            </label>
+                            <input type="file" id="avatarInput" name="avatar" accept="image/*" style="display: none;" onchange="previewAvatar(this)">
                         </div>
-                        <label for="avatarInput" class="avatar-upload-btn">
-                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+                        <div class="avatar-info">
+                            <h3 data-i18n="photo">{{ __('users.photo') }}</h3>
+                            <p data-i18n="photoDesc">{{ __('users.photo_desc') }}</p>
+                            <p id="fileNameDisplay" class="avatar-file-name"></p>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- ОСНОВНЫЕ ДАННЫЕ --}}
+                <div class="form-section">
+                    <div class="section-title" data-i18n="mainInfo">Основная информация</div>
+
+                    <div class="field-group">
+                        <label class="field-label">
+                            <span data-i18n="fullName">{{ __('users.full_name') }}</span>
+                            <span class="required">*</span>
                         </label>
-                        <input type="file" id="avatarInput" name="avatar" accept="image/*" class="hidden" onchange="previewAvatar(this)">
+                        <input name="name" type="text" required class="input-custom" placeholder="Иван Иванов" id="nameInput">
                     </div>
-                    <div class="flex-1">
-                        <h3 class="avatar-info-h3" style="font-size: 0.85rem; font-weight: 700; color: #0f172a; margin-bottom: 0.2rem;" data-i18n="photo">{{ __('users.photo') }}</h3>
-                        <p style="font-size: 0.7rem; color: #71717a;" data-i18n="photoDesc">{{ __('users.photo_desc') }}</p>
-                        <p id="fileNameDisplay" class="avatar-file-name"></p>
+
+                    <div class="field-row">
+                        <div class="field-group">
+                            <label class="field-label">
+                                <span data-i18n="email">{{ __('users.email') }}</span>
+                                <span class="required">*</span>
+                            </label>
+                            <input name="email" type="email" required class="input-custom" placeholder="mail@example.com">
+                        </div>
+                        <div class="field-group">
+                            <label class="field-label">
+                                <span data-i18n="phone">{{ __('users.phone') }}</span>
+                                <span class="required">*</span>
+                            </label>
+                            <input name="phone" type="text" id="phone" required class="input-custom" placeholder="+992 00 000 0000">
+                        </div>
+                    </div>
+
+                    <div class="field-group">
+                        <label class="field-label">
+                            <span data-i18n="role">{{ __('users.role') }}</span>
+                            <span class="required">*</span>
+                        </label>
+                        <input name="role" type="text" required class="input-custom" placeholder="{{ __('users.role_placeholder') }}">
                     </div>
                 </div>
 
-                {{-- ИМЯ --}}
-                <div>
-                    <label class="field-label" data-i18n="fullName">{{ __('users.full_name') }}</label>
-                    <input name="name" type="text" required class="input-custom" placeholder="Иван Иванов" id="nameInput">
-                </div>
+                {{-- ДОСТУП --}}
+                <div class="form-section">
+                    <div class="section-title" data-i18n="accessSection">Доступ и безопасность</div>
 
-                {{-- EMAIL + ТЕЛЕФОН --}}
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                        <label class="field-label" data-i18n="email">{{ __('users.email') }}</label>
-                        <input name="email" type="email" required class="input-custom" placeholder="mail@example.com">
+                    <div class="field-group">
+                        <label class="field-label">
+                            <span data-i18n="level">{{ __('users.level') }}</span> (2-20)
+                            <span class="required">*</span>
+                        </label>
+                        <select name="level" required class="input-custom">
+                            @for($i = 2; $i <= 20; $i++)
+                            <option value="{{ $i }}">{{ __('users.level') }} {{ $i }}</option>
+                            @endfor
+                        </select>
+                        <p class="note-text"><span data-i18n="levelNote">{{ __('users.level_note') }}</span></p>
                     </div>
-                    <div>
-                        <label class="field-label" data-i18n="phone">{{ __('users.phone') }}</label>
-                        <input name="phone" type="text" id="phone" required class="input-custom" placeholder="+992 00 000 0000">
-                    </div>
-                </div>
 
-                {{-- РОЛЬ --}}
-                <div>
-                    <label class="field-label" data-i18n="role">{{ __('users.role') }}</label>
-                    <input name="role" type="text" required class="input-custom" placeholder="{{ __('users.role_placeholder') }}">
-                </div>
-
-                {{-- УРОВЕНЬ --}}
-                <div>
-                    <label class="field-label"><span data-i18n="level">{{ __('users.level') }}</span> (2-20)</label>
-                    <select name="level" required class="input-custom">
-                        @for($i = 2; $i <= 20; $i++)
-                        <option value="{{ $i }}">{{ __('users.level') }} {{ $i }}</option>
-                        @endfor
-                    </select>
-                    <p class="note-text">️ <span data-i18n="levelNote">{{ __('users.level_note') }}</span></p>
-                </div>
-
-                {{-- ПАРОЛЬ --}}
-                <div>
-                    <label class="field-label" data-i18n="password">{{ __('users.password') }}</label>
-                    <div class="relative">
-                        <input name="password" type="password" id="password" required class="input-custom pr-12" placeholder="{{ __('users.password_placeholder') }}">
-                        <button type="button" onclick="togglePassword()" class="absolute inset-y-0 right-3 flex items-center text-slate-400 hover:text-blue-600">
-                            <svg id="eyeIcon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
-                        </button>
+                    <div class="field-group">
+                        <label class="field-label">
+                            <span data-i18n="password">{{ __('users.password') }}</span>
+                            <span class="required">*</span>
+                        </label>
+                        <div class="password-wrap">
+                            <input name="password" type="password" id="password" required class="input-custom" style="padding-right: 48px !important;" placeholder="{{ __('users.password_placeholder') }}">
+                            <button type="button" onclick="togglePassword()" class="password-toggle" aria-label="Toggle password">
+                                <svg id="eyeIcon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                                </svg>
+                            </button>
+                        </div>
                     </div>
                 </div>
 
                 {{-- ИНФО О КОМПАНИИ --}}
-                <div class="info-banner">
-                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                    <div>
-                        <strong data-i18n="autoCompany">{{ __('users.auto_company') }}:</strong>
-                        <strong>{{ auth()->user()->company ?? '—' }}</strong>
+                <div class="form-section">
+                    <div class="info-banner">
+                        <div class="info-banner-icon">
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                        </div>
+                        <div class="info-banner-text">
+                            <strong data-i18n="autoCompany">{{ __('users.auto_company') }}:</strong>
+                            <strong>{{ auth()->user()->company ?? '—' }}</strong>
+                        </div>
                     </div>
                 </div>
 
                 {{-- КНОПКА --}}
-                <div class="pt-3 flex justify-center">
-                    <button type="submit" class="btn-save">
-                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+                <div class="submit-wrap">
+                    <button type="submit" class="btn-submit">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
+                        </svg>
                         <span data-i18n="createUser">{{ __('users.create_user') }}</span>
                     </button>
                 </div>
@@ -298,38 +732,61 @@
 </div>
 
 <script>
+    // ============================================================
+    // ПРЕВЬЮ АВАТАРА
+    // ============================================================
     function previewAvatar(input) {
         if (input.files && input.files[0]) {
             const file = input.files[0];
+
+            // Проверка размера (2MB) — берём АКТУАЛЬНЫЙ язык
             if (file.size > 2 * 1024 * 1024) {
-                alert('{{ __('users.file_too_large') }}');
+                const lang = localStorage.getItem('docsign_lang') || 'ru';
+                const alerts = {
+                    ru: 'Файл слишком большой. Максимум 2MB',
+                    tj: 'Файл хеле калон аст. Ҳадди аксар 2MB',
+                    en: 'File too large. Maximum 2MB'
+                };
+                alert(alerts[lang] || alerts.ru);
                 input.value = '';
                 return;
             }
+
             const reader = new FileReader();
             reader.onload = function(e) {
-                document.getElementById('avatarPreview').src = e.target.result;
-                document.getElementById('avatarPreview').classList.remove('hidden');
-                document.getElementById('avatarLetter').classList.add('hidden');
+                const preview = document.getElementById('avatarPreview');
+                const letter = document.getElementById('avatarLetter');
+                preview.src = e.target.result;
+                preview.style.display = 'block';
+                letter.style.display = 'none';
                 document.getElementById('fileNameDisplay').textContent = '📎 ' + file.name;
             }
             reader.readAsDataURL(file);
         }
     }
 
+    // ============================================================
+    // ФОРМАТИРОВАНИЕ ТЕЛЕФОНА
+    // ============================================================
     const phoneInput = document.getElementById('phone');
     const prefix = '+992 ';
-    phoneInput.addEventListener('input', function(e) {
-        if (!e.target.value.startsWith(prefix)) e.target.value = prefix;
-        let digits = e.target.value.substring(prefix.length).replace(/\D/g, '').substring(0, 9);
-        let formatted = '';
-        if (digits.length > 0) formatted += digits.substring(0, 2);
-        if (digits.length >= 3) formatted += ' ' + digits.substring(2, 5);
-        if (digits.length >= 6) formatted += ' ' + digits.substring(5, 7);
-        if (digits.length >= 8) formatted += ' ' + digits.substring(7, 9);
-        e.target.value = prefix + formatted;
-    });
 
+    if (phoneInput) {
+        phoneInput.addEventListener('input', function(e) {
+            if (!e.target.value.startsWith(prefix)) e.target.value = prefix;
+            let digits = e.target.value.substring(prefix.length).replace(/\D/g, '').substring(0, 9);
+            let formatted = '';
+            if (digits.length > 0) formatted += digits.substring(0, 2);
+            if (digits.length >= 3) formatted += ' ' + digits.substring(2, 5);
+            if (digits.length >= 6) formatted += ' ' + digits.substring(5, 7);
+            if (digits.length >= 8) formatted += ' ' + digits.substring(7, 9);
+            e.target.value = prefix + formatted;
+        });
+    }
+
+    // ============================================================
+    // TOGGLE PASSWORD
+    // ============================================================
     function togglePassword() {
         const input = document.getElementById('password');
         const icon = document.getElementById('eyeIcon');
@@ -342,57 +799,144 @@
         }
     }
 
-    document.getElementById('nameInput').addEventListener('input', function(e) {
-        const letter = e.target.value.trim().charAt(0).toUpperCase();
-        document.getElementById('avatarLetter').textContent = letter || '?';
-    });
+    // ============================================================
+    // ОБНОВЛЕНИЕ БУКВЫ АВАТАРА
+    // ============================================================
+    const nameInput = document.getElementById('nameInput');
+    if (nameInput) {
+        nameInput.addEventListener('input', function(e) {
+            const letter = e.target.value.trim().charAt(0).toUpperCase();
+            document.getElementById('avatarLetter').textContent = letter || '?';
+        });
+    }
 
-    // Переводы
+    // ============================================================
+    // ПЕРЕВОДЫ
+    // ============================================================
     document.addEventListener('DOMContentLoaded', function() {
-        const translations = {
+        // ============================================================
+        // ЛОКАЛЬНЫЙ СЛОВАРЬ СТРАНИЦЫ СОЗДАНИЯ ПОЛЬЗОВАТЕЛЯ
+        // ============================================================
+        const CREATE_USER_TRANSLATIONS = {
             ru: {
-                newUser: 'Новый пользователь', companyLabel: 'Компания', backToList: 'Назад к списку',
-                photo: 'Фото', photoDesc: 'JPG, PNG до 2MB', fullName: 'Полное имя',
-                email: 'Email', phone: 'Телефон', role: 'Роль',
-                level: 'Уровень', levelNote: 'Уровень 1 зарезервирован для администратора',
-                password: 'Пароль', autoCompany: 'Компания назначается автоматически',
-                createUser: 'Создать пользователя'
+                newUser: 'Новый пользователь',
+                companyLabel: 'Компания',
+                backToList: 'Назад к списку',
+                photo: 'Фото',
+                photoDesc: 'JPG, PNG до 2MB',
+                fullName: 'Полное имя',
+                email: 'Email',
+                phone: 'Телефон',
+                role: 'Роль',
+                level: 'Уровень',
+                levelNote: 'Уровень 1 зарезервирован для администратора',
+                password: 'Пароль',
+                autoCompany: 'Компания назначается автоматически',
+                createUser: 'Создать пользователя',
+                photoSection: 'Фото профиля',
+                mainInfo: 'Основная информация',
+                accessSection: 'Доступ и безопасность'
+            },
+            tj: {
+                newUser: 'Корбари нав',
+                companyLabel: 'Ширкат',
+                backToList: 'Бозгашт ба рӯйхат',
+                photo: 'Сурат',
+                photoDesc: 'JPG, PNG то 2MB',
+                fullName: 'Номи пурра',
+                email: 'Email',
+                phone: 'Телефон',
+                role: 'Вазифа',
+                level: 'Сатҳ',
+                levelNote: 'Сатҳи 1 барои администратор аст',
+                password: 'Рамз',
+                autoCompany: 'Ширкат автоматикӣ таъин мешавад',
+                createUser: 'Эҷоди корбар',
+                photoSection: 'Сурати профил',
+                mainInfo: 'Маълумоти асосӣ',
+                accessSection: 'Дастрасӣ ва амният'
             },
             en: {
-                newUser: 'New User', companyLabel: 'Company', backToList: 'Back to list',
-                photo: 'Photo', photoDesc: 'JPG, PNG up to 2MB', fullName: 'Full Name',
-                email: 'Email', phone: 'Phone', role: 'Role',
-                level: 'Level', levelNote: 'Level 1 is reserved for admin',
-                password: 'Password', autoCompany: 'Company is assigned automatically',
-                createUser: 'Create User'
-            },
-            tg: {
-                newUser: 'Корбари нав', companyLabel: 'Ширкат', backToList: 'Бозгашт ба рӯйхат',
-                photo: 'Сурат', photoDesc: 'JPG, PNG то 2MB', fullName: 'Номи пурра',
-                email: 'Email', phone: 'Телефон', role: 'Вазифа',
-                level: 'Сатҳ', levelNote: 'Сатҳи 1 барои администратор аст',
-                password: 'Рамз', autoCompany: 'Ширкат автоматикӣ таъин мешавад',
-                createUser: 'Эҷоди корбар'
+                newUser: 'New User',
+                companyLabel: 'Company',
+                backToList: 'Back to list',
+                photo: 'Photo',
+                photoDesc: 'JPG, PNG up to 2MB',
+                fullName: 'Full Name',
+                email: 'Email',
+                phone: 'Phone',
+                role: 'Role',
+                level: 'Level',
+                levelNote: 'Level 1 is reserved for admin',
+                password: 'Password',
+                autoCompany: 'Company is assigned automatically',
+                createUser: 'Create User',
+                photoSection: 'Profile Photo',
+                mainInfo: 'Main Information',
+                accessSection: 'Access & Security'
             }
         };
-        function getCurrentLang() {
-            const htmlLang = document.documentElement.lang;
-            if (htmlLang && translations[htmlLang]) return htmlLang;
-            const stored = localStorage.getItem('admin_lang');
-            if (stored && translations[stored]) return stored;
-            return 'ru';
-        }
-        function applyLanguage(lang) {
-            const dict = translations[lang];
-            if (!dict) return;
+
+        // ============================================================
+        // ФУНКЦИЯ ПРИМЕНЕНИЯ ПЕРЕВОДОВ
+        // ============================================================
+        function applyCreateUserTranslations(lang) {
+            const dict = CREATE_USER_TRANSLATIONS[lang] || CREATE_USER_TRANSLATIONS.ru;
+
+            // 1) Переводим все элементы с data-i18n
             document.querySelectorAll('[data-i18n]').forEach(el => {
                 const key = el.getAttribute('data-i18n');
-                if (dict[key]) el.textContent = dict[key];
+                if (dict[key] !== undefined) el.textContent = dict[key];
+            });
+
+            // 2) Переводим placeholder
+            document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+                const key = el.getAttribute('data-i18n-placeholder');
+                if (dict[key] !== undefined) el.setAttribute('placeholder', dict[key]);
+            });
+
+            // 3) Переводим title (подсказки)
+            document.querySelectorAll('[data-i18n-title]').forEach(el => {
+                const key = el.getAttribute('data-i18n-title');
+                if (dict[key] !== undefined) el.setAttribute('title', dict[key]);
             });
         }
-        applyLanguage(getCurrentLang());
-        const observer = new MutationObserver(() => applyLanguage(getCurrentLang()));
-        observer.observe(document.documentElement, { attributes: true, attributeFilter: ['lang'] });
+
+        // ============================================================
+        // ПАРАЛЛАКС ДЛЯ ФОНОВЫХ ПЯТЕН
+        // ============================================================
+        const blobs = document.querySelectorAll('.create-blob');
+        document.addEventListener('mousemove', (e) => {
+            const x = (e.clientX / window.innerWidth - 0.5) * 30;
+            const y = (e.clientY / window.innerHeight - 0.5) * 30;
+            blobs.forEach((blob, i) => {
+                const factor = (i + 1) * 0.4;
+                blob.style.transform = `translate(${x * factor}px, ${y * factor}px)`;
+            });
+        });
+
+        // ============================================================
+        // 1. Применяем сразу при загрузке
+        // ============================================================
+        const initialLang = localStorage.getItem('docsign_lang') || 'ru';
+        applyCreateUserTranslations(initialLang);
+
+        // ============================================================
+        // 2. Слушаем событие смены языка от layouts/admin.blade.php
+        // ============================================================
+        window.addEventListener('docsign:lang-changed', (e) => {
+            const lang = e.detail?.lang || 'ru';
+            applyCreateUserTranslations(lang);
+        });
+
+        // ============================================================
+        // 3. Синхронизация между вкладками браузера
+        // ============================================================
+        window.addEventListener('storage', (e) => {
+            if (e.key === 'docsign_lang' && e.newValue) {
+                applyCreateUserTranslations(e.newValue);
+            }
+        });
     });
 </script>
 @endsection

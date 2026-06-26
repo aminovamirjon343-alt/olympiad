@@ -1,453 +1,1597 @@
-
 @extends('layouts.admin')
 
 @section('content')
-    <div id="pjax-container">
+<div id="pjax-container">
     <section class="page-section active" id="page-dashboard">
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <div>
-                <h4 class="fw-bold mb-1" data-i18n="welcomeBack">
-                                        Welcome back, {{ strtok(auth()->user()->name, ' ') }} !</h4>
-                <p class="text-muted mb-0" data-i18n="dashSubtitle">Here's what's happening with your documents today.</p>
+
+        <!-- Header Section -->
+        <div class="dashboard-header">
+            <div class="row align-items-end">
+                <div class="col-md-8">
+                    <div class="breadcrumb-custom mb-3">
+                        <span class="breadcrumb-item" data-i18n="breadcrumb_home">Главная</span>
+                        <span class="breadcrumb-separator">/</span>
+                        <span class="breadcrumb-item active" data-i18n="control_panel">Панель управления</span>
+                    </div>
+                    @auth
+                    <h1 class="dashboard-title mb-2">
+                        <span data-i18n="welcomeBack">Доброе утро</span>, {{ explode(' ', auth()->user()->name)[0] }} !
+                    </h1>
+                    @endauth
+                    <p class="dashboard-subtitle mb-0">
+                        <span data-i18n="dashSubtitle">
+                            У вас {{ $stats['pending'] ?? 0 }} документов ожидают подписания и {{ $stats['incoming'] ?? 0 }} новых входящих.
+                        </span>
+                    </p>
+                </div>
+                <div class="col-md-4 text-md-end mt-3 mt-md-0">
+                    <div class="header-actions">
+
+                        <button class="btn btn-primary-custom btn-glow" onclick="showPage('documents', 'create')">
+                            <a href="{{route('documents.create')}}">
+                                <i class="bi bi-plus-lg me-2"></i>
+
+                                <span data-i18n="createDocument">Новый документ</span>
+                            </a>
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
 
-        <div class="row g-3 mb-4">
-
-            <div class="col-6 col-lg-3">
-                <div class="stat-card" style="border: 1px solid #dee2e6; border-radius: 12px; padding: 15px;">
-                    <div class="d-flex justify-content-between align-items-start mb-3">
-                        <div class="stat-icon" style="background:#ede9fe;color:var(--primary);">
-                            <i class="bi bi-folder2"></i>
-                        </div>
-                        <span class="badge {{ $docsGrowth >= 0 ? 'bg-success-subtle text-success' : 'bg-danger-subtle text-danger' }}">
-                            {{ $docsGrowth >= 0 ? '+' : '' }}{{ $docsGrowth }}%
-                        </span>
+        <!-- Stats Grid -->
+        <div class="stats-grid">
+            <!-- Total Documents -->
+            <div class="stat-card">
+                <div class="stat-header">
+                    <span class="stat-label" data-i18n="totalDocs">Всего документов</span>
+                    <div class="stat-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                            <polyline points="14 2 14 8 20 8"/>
+                        </svg>
                     </div>
-
-                    <div class="fw-bold fs-4">
-                        {{ number_format($totalDocs) }}
-                    </div>
-
-                    <div class="text-muted" style="font-size:13px;" data-i18n="totalDocs">
-                        Total Documents
-                    </div>
+                </div>
+                <div class="stat-value">
+                    {{ number_format($stats['total'] ?? 0, 0, '.', ' ') }}
+                </div>
+                <span class="stat-delta {{ $docsGrowth >= 0 ? 'delta-up' : 'delta-down' }}">
+            {{ $docsGrowth >= 0 ? '▲' : '▼' }} {{ abs($docsGrowth) }}%
+        </span>
+                <div class="stat-spark">
+                    <x-sparkline :data="$sparklineData['total']" id="total" />
                 </div>
             </div>
 
-            <div class="col-6 col-lg-3">
-                <div class="stat-card" style="border: 1px solid #dee2e6; border-radius: 12px; padding: 15px;">
-                    <div class="d-flex justify-content-between align-items-start mb-3">
-                        <div class="stat-icon" style="background:#dcfce7;color:#16a34a;">
-                            <i class="bi bi-pen"></i>
-                        </div>
-                        <span class="badge {{ $signedGrowth >= 0 ? 'bg-success-subtle text-success' : 'bg-danger-subtle text-danger' }}">
-                            {{ $signedGrowth >= 0 ? '+' : '' }}{{ $signedGrowth }}%
-                        </span>
+            <!-- Pending Documents -->
+            <div class="stat-card">
+                <div class="stat-header">
+                    <span class="stat-label" data-i18n="pending">На подписании</span>
+                    <div class="stat-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 19l7-7 3 3-7 7-3-3z"/>
+                            <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/>
+                        </svg>
                     </div>
-
-                    <div class="fw-bold fs-4">
-                        {{ $stats['signed'] }}
-                    </div>
-
-                    <div class="text-muted" style="font-size:13px;" data-i18n="signed">
-                        Signed
-                    </div>
+                </div>
+                <div class="stat-value">{{ number_format($stats['waiting'] ?? 0, 0, '.', ' ') }}</div>
+                <span class="stat-delta delta-down">{{ $stats['pending_change'] ?? 3 }}</span>
+                <div class="stat-spark">
+                    <x-sparkline :data="$sparklineData['waiting']" id="waiting" />
                 </div>
             </div>
 
-            <div class="col-6 col-lg-3">
-                <div class="stat-card" style="border: 1px solid #dee2e6; border-radius: 12px; padding: 15px;">
-                    <div class="d-flex justify-content-between align-items-start mb-3">
-                        <div class="stat-icon" style="background:#dbeafe;color:#2563eb;">
-                            <i class="bi bi-people"></i>
-                        </div>
-                        <span class="badge bg-info-subtle text-info" data-i18n="badgeUsers">Users</span>
+            <!-- Signed Documents -->
+            <div class="stat-card">
+                <div class="stat-header">
+                    <span class="stat-label" data-i18n="signedMonth">Подписано за месяц</span>
+                    <div class="stat-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="20 6 9 17 4 12"/>
+                        </svg>
                     </div>
-
-                    <div class="fw-bold fs-4">
-                        {{ $stats['users'] }}
-                    </div>
-
-                    <div class="text-muted" style="font-size:13px;" data-i18n="activeUsers">
-                        Active Users
-                    </div>
+                </div>
+                <div class="stat-value">{{ number_format($stats['signed'] ?? 0, 0, '.', ' ') }}</div>
+                <span class="stat-delta delta-up">▲ {{ $signedGrowth ?? 0 }}%</span>
+                <div class="stat-spark">
+                    <x-sparkline :data="$sparklineData['signed']" id="signed" />
                 </div>
             </div>
 
-            <div class="col-6 col-lg-3">
-                <div class="stat-card ai-promo-card"
-                     style="border: 1px solid rgba(99, 102, 241, 0.3); border-radius: 12px; padding: 15px; background: linear-gradient(145deg, #6366f1, #8b5cf6); position: relative; overflow: hidden; height: 100%; transition: 0.3s;">
-
-                    <div class="d-flex justify-content-between align-items-start mb-3">
-                        <div class="stat-icon" style="background: rgba(255,255,255,0.2); color: #ffffff; width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; border-radius: 9px;">
-                            <i class="bi bi-stars" style="font-size: 1rem;"></i>
-                        </div>
-                        <span class="badge" style="background: #ffffff; color: #6366f1; font-size: 8px; font-weight: 800; border-radius: 5px; padding: 3px 6px;">AI SMART</span>
+            <!-- Counterparties -->
+            <div class="stat-card">
+                <div class="stat-header">
+                    <span class="stat-label" data-i18n="counterparties">Контакты</span>
+                    <div class="stat-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                            <circle cx="9" cy="7" r="4"/>
+                            <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                        </svg>
                     </div>
-
-                    <div class="fw-bold" style="color: #ffffff; font-size: 18px; line-height: 1.2; margin-bottom: 2px;" data-i18n="aiTitle">
-                        AI Анализ
-                    </div>
-
-                    <div style="color: rgba(255,255,255,0.7); font-size: 11px; font-weight: 400;" data-i18n="aiSub">
-                        Мгновенный разбор
-                    </div>
-
-                    <div class="shimmer-effect"></div>
+                </div>
+                <div class="stat-value">{{ $stats['users'] ?? 0 }}</div>
+                <span class="stat-delta delta-up">
+                    ▲ <span data-i18n="new_users">{{ $stats['new_users'] ?? 0 }} новых</span>
+                </span>
+                <div class="stat-spark">
+                    <x-sparkline :data="$sparklineData['users']" id="users" />
                 </div>
             </div>
-
-            <style>
-                .ai-promo-card:hover {
-                    transform: translateY(-3px);
-                    box-shadow: 0 8px 20px rgba(99, 102, 241, 0.2);
-                    filter: brightness(1.05);
-                }
-
-                .shimmer-effect {
-                    position: absolute;
-                    top: 0;
-                    left: -100%;
-                    width: 50%;
-                    height: 100%;
-                    background: linear-gradient(to right, transparent, rgba(255,255,255,0.15), transparent);
-                    transform: skewX(-25deg);
-                    animation: shimmer 5s infinite;
-                }
-
-                @keyframes shimmer {
-                    0% { left: -100%; }
-                    20% { left: 150%; }
-                    100% { left: 150%; }
-                }
-            </style>
         </div>
 
-        <div class="row g-3">
-            <div class="col-lg-8">
-                <div class="table-custom">
-                    <div class="d-flex justify-content-between align-items-center p-4 border-bottom">
-                        <h6 class="fw-bold mb-0" data-i18n="recentDocuments">Recent Documents</h6>
-                        <a href="{{route('documents.index')}}" class="btn btn-sm btn-outline-primary" onclick="showPage('documents', null)" data-i18n="viewAll">View All</a>
-                    </div>
+        <!-- Main Content Grid -->
+        <div class="chart-container">
+            @php
+            // Защита от ошибки, если $chartData не передана
+            if (!isset($chartData) || empty($chartData['values'])) {
+            $chartData = [
+            'labels' => ['Янв', 'Фев', 'Мар', 'Апр', 'Май', 'Июн', 'Июл', 'Авг', 'Сен', 'Окт', 'Ноя', 'Дек'],
+            'values' => [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+            ];
+            }
 
-                    <div class="table-responsive">
-                        <table class="table table-custom align-middle table-hover mb-0">
-                            <thead>
-                            <tr>
-                                <th>ID</th>
-                                <th data-i18n="thDoc">Document</th>
-                                <th data-i18n="thStatus">Status</th>
-                                <th data-i18n="thDeadline">Deadline</th>
-                                <th data-i18n="thDate">Date</th>
-                                <th data-i18n="thActions">Actions</th>
-                            </tr>
-                            <style>
-                                /* Общие стили для всех режимов */
-                                .table-custom thead th {
-                                    text-transform: uppercase;
-                                    font-size: 12px;
-                                    letter-spacing: 0.5px;
-                                    padding: 14px 12px !important;
-                                    border: none !important;
-                                }
+            $values = $chartData['values'];
+            $max = max($values) ?: 1;
+            $min = min($values);
+            $range = $max - $min ?: 1;
 
-                                /* --- СВЕТЛАЯ ТЕМА --- */
-                                [data-bs-theme="light"] .table-custom thead tr {
-                                    background-color: #ffffff !important;
-                                }
-                                [data-bs-theme="light"] .table-custom thead th {
-                                    color: #000000 !important;
-                                }
+            $height = 260;
+            $width = 600;
+            $padding = 40;
+            $chartHeight = $height - $padding * 2;
+            $count = count($values);
+            $step = $count > 1 ? ($width - $padding) / ($count - 1) : 0;
 
-                                /* --- ТЕМНАЯ ТЕМА --- */
-                                [data-bs-theme="dark"] .table-custom thead tr {
-                                    background-color: #111111 !important;
-                                }
-                                [data-bs-theme="dark"] .table-custom thead th {
-                                    color: #ffffff !important;
-                                }
+            $points = [];
+            foreach ($values as $i => $value) {
+            $x = $padding + ($i * $step);
+            $y = $height - $padding - (($value - $min) / $range) * $chartHeight;
+            $points[] = [
+            'x' => round($x, 1),
+            'y' => round($y, 1),
+            'value' => $value,
+            'label' => $chartData['labels'][$i] ?? ''
+            ];
+            }
 
-                                /* --- ТЕЛО ТАБЛИЦЫ --- */
-                                .table-custom tbody tr {
-                                    background-color: #ffffff !important;
-                                    border-bottom: 1px solid #eee !important;
-                                }
-                                .table-custom tbody td,
-                                .table-custom tbody td span,
-                                .table-custom tbody td div {
-                                    color: #000000 !important;
-                                }
-                            </style>
-                            </thead>
+            $pathParts = [];
+            foreach ($points as $p) {
+            $pathParts[] = $p['x'] . ',' . $p['y'];
+            }
+            $pathLine = 'M' . implode(' L', $pathParts);
 
-                            <tbody>
-                            @foreach($documents as $index =>$doc)
-                                <tr style="font-size:14px; background-color: #fff !important;">
-                                    <td style="padding:14px 12px;">
-                                        <span class="fw-semibold">#{{ $index + 1 }}</span>
-                                    </td>
+            $lastPoint = $points[count($points) - 1];
+            $pathFill = $pathLine
+            . " L" . $lastPoint['x'] . "," . ($height - $padding)
+            . " L" . $padding . "," . ($height - $padding)
+            . " Z";
 
-                                    <td style="padding:14px 12px;">
-                                        <div class="fw-semibold" style="font-size:14px;">
-                                            {{ $doc->title }}
-                                        </div>
-                                        @if($doc->file_path)
-                                            <small class="text-muted">
-                                                {{ strtoupper(pathinfo($doc->file_path, PATHINFO_EXTENSION)) }}
-                                                • {{ $doc->file_size ?? 'N/A' }}
-                                            </small>
-                                        @endif
-                                    </td>
+            $yLabels = [];
+            for ($i = 0; $i <= 4; $i++) {
+            $val = round($min + ($range * $i / 4));
+            $yLabels[] = [
+            'value' => $val,
+            'y' => $height - $padding - ($chartHeight * $i / 4)
+            ];
+            }
+            @endphp
 
-                                    <td style="padding:14px 12px;">
-                                        <span class="status-badge status-{{ $doc->status }}">
+            <svg viewBox="0 0 {{ $width }} {{ $height }}" preserveAspectRatio="none">
+                <defs>
+                    <linearGradient id="areaGrad" x1="0" x2="0" y1="0" y2="1">
+                        <stop offset="0" stop-color="rgba(139, 92, 246, 0.5)"/>
+                        <stop offset="1" stop-color="rgba(139, 92, 246, 0)"/>
+                    </linearGradient>
+                    <filter id="glow">
+                        <feGaussianBlur stdDeviation="3"/>
+                    </filter>
+                </defs>
+
+                <!-- Сетка -->
+                <g stroke="rgba(255,255,255,0.05)" stroke-width="1">
+                    @foreach($yLabels as $label)
+                    <line x1="{{ $padding }}" y1="{{ $label['y'] }}" x2="{{ $width }}" y2="{{ $label['y'] }}"/>
+                    @endforeach
+                </g>
+
+                <!-- Метки Y -->
+                <g fill="rgba(255,255,255,0.3)" font-size="10" font-family="monospace">
+                    @foreach($yLabels as $label)
+                    <text x="6" y="{{ $label['y'] + 4 }}">{{ $label['value'] }}</text>
+                    @endforeach
+                </g>
+
+                <!-- Область под графиком -->
+                <path d="{{ $pathFill }}" fill="url(#areaGrad)"/>
+
+                <!-- Линия с glow -->
+                <path d="{{ $pathLine }}" fill="none" stroke="rgba(139, 92, 246, 0.4)" stroke-width="6" filter="url(#glow)"/>
+
+                <!-- Основная линия -->
+                <path d="{{ $pathLine }}" fill="none" stroke="rgba(139, 92, 246, 1)" stroke-width="2"/>
+
+                <!-- Точки данных -->
+                <g fill="rgba(139, 92, 246, 1)" stroke="#0a0d14" stroke-width="2">
+                    @foreach($points as $point)
+                    @if($point['value'] > 0)
+                    <circle cx="{{ $point['x'] }}" cy="{{ $point['y'] }}" r="4">
+                        <title>{{ $point['label'] }}: {{ $point['value'] }} <span data-i18n="docs_word">документов</span></title>
+                    </circle>
+                    @endif
+                    @endforeach
+                </g>
+
+                <!-- Метки X (месяцы) -->
+                <g fill="rgba(255,255,255,0.4)" font-size="10" font-family="sans-serif">
+                    @foreach($points as $i => $point)
+                    @if($i % 2 == 0)
+                    <text x="{{ $point['x'] }}" y="{{ $height - 10 }}" text-anchor="middle">{{ $point['label'] }}</text>
+                    @endif
+                    @endforeach
+                </g>
+            </svg>
+
+            @if(isset($stats['total']) && $stats['total'] == 0)
+            <div class="empty-chart-message">
+                <p data-i18n="no_data_chart">Нет данных для отображения</p>
+                <small data-i18n="create_docs_hint">Создайте документы, чтобы увидеть статистику</small>
+            </div>
+            @endif
+        </div>
+        <!-- Documents Table -->
+        <div class="panel table-panel">
+            <div class="panel-head">
+                <div>
+                    <h3 data-i18n="recentDocuments">Последние документы</h3>
+                    <div class="sub" data-i18n="allOperations">Все операции в системе электронного документооборота</div>
+                </div>
+                <div class="tabs">
+                    <button class="tab-btn active" data-i18n="all">Все</button>
+                    <button class="tab-btn" data-i18n="incoming">Входящие</button>
+                    <button class="tab-btn" data-i18n="outgoing">Исходящие</button>
+                    <button class="tab-btn" data-i18n="drafts">Черновики</button>
+                </div>
+            </div>
+            <div class="table-responsive-custom">
+                <table class="table-modern">
+                    <thead>
+                    <tr>
+                        <th data-i18n="thDoc">Документ</th>
+                        <th data-i18n="thCounterparty">Команда</th>
+                        <th data-i18n="thType">Тип</th>
+                        <th data-i18n="thStatus">Статус</th>
+                        <th data-i18n="thDate">Дата</th>
+                        <th data-i18n="thActions">Действия</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    @foreach($documents as $doc)
+                    <tr class="table-row-hover" data-doc-id="{{ $doc->id }}">
+                        <td>
+                            <div class="doc-cell">
+                                <div class="doc-icon">
+                                    {{ strtoupper(pathinfo($doc->file_path ?? 'pdf', PATHINFO_EXTENSION)) }}
+                                </div>
+                                <div class="doc-meta">
+                                    <b>{{ $doc->title }}</b>
+                                    <small>ID: {{ $doc->id }} · {{ $doc->file_size ?? 'N/A' }}</small>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="counterparty-cell">{{ $doc->counterparty ?? 'Внутренний' }}</td>
+                        <td class="type-cell">{{ $doc->type ?? 'Документ' }}</td>
+                        <td>
+                                <span class="pill pill-{{ $doc->status }}" data-status="{{ $doc->status }}">
+                                    @switch($doc->status)
+                                        @case('pending')
+                                            <span data-i18n="status_pending">На подписании</span>
+                                            @break
+                                        @case('approved')
+                                        @case('signed')
+                                            <span data-i18n="status_signed">Подписан</span>
+                                            @break
+                                        @case('rejected')
+                                            <span data-i18n="status_rejected">Отклонён</span>
+                                            @break
+                                        @case('draft')
+                                            <span data-i18n="status_draft">Черновик</span>
+                                            @break
+                                        @default
                                             {{ ucfirst($doc->status) }}
-                                        </span>
-                                    </td>
+                                    @endswitch
+                                </span>
+                        </td>
+                        <td class="date-cell">{{ $doc->created_at->format('d M Y') }}</td>
+                        <td>
+                            <div class="action-buttons">
+                                <a href="{{ route('documents.show', $doc->id) }}"
+                                   class="btn-action btn-view"
+                                   data-tooltip="Просмотр"
+                                   data-i18n-title="tooltip_view"
+                                   title="Просмотр">
+                                    <i class="bi bi-eye"></i>
+                                    <span class="btn-glow-effect"></span>
+                                </a>
+                                <a href="{{ route('documents.edit', $doc->id) }}"
+                                   class="btn-action btn-edit"
+                                   data-tooltip="Редактировать"
+                                   data-i18n-title="tooltip_edit"
+                                   title="Редактировать">
+                                    <i class="bi bi-pencil"></i>
+                                    <span class="btn-glow-effect"></span>
+                                </a>
+                                <button type="button"
+                                        class="btn-action btn-delete"
+                                        data-tooltip="Удалить"
+                                        data-i18n-title="tooltip_delete"
+                                        title="Удалить"
+                                        onclick="confirmDelete({{ $doc->id }}, '{{ addslashes($doc->title) }}')">
+                                    <i class="bi bi-trash3"></i>
+                                    <span class="btn-glow-effect"></span>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    @endforeach
 
-                                    <td style="padding:14px 12px;">
-                                        {{ $doc->deadline ? $doc->deadline->format('Y-m-d') : '---' }}
-                                    </td>
-
-                                    <td style="padding:14px 12px;">
-                                        {{ $doc->created_at->format('Y-m-d') }}
-                                    </td>
-
-                                    <td style="padding:14px 12px;">
-                                        <a href="{{ route('documents.show', $doc->id) }}" class="btn btn-sm btn-light me-1 border">
-                                            <i class="bi bi-eye" style="color: #000 !important;"></i>
-                                        </a>
-                                        <a href="{{ route('documents.edit', $doc->id) }}" class="btn btn-sm btn-light border">
-                                            <i class="bi bi-pencil" style="color: #000 !important;"></i>
-                                        </a>
-                                    </td>
-                                </tr>
-                            @endforeach
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
+                    @if($documents->isEmpty())
+                    <tr>
+                        <td colspan="6">
+                            <div class="empty-state">
+                                <div class="empty-icon">
+                                    <i class="bi bi-folder2-open"></i>
+                                </div>
+                                <p class="empty-text" data-i18n="no_documents">Документы не найдены</p>
+                                <small style="color: var(--text-muted);" data-i18n="create_first_doc">Создайте первый документ, чтобы начать работу</small>
+                            </div>
+                        </td>
+                    </tr>
+                    @endif
+                    </tbody>
+                </table>
             </div>
 
-            <div class="col-lg-4">
-                <div class="stat-card mb-3">
-                    <h6 class="fw-bold mb-3" data-i18n="quickActions">Quick Actions</h6>
-                    <div class="d-grid gap-2">
-                        <a href="{{route('documents.create')}}" class="btn btn-outline-primary btn-sm rounded-3" onclick="showPage('documents', null)"><i class="bi bi-plus-lg me-2"></i><span data-i18n="createDocument">Create Document</span></a>
-                        <a href="{{route('analysis.index')}}" class="btn btn-outline-warning btn-sm rounded-3" onclick="showPage('analysis', null)"><i class="bi bi-arrow-repeat me-2"></i><span data-i18n="reviewWorkflow">Analysis</span></a>
-                        <a href="{{route('signatures.create')}}" class="btn btn-outline-success btn-sm rounded-3" onclick="showPage('signatures', null)"><i class="bi bi-pen me-2"></i><span data-i18n="manageSignatures">Manage Signatures</span></a>
-                        <a href="{{route('notifications.index')}}" class="btn btn-outline-info btn-sm rounded-3" onclick="showPage('notifications', null)"><i class="bi bi-bell me-2"></i><span data-i18n="checkNotifications">Check Notifications</span></a>
-                    </div>
-                </div>
-
-                <div class="stat-card p-3">
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <h6 class="fw-bold mb-0" data-i18n="activityLog">
-                            Activity Log
-                        </h6>
-                        <span class="badge bg-light text-dark border" data-i18n="live">Live</span>
-                    </div>
-
-                    <div style="max-height:280px; overflow-y:auto; padding-right:5px;">
-                        @forelse($activities as $log)
-                            <div class="d-flex align-items-start gap-3 mb-3 activity-item">
-
-                                <div class="activity-icon rounded-circle d-flex align-items-center justify-content-center text-white"
-                                     style="width: 35px; height: 35px; flex-shrink: 0;
-                     background-color: @if($log->status == 'approved') #198754 @elseif($log->status == 'pending') #0d6efd @else #6c757d @endif !important;">
-
-                                    @if($log->status == 'approved')
-                                        <i class="bi bi-vector-pen"></i>
-                                    @elseif($log->status == 'pending')
-                                        <i class="bi bi-send-check"></i>
-                                    @else
-                                        <i class="bi bi-file-earmark-plus"></i>
-                                    @endif
-                                </div>
-
-                                <div class="flex-grow-1">
-                                    <div style="font-size:13px; line-height: 1.4;">
-                                        <span class="log-username">
-                                            {{ $log->user->name ?? 'Система' }}:
-                                        </span>
-                                        <style>
-                                            .log-username { color: #000000; font-weight: bold; }
-                                            @media (prefers-color-scheme: dark) { .log-username { color: #ffffff; } }
-                                        </style>
-
-                                        @if($log->status == 'approved')
-                                            <span class="text-success" data-i18n="actSigned">подписал(а) документ</span>
-                                        @elseif($log->status == 'pending')
-                                            <span class="text-primary" data-i18n="actReview">отправил(а) на согласование</span>
-                                        @else
-                                            <span class="text-muted" data-i18n="actCreated">создал(а) новый документ</span>
-                                        @endif
-
-                                        <div class="fw-semibold mt-1" style="color: #444;">
-                                            <i class="bi bi-file-earmark-text text-secondary"></i> {{ $log->title }}
-                                        </div>
-                                    </div>
-
-                                    @if($log->content)
-                                        <div class="p-2 mt-2 bg-light rounded border-start border-3 border-secondary" style="font-size:11px; font-style: italic;">
-                                            "{{ Str::limit($log->content, 60) }}"
-                                        </div>
-                                    @endif
-
-                                    <div class="text-muted mt-2 d-flex align-items-center" style="font-size:10px; text-transform: uppercase; letter-spacing: 0.5px;">
-                                        <i class="bi bi-clock me-1"></i>
-                                        {{ $log->created_at->diffForHumans() }}
-                                    </div>
-                                </div>
-                            </div>
-                        @empty
-                            <div class="text-center text-muted py-4">
-                                <i class="bi bi-inbox d-block mb-2" style="font-size: 24px;"></i>
-                                <span style="font-size:13px;" data-i18n="emptyLog">История активности пуста</span>
-                            </div>
-                        @endforelse
-                    </div>
-                </div>
+            @if($documents instanceof \Illuminate\Pagination\LengthAwarePaginator && $documents->hasPages())
+            <div class="pagination-wrapper">
+                {{ $documents->links() }}
             </div>
+            @endif
         </div>
     </section>
 
+    <!-- Delete Confirmation Modal -->
+    <div class="modal-overlay" id="deleteModal">
+        <div class="modal-box">
+            <div class="modal-icon-wrapper danger">
+                <i class="bi bi-exclamation-triangle"></i>
+            </div>
+            <h3 class="modal-title" data-i18n="delete_doc_title">Удалить документ?</h3>
+            <p class="modal-text">
+                <span data-i18n="delete_doc_text">Вы действительно хотите удалить документ</span>
+                <b id="deleteDocName"></b>?
+                <span data-i18n="delete_doc_warning">Это действие нельзя отменить.</span>
+            </p>
+            <form id="deleteForm" method="POST" style="display:none;">
+                @csrf
+                @method('DELETE')
+            </form>
+            <div class="modal-actions">
+                <button class="modal-btn modal-btn-cancel" onclick="closeDeleteModal()" data-i18n="cancel">
+                    Отмена
+                </button>
+                <button class="modal-btn modal-btn-danger" onclick="submitDelete()">
+                    <i class="bi bi-trash3 me-1"></i> <span data-i18n="delete">Удалить</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div class="toast-container" id="toastContainer"></div>
+
     <style>
-        .activity-item {
-            padding: 8px;
+        :root {
+            --glow: 139, 92, 246;
+            --bg-dark: #0a0d14;
+            --bg-card: rgba(20, 23, 35, 0.8);
+            --bg-panel: rgba(15, 18, 28, 0.9);
+            --border-color: rgba(139, 92, 246, 0.15);
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --purple: #8b5cf6;
+            --purple-light: #a78bfa;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --info: #3b82f6;
+        }
+
+        body {
+            background: var(--bg-dark);
+            color: var(--text-primary);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+
+        #pjax-container {
+            padding: 2rem;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        /* Header */
+        .dashboard-header {
+            margin-bottom: 2rem;
+        }
+
+        .breadcrumb-custom {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.875rem;
+            color: var(--text-muted);
+        }
+
+        .breadcrumb-separator {
+            color: var(--text-muted);
+        }
+
+        .dashboard-title {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(135deg, #fff 0%, #94a3b8 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .dashboard-subtitle {
+            color: var(--text-secondary);
+            font-size: 1rem;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 1rem;
+            justify-content: flex-end;
+        }
+
+        .btn-outline-custom {
+            background: transparent;
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            padding: 0.75rem 1.5rem;
+            border-radius: 12px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .btn-outline-custom:hover {
+            border-color: var(--purple);
+            background: rgba(139, 92, 246, 0.1);
+        }
+
+        .btn-primary-custom {
+            background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+            border: none;
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 12px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(139, 92, 246, 0.4);
+            cursor: pointer;
+        }
+
+        .btn-primary-custom a {
+            color: inherit;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+        }
+
+        .btn-primary-custom:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(139, 92, 246, 0.6);
+        }
+
+        .btn-glow {
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-glow::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            transition: left 0.5s;
+        }
+
+        .btn-glow:hover::before {
+            left: 100%;
+        }
+
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 1.5rem;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--purple), transparent);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-4px);
+            border-color: rgba(139, 92, 246, 0.3);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3), 0 0 40px rgba(139, 92, 246, 0.15);
+        }
+
+        .stat-card:hover::before {
+            opacity: 1;
+        }
+
+        .stat-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 1rem;
+        }
+
+        .stat-label {
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+
+        .stat-icon {
+            width: 40px;
+            height: 40px;
             border-radius: 10px;
-            transition: 0.2s;
+            background: rgba(139, 92, 246, 0.15);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--purple-light);
         }
 
-        .activity-item:hover {
-            background: #f8fafc;
-            transform: translateX(3px);
+        .stat-icon svg {
+            width: 20px;
+            height: 20px;
         }
 
-        .activity-icon {
-            width: 28px;
-            height: 28px;
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            color: var(--text-primary);
+        }
+
+        .stat-delta {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+        }
+
+        .delta-up {
+            background: rgba(16, 185, 129, 0.15);
+            color: var(--success);
+        }
+
+        .delta-down {
+            background: rgba(239, 68, 68, 0.15);
+            color: var(--danger);
+        }
+
+        .stat-spark {
+            height: 40px;
+        }
+
+        .stat-spark svg {
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Main Grid */
+        .main-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .panel {
+            background: var(--bg-panel);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 1.5rem;
+        }
+
+        .panel-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .panel-head h3 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+            color: var(--text-primary);
+        }
+
+        .panel-head .sub {
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 0.5rem;
+            background: rgba(15, 18, 28, 0.5);
+            padding: 0.25rem;
             border-radius: 8px;
+        }
+
+        .tab-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .tab-btn.active {
+            background: var(--purple);
+            color: white;
+            box-shadow: 0 0 15px rgba(139, 92, 246, 0.4);
+        }
+
+        .tab-btn:hover:not(.active) {
+            color: var(--text-primary);
+        }
+
+        /* Chart */
+        .chart-container {
+            height: 260px;
+            background: var(--bg-panel);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            position: relative;
+        }
+
+        .chart-container svg {
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Signers */
+        .signers-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .signer-item {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem;
+            background: rgba(15, 18, 28, 0.5);
+            border-radius: 12px;
+            transition: all 0.3s ease;
+        }
+
+        .signer-item:hover {
+            background: rgba(139, 92, 246, 0.05);
+        }
+
+        .signer-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
             display: flex;
             align-items: center;
             justify-content: center;
             color: white;
-            font-size: 14px;
+            font-weight: 600;
+            font-size: 0.875rem;
             flex-shrink: 0;
         }
 
-        .table-custom {
+        .signer-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .signer-info b {
+            display: block;
+            color: var(--text-primary);
+            font-size: 0.9375rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .signer-info small {
+            color: var(--text-secondary);
+            font-size: 0.8125rem;
+        }
+
+        .signer-status {
+            padding: 0.375rem 0.875rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .status-wait {
+            background: rgba(245, 158, 11, 0.15);
+            color: var(--warning);
+        }
+
+        .status-ok {
+            background: rgba(16, 185, 129, 0.15);
+            color: var(--success);
+        }
+
+        /* Table */
+        .table-responsive-custom {
+            overflow-x: auto;
+        }
+
+        .table-modern {
+            width: 100%;
             border-collapse: separate;
-            border-spacing: 0 10px;
+            border-spacing: 0;
         }
 
-        .table-custom tbody tr {
-            background: #fff;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+        .table-modern thead th {
+            background: rgba(15, 18, 28, 0.5);
+            color: var(--text-secondary);
+            font-weight: 600;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            padding: 1rem;
+            border-bottom: 1px solid var(--border-color);
+            text-align: left;
+            position: sticky;
+            top: 0;
+        }
+
+        .table-modern tbody tr {
+            transition: all 0.3s ease;
+        }
+
+        .table-row-hover:hover {
+            background: rgba(139, 92, 246, 0.05);
+            box-shadow: inset 3px 0 0 var(--purple);
+        }
+
+        .table-modern td {
+            padding: 1.25rem 1rem;
+            border-bottom: 1px solid var(--border-color);
+            vertical-align: middle;
+        }
+
+        .doc-cell {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .doc-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            background: rgba(139, 92, 246, 0.15);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--purple-light);
+            font-size: 0.75rem;
+            font-weight: 600;
+            flex-shrink: 0;
+        }
+
+        .doc-meta {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+
+        .doc-meta b {
+            color: var(--text-primary);
+            font-size: 0.9375rem;
+        }
+
+        .doc-meta small {
+            color: var(--text-muted);
+            font-size: 0.75rem;
+        }
+
+        .counterparty-cell, .type-cell {
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+        }
+
+        .pill {
+            display: inline-block;
+            padding: 0.375rem 0.875rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .pill-pending {
+            background: rgba(245, 158, 11, 0.15);
+            color: var(--warning);
+        }
+
+        .pill-approved, .pill-signed {
+            background: rgba(16, 185, 129, 0.15);
+            color: var(--success);
+        }
+
+        .pill-rejected {
+            background: rgba(239, 68, 68, 0.15);
+            color: var(--danger);
+        }
+
+        .pill-draft {
+            background: rgba(148, 163, 184, 0.15);
+            color: var(--text-muted);
+        }
+
+        .date-cell {
+            color: var(--text-muted);
+            font-size: 0.875rem;
+        }
+
+        /* ===== ACTION BUTTONS (VIEW / EDIT / DELETE) ===== */
+        .action-buttons {
+            display: flex;
+            gap: 0.5rem;
+            justify-content: flex-end;
+        }
+
+        .btn-action {
+            position: relative;
+            width: 36px;
+            height: 36px;
             border-radius: 10px;
-            transition: 0.2s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 1px solid transparent;
+            cursor: pointer;
+            text-decoration: none;
+            font-size: 1rem;
+            overflow: hidden;
+            background: transparent;
         }
 
-        .table-custom tbody tr:hover {
-            transform: scale(1.01);
-            box-shadow: 0 6px 18px rgba(0,0,0,0.08);
+        .btn-action i {
+            position: relative;
+            z-index: 2;
+            transition: transform 0.3s ease;
         }
 
-        .table-custom td {
-            border: none !important;
+        .btn-glow-effect {
+            position: absolute;
+            inset: 0;
+            border-radius: inherit;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            z-index: 1;
+        }
+
+        /* VIEW */
+        .btn-view {
+            background: rgba(59, 130, 246, 0.08);
+            color: #60a5fa;
+            border-color: rgba(59, 130, 246, 0.15);
+        }
+
+        .btn-view .btn-glow-effect {
+            background: radial-gradient(circle at center, rgba(59, 130, 246, 0.4), transparent 70%);
+            box-shadow: 0 0 20px rgba(59, 130, 246, 0.6);
+        }
+
+        .btn-view:hover {
+            background: rgba(59, 130, 246, 0.18);
+            border-color: rgba(59, 130, 246, 0.5);
+            color: #93c5fd;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(59, 130, 246, 0.35);
+        }
+
+        .btn-view:hover .btn-glow-effect {
+            opacity: 1;
+        }
+
+        .btn-view:hover i {
+            transform: scale(1.15);
+        }
+
+        /* EDIT */
+        .btn-edit {
+            background: rgba(245, 158, 11, 0.08);
+            color: #fbbf24;
+            border-color: rgba(245, 158, 11, 0.15);
+        }
+
+        .btn-edit .btn-glow-effect {
+            background: radial-gradient(circle at center, rgba(245, 158, 11, 0.4), transparent 70%);
+            box-shadow: 0 0 20px rgba(245, 158, 11, 0.6);
+        }
+
+        .btn-edit:hover {
+            background: rgba(245, 158, 11, 0.18);
+            border-color: rgba(245, 158, 11, 0.5);
+            color: #fcd34d;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(245, 158, 11, 0.35);
+        }
+
+        .btn-edit:hover .btn-glow-effect {
+            opacity: 1;
+        }
+
+        .btn-edit:hover i {
+            transform: scale(1.15) rotate(-8deg);
+        }
+
+        /* DELETE */
+        .btn-delete {
+            background: rgba(239, 68, 68, 0.08);
+            color: #f87171;
+            border-color: rgba(239, 68, 68, 0.15);
+        }
+
+        .btn-delete .btn-glow-effect {
+            background: radial-gradient(circle at center, rgba(239, 68, 68, 0.4), transparent 70%);
+            box-shadow: 0 0 20px rgba(239, 68, 68, 0.6);
+        }
+
+        .btn-delete:hover {
+            background: rgba(239, 68, 68, 0.18);
+            border-color: rgba(239, 68, 68, 0.5);
+            color: #fca5a5;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(239, 68, 68, 0.35);
+        }
+
+        .btn-delete:hover .btn-glow-effect {
+            opacity: 1;
+        }
+
+        .btn-delete:hover i {
+            transform: scale(1.15);
+            animation: shake 0.5s ease;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: scale(1.15) rotate(0); }
+            25% { transform: scale(1.15) rotate(-8deg); }
+            75% { transform: scale(1.15) rotate(8deg); }
+        }
+
+        /* Tooltip */
+        .btn-action::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            bottom: calc(100% + 8px);
+            left: 50%;
+            transform: translateX(-50%) translateY(4px);
+            background: rgba(15, 18, 28, 0.95);
+            color: var(--text-primary);
+            padding: 0.375rem 0.75rem;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            white-space: nowrap;
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.2s ease;
+            border: 1px solid var(--border-color);
+            z-index: 10;
+        }
+
+        .btn-action:hover::after {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+
+        /* ===== DELETE MODAL ===== */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+            padding: 1rem;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal-box {
+            background: linear-gradient(145deg, #141723 0%, #0f121c 100%);
+            border: 1px solid rgba(239, 68, 68, 0.25);
+            border-radius: 20px;
+            padding: 2rem;
+            max-width: 420px;
+            width: 100%;
+            text-align: center;
+            transform: scale(0.9) translateY(20px);
+            transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5), 0 0 40px rgba(239, 68, 68, 0.15);
+        }
+
+        .modal-overlay.active .modal-box {
+            transform: scale(1) translateY(0);
+        }
+
+        .modal-icon-wrapper {
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1.25rem;
+            font-size: 1.75rem;
+        }
+
+        .modal-icon-wrapper.danger {
+            background: rgba(239, 68, 68, 0.15);
+            color: var(--danger);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            animation: pulse-danger 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse-danger {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+            50% { box-shadow: 0 0 0 12px rgba(239, 68, 68, 0); }
+        }
+
+        .modal-title {
+            color: var(--text-primary);
+            font-size: 1.375rem;
+            font-weight: 700;
+            margin-bottom: 0.75rem;
+        }
+
+        .modal-text {
+            color: var(--text-secondary);
+            font-size: 0.9375rem;
+            line-height: 1.6;
+            margin-bottom: 1.75rem;
+        }
+
+        .modal-text b {
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 0.75rem;
+        }
+
+        .modal-btn {
+            flex: 1;
+            padding: 0.75rem 1.25rem;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 0.9375rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 1px solid transparent;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.375rem;
+        }
+
+        .modal-btn-cancel {
+            background: rgba(148, 163, 184, 0.1);
+            color: var(--text-secondary);
+            border-color: rgba(148, 163, 184, 0.2);
+        }
+
+        .modal-btn-cancel:hover {
+            background: rgba(148, 163, 184, 0.18);
+            color: var(--text-primary);
+            border-color: rgba(148, 163, 184, 0.4);
+        }
+
+        .modal-btn-danger {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(239, 68, 68, 0.35);
+        }
+
+        .modal-btn-danger:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(239, 68, 68, 0.5);
+        }
+
+        /* ===== TOAST ===== */
+        .toast-container {
+            position: fixed;
+            top: 1.5rem;
+            right: 1.5rem;
+            z-index: 10000;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            pointer-events: none;
+        }
+
+        .toast {
+            background: linear-gradient(145deg, #141723 0%, #0f121c 100%);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1rem 1.25rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            min-width: 280px;
+            max-width: 400px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+            animation: toast-in 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+            pointer-events: auto;
+        }
+
+        .toast.toast-out {
+            animation: toast-out 0.3s ease forwards;
+        }
+
+        .toast.success {
+            border-color: rgba(16, 185, 129, 0.4);
+        }
+
+        .toast.error {
+            border-color: rgba(239, 68, 68, 0.4);
+        }
+
+        .toast-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.125rem;
+            flex-shrink: 0;
+        }
+
+        .toast.success .toast-icon {
+            background: rgba(16, 185, 129, 0.15);
+            color: var(--success);
+        }
+
+        .toast.error .toast-icon {
+            background: rgba(239, 68, 68, 0.15);
+            color: var(--danger);
+        }
+
+        .toast-content {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .toast-title {
+            color: var(--text-primary);
+            font-weight: 600;
+            font-size: 0.9375rem;
+            margin-bottom: 0.125rem;
+        }
+
+        .toast-message {
+            color: var(--text-secondary);
+            font-size: 0.8125rem;
+        }
+
+        @keyframes toast-in {
+            from {
+                opacity: 0;
+                transform: translateX(100%);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        @keyframes toast-out {
+            to {
+                opacity: 0;
+                transform: translateX(100%);
+            }
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 3rem 1rem;
+        }
+
+        .empty-icon {
+            font-size: 3rem;
+            color: var(--text-muted);
+            margin-bottom: 1rem;
+        }
+
+        .empty-text {
+            color: var(--text-secondary);
+            margin: 0;
+        }
+
+        /* Pagination */
+        .pagination-wrapper {
+            margin-top: 1.5rem;
+            display: flex;
+            justify-content: center;
+        }
+
+        .pagination-wrapper .pagination {
+            gap: 0.375rem;
+        }
+
+        .pagination-wrapper .page-link {
+            background: rgba(15, 18, 28, 0.5);
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            padding: 0.5rem 0.875rem;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            transition: all 0.3s ease;
+        }
+
+        .pagination-wrapper .page-link:hover {
+            background: rgba(139, 92, 246, 0.15);
+            color: var(--text-primary);
+            border-color: var(--purple);
+        }
+
+        .pagination-wrapper .page-item.active .page-link {
+            background: var(--purple);
+            border-color: var(--purple);
+            color: white;
+            box-shadow: 0 0 15px rgba(139, 92, 246, 0.4);
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg-dark);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--text-muted);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--purple);
+        }
+
+        /* Responsive */
+        @media (max-width: 1200px) {
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 768px) {
+            #pjax-container {
+                padding: 1rem;
+            }
+
+            .dashboard-title {
+                font-size: 1.5rem;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .header-actions {
+                flex-direction: column;
+            }
+
+            .stat-value {
+                font-size: 1.5rem;
+            }
+
+            .action-buttons {
+                justify-content: center;
+            }
+
+            .btn-action {
+                width: 32px;
+                height: 32px;
+                font-size: 0.875rem;
+            }
+
+            .btn-action::after {
+                display: none;
+            }
+
+            .modal-box {
+                padding: 1.5rem;
+            }
+
+            .modal-actions {
+                flex-direction: column-reverse;
+            }
         }
     </style>
 
     <script>
         document.addEventListener('DOMContentLoaded', function () {
+            // ===== ПЕРЕВОДЫ / TRANSLATIONS / ТАРҶУМАҲО =====
             const translations = {
                 ru: {
-                    welcomeBack: "С возвращением",
-                    dashSubtitle: "Вот что происходит с вашими документами сегодня.",
+                    breadcrumb_home: "Главная",
+                    control_panel: "Панель управления",
+                    welcomeBack: "Доброе утро",
+                    dashSubtitle: "У вас {pending} документов ожидают подписания и {incoming} новых входящих.",
+                    new_users: "{count} новых",
+                    createDocument: "Новый документ",
                     totalDocs: "Всего документов",
-                    signed: "Подписано",
-                    badgeUsers: "Пользователи",
-                    activeUsers: "Активные пользователи",
-                    aiTitle: "Анализ",
-                    aiSub: "Мгновенный разбор",
+                    pending: "На подписании",
+                    signedMonth: "Подписано за месяц",
+                    counterparties: "Команда",
+                    documentFlow: "Документооборот",
+                    chartSubtitle: "Динамика за последние 12 месяцев",
+                    week: "Неделя",
+                    month: "Месяц",
+                    year: "Год",
+                    awaitingSignature: "Ожидают подписи",
+                    needAttention: "Требуют вашего внимания",
+                    noPending: "Нет ожидающих документов",
                     recentDocuments: "Последние документы",
-                    viewAll: "Смотреть все",
-                    thDoc: "Документ", thStatus: "Статус", thDeadline: "Срок", thDate: "Дата", thActions: "Действия",
-                    quickActions: "Быстрые действия",
-                    createDocument: "Создать документ",
-                    reviewWorkflow: "Анализ",
-                    manageSignatures: "Управление подписями",
-                    checkNotifications: "Уведомления",
-                    activityLog: "Журнал активности",
-                    live: "Live",
-                    actSigned: "подписал(а) документ",
-                    actReview: "отправил(а) на согласование",
-                    actCreated: "создал(а) новый документ",
-                    emptyLog: "История активности пуста",
-                    searchPlaceholder: "Поиск по сайту..."
+                    allOperations: "Все операции в системе электронного документооборота",
+                    all: "Все",
+                    incoming: "Входящие",
+                    outgoing: "Исходящие",
+                    drafts: "Черновики",
+                    thDoc: "Документ",
+                    thCounterparty: "Контрагент",
+                    thType: "Тип",
+                    thStatus: "Статус",
+                    thDate: "Дата",
+                    thActions: "Действия",
+                    status_pending: "На подписании",
+                    status_signed: "Подписан",
+                    status_rejected: "Отклонён",
+                    status_draft: "Черновик",
+                    tooltip_view: "Просмотр",
+                    tooltip_edit: "Редактировать",
+                    tooltip_delete: "Удалить",
+                    no_documents: "Документы не найдены",
+                    create_first_doc: "Создайте первый документ, чтобы начать работу",
+                    no_data_chart: "Нет данных для отображения",
+                    create_docs_hint: "Создайте документы, чтобы увидеть статистику",
+                    docs_word: "документов",
+                    delete_doc_title: "Удалить документ?",
+                    delete_doc_text: "Вы действительно хотите удалить документ",
+                    delete_doc_warning: "Это действие нельзя отменить.",
+                    cancel: "Отмена",
+                    delete: "Удалить",
+                    deleteSuccess: "Документ успешно удалён",
+                    deleteError: "Ошибка при удалении",
+                    toast_success: "Успешно",
+                    toast_error: "Ошибка",
+                    internal: "Внутренний",
+                    document_type: "Документ"
                 },
                 tj: {
-                    welcomeBack: "Хуш омадед",
-                    dashSubtitle: "Инҷо вазъи ҳуҷҷатҳои шумо имрӯз.",
+                    breadcrumb_home: "Асосӣ",
+                    control_panel: "Панели идоракунӣ",
+                    welcomeBack: "Субҳ ба хайр",
+                    dashSubtitle: "Шумо {pending} ҳуҷҷат дар интизори имзо ва {incoming} воридоти нав доред.",
+                    new_users: "{count} нав",
+                    createDocument: "Ҳуҷҷати нав",
                     totalDocs: "Ҳамаи ҳуҷҷатҳо",
-                    signed: "Имзошуда",
-                    badgeUsers: "Корбарон",
-                    activeUsers: "Корбарони фаъол",
-                    aiTitle: "Таҳлили",
-                    aiSub: "Таҳлили фаврӣ",
+                    pending: "Дар интизори имзо",
+                    signedMonth: "Имзошуда дар моҳ",
+                    counterparties: "Даста",
+                    documentFlow: "Гардиши ҳуҷҷатҳо",
+                    chartSubtitle: "Динамика дар 12 моҳи охир",
+                    week: "Ҳафта",
+                    month: "Моҳ",
+                    year: "Сол",
+                    awaitingSignature: "Интизори имзо",
+                    needAttention: "Талаб кардани диққат",
+                    noPending: "Ҳуҷҷати интизор нест",
                     recentDocuments: "Ҳуҷҷатҳои охирин",
-                    viewAll: "Ҳамааш",
-                    thDoc: "Ҳуҷҷат", thStatus: "Статус", thDeadline: "Мӯҳлат", thDate: "Сана", thActions: "Амалҳо",
-                    quickActions: "Амалҳои фаврӣ",
-                    createDocument: "Эҷоди ҳуҷҷат",
-                    reviewWorkflow: "Таҳлил",
-                    manageSignatures: "Имзоҳо",
-                    checkNotifications: "Огоҳиномаҳо",
-                    activityLog: "Журнали фаъолият",
-                    live: "Зинда",
-                    actSigned: "ҳуҷҷатро имзо кард",
-                    actReview: "барои тасдиқ фиристод",
-                    actCreated: "ҳуҷҷати нав сохт",
-                    emptyLog: "Таърихи фаъолият холӣ аст",
-                    searchPlaceholder: "Ҷустуҷӯ дар сайт..."
+                    allOperations: "Ҳамаи амалиётҳо дар системаи ҳуҷҷатгардонӣ",
+                    all: "Ҳама",
+                    incoming: "Воридотӣ",
+                    outgoing: "Содиротӣ",
+                    drafts: "Пешнависҳо",
+                    thDoc: "Ҳуҷҷат",
+                    thCounterparty: "Ҳамкор",
+                    thType: "Намуд",
+                    thStatus: "Статус",
+                    thDate: "Сана",
+                    thActions: "Амалҳо",
+                    status_pending: "Дар интизори имзо",
+                    status_signed: "Имзо шуд",
+                    status_rejected: "Рад шуд",
+                    status_draft: "Пешнавис",
+                    tooltip_view: "Дидан",
+                    tooltip_edit: "Таҳрир кардан",
+                    tooltip_delete: "Нест кардан",
+                    no_documents: "Ҳуҷҷатҳо ёфт нашуданд",
+                    create_first_doc: "Барои оғози кор аввалин ҳуҷҷатро эҷод кунед",
+                    no_data_chart: "Маълумот барои намоиш нест",
+                    create_docs_hint: "Барои дидани омор ҳуҷҷатҳоро эҷод кунед",
+                    docs_word: "ҳуҷҷат",
+                    delete_doc_title: "Ҳуҷҷатро нест мекунед?",
+                    delete_doc_text: "Шумо мутмаин ҳастед, ки мехоҳед ҳуҷҷатро нест кунед",
+                    delete_doc_warning: "Ин амалро бекор карда намешавад.",
+                    cancel: "Бекор кардан",
+                    delete: "Нест кардан",
+                    deleteSuccess: "Ҳуҷҷат бомуваффақият нест карда шуд",
+                    deleteError: "Хато ҳангоми нест кардан",
+                    toast_success: "Бомуваффақият",
+                    toast_error: "Хато",
+                    internal: "Дохилӣ",
+                    document_type: "Ҳуҷҷат"
                 },
                 en: {
-                    welcomeBack: "Welcome back",
-                    dashSubtitle: "Here's what's happening with your documents today.",
+                    breadcrumb_home: "Home",
+                    control_panel: "Control Panel",
+                    welcomeBack: "Good morning",
+                    dashSubtitle: "You have {pending} documents awaiting signature and {incoming} new incoming.",
+                    new_users: "{count} new",
+                    createDocument: "New Document",
                     totalDocs: "Total Documents",
-                    signed: "Signed",
-                    badgeUsers: "Users",
-                    activeUsers: "Active Users",
-                    aiTitle: "Analysis",
-                    aiSub: "Instant breakdown",
+                    pending: "Pending Signature",
+                    signedMonth: "Signed This Month",
+                    counterparties: "Team",
+                    documentFlow: "Document Flow",
+                    chartSubtitle: "Dynamics for the last 12 months",
+                    week: "Week",
+                    month: "Month",
+                    year: "Year",
+                    awaitingSignature: "Awaiting Signature",
+                    needAttention: "Require your attention",
+                    noPending: "No pending documents",
                     recentDocuments: "Recent Documents",
-                    viewAll: "View All",
-                    thDoc: "Document", thStatus: "Status", thDeadline: "Deadline", thDate: "Date", thActions: "Actions",
-                    quickActions: "Quick Actions",
-                    createDocument: "Create Document",
-                    reviewWorkflow: "Analysis",
-                    manageSignatures: "Manage Signatures",
-                    checkNotifications: "Check Notifications",
-                    activityLog: "Activity Log",
-                    live: "Live",
-                    actSigned: "signed the document",
-                    actReview: "sent for review",
-                    actCreated: "created a new document",
-                    emptyLog: "Activity log is empty",
-                    searchPlaceholder: "Search on site..."
+                    allOperations: "All operations in the electronic document management system",
+                    all: "All",
+                    incoming: "Incoming",
+                    outgoing: "Outgoing",
+                    drafts: "Drafts",
+                    thDoc: "Document",
+                    thCounterparty: "Counterparty",
+                    thType: "Type",
+                    thStatus: "Status",
+                    thDate: "Date",
+                    thActions: "Actions",
+                    status_pending: "Pending",
+                    status_signed: "Signed",
+                    status_rejected: "Rejected",
+                    status_draft: "Draft",
+                    tooltip_view: "View",
+                    tooltip_edit: "Edit",
+                    tooltip_delete: "Delete",
+                    no_documents: "No documents found",
+                    create_first_doc: "Create the first document to get started",
+                    no_data_chart: "No data to display",
+                    create_docs_hint: "Create documents to see statistics",
+                    docs_word: "documents",
+                    delete_doc_title: "Delete document?",
+                    delete_doc_text: "Are you sure you want to delete the document",
+                    delete_doc_warning: "This action cannot be undone.",
+                    cancel: "Cancel",
+                    delete: "Delete",
+                    deleteSuccess: "Document deleted successfully",
+                    deleteError: "Error while deleting",
+                    toast_success: "Success",
+                    toast_error: "Error",
+                    internal: "Internal",
+                    document_type: "Document"
                 }
             };
 
+            // ===== Получение текущего языка =====
+            function getCurrentLang() {
+                return localStorage.getItem('docsign_lang')
+                    || localStorage.getItem('app-lang')
+                    || 'ru';
+            }
+
+            // ===== Применение переводов =====
             function applyTranslations() {
-                const lang = localStorage.getItem('app-lang') || 'tj';
+                const lang = getCurrentLang();
                 const t = translations[lang] || translations['ru'];
 
-                // 1. Текстовые блоки
+                // Подзаголовок с переменными (одинарные скобки {pending} {incoming})
+                const subtitleEl = document.querySelector('[data-i18n="dashSubtitle"]');
+                if (subtitleEl && t.dashSubtitle) {
+                    const pending = {{ $stats['pending'] ?? 0 }};
+                    const incoming = {{ $stats['incoming'] ?? 0 }};
+                    subtitleEl.textContent = t.dashSubtitle
+                        .replace('{pending}', pending)
+                        .replace('{incoming}', incoming);
+                }
+
+                // Новые пользователи (одинарные скобки {count})
+                const newUsersEl = document.querySelector('[data-i18n="new_users"]');
+                if (newUsersEl && t.new_users) {
+                    const count = {{ $stats['new_users'] ?? 0 }};
+                    newUsersEl.textContent = t.new_users.replace('{count}', count);
+                }
+
+                // Все элементы с data-i18n
                 document.querySelectorAll('[data-i18n]').forEach(el => {
                     const key = el.getAttribute('data-i18n');
-                    if (t[key]) {
+                    if (t[key] && key !== 'dashSubtitle' && key !== 'new_users') {
                         if (el.children.length > 0) {
                             el.childNodes.forEach(node => {
                                 if (node.nodeType === Node.TEXT_NODE && node.textContent.trim() !== "") {
@@ -460,7 +1604,16 @@
                     }
                 });
 
-                // 2. Поля ввода (Плейсхолдеры)
+                // Tooltip-ы
+                document.querySelectorAll('[data-i18n-title]').forEach(el => {
+                    const key = el.getAttribute('data-i18n-title');
+                    if (t[key]) {
+                        el.setAttribute('title', t[key]);
+                        el.setAttribute('data-tooltip', t[key]);
+                    }
+                });
+
+                // Placeholder-ы
                 document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
                     const key = el.getAttribute('data-i18n-placeholder');
                     if (t[key]) {
@@ -469,12 +1622,112 @@
                 });
             }
 
+            // Применяем сразу
             applyTranslations();
+
+            // Слушаем событие смены языка из layout
+            window.addEventListener('docsign:lang-changed', function(e) {
+                if (e.detail && e.detail.lang) {
+                    localStorage.setItem('docsign_lang', e.detail.lang);
+                    localStorage.setItem('app-lang', e.detail.lang);
+                }
+                applyTranslations();
+            });
+
+            // Tab switching
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const parent = this.closest('.tabs');
+                    parent.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                    this.classList.add('active');
+                });
+            });
+
+            // ===== TOAST FUNCTION =====
+            window.showToast = function(type, title, message) {
+                const container = document.getElementById('toastContainer');
+                if (!container) return;
+
+                const toast = document.createElement('div');
+                toast.className = `toast ${type}`;
+
+                const iconClass = type === 'success' ? 'bi-check-circle-fill' : 'bi-x-circle-fill';
+
+                toast.innerHTML = `
+                    <div class="toast-icon">
+                        <i class="bi ${iconClass}"></i>
+                    </div>
+                    <div class="toast-content">
+                        <div class="toast-title">${title}</div>
+                        <div class="toast-message">${message}</div>
+                    </div>
+                `;
+
+                container.appendChild(toast);
+
+                setTimeout(() => {
+                    toast.classList.add('toast-out');
+                    setTimeout(() => toast.remove(), 300);
+                }, 4000);
+            };
+
+            // ===== FLASH MESSAGES =====
+            @if(session('success'))
+                const _lang = getCurrentLang();
+                const _t = translations[_lang] || translations['ru'];
+                showToast('success', _t.toast_success, @json(session('success')));
+            @endif
+
+            @if(session('error'))
+                const _lang2 = getCurrentLang();
+                const _t2 = translations[_lang2] || translations['ru'];
+                showToast('error', _t2.toast_error, @json(session('error')));
+            @endif
+        });
+
+        // ===== DELETE MODAL LOGIC =====
+        let currentDeleteId = null;
+
+        function confirmDelete(id, name) {
+            currentDeleteId = id;
+            const modal = document.getElementById('deleteModal');
+            const nameEl = document.getElementById('deleteDocName');
+            const form = document.getElementById('deleteForm');
+
+            nameEl.textContent = name;
+            form.action = `/documents/${id}`;
+            modal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeDeleteModal() {
+            const modal = document.getElementById('deleteModal');
+            modal.classList.remove('active');
+            document.body.style.overflow = '';
+            currentDeleteId = null;
+        }
+
+        function submitDelete() {
+            const form = document.getElementById('deleteForm');
+            if (currentDeleteId && form) {
+                form.style.display = 'block';
+                form.submit();
+            }
+        }
+
+        // Close modal on overlay click
+        document.addEventListener('click', function(e) {
+            if (e.target.id === 'deleteModal') {
+                closeDeleteModal();
+            }
+        });
+
+        // Close modal on ESC
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeDeleteModal();
+            }
         });
     </script>
-    </div>
+</div>
 @endsection
-
-
-
-

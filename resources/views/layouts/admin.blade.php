@@ -1,1465 +1,2013 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DocSign</title>
-
-    <link rel="icon" type="image/png" href="https://cdn-icons-png.flaticon.com/512/5968/5968517.png">
-
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/fontsource-inter@5.1.1/index.css" rel="stylesheet">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>DocSign — Электронный документооборот</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/inter@5.0.0/index.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/jetbrains-mono@5.0.0/index.css">
+    {{-- КРИТИЧНО: применяем цвет ДО рендера, чтобы не было мигания --}}
+    <script>
+        (function(){
+            try {
+                const s = JSON.parse(localStorage.getItem('docsign_ambient') || '{}');
+                const rgb = s.color || '79,140,255';
+                const intensity = s.intensity || 80;
+                const spread = s.spread || 60;
+                const mode = s.mode || 'solid';
+                const lang = localStorage.getItem('docsign_lang') || 'ru';
+                document.documentElement.style.setProperty('--glow', rgb);
+                document.documentElement.style.setProperty('--glow-intensity', intensity);
+                document.documentElement.style.setProperty('--glow-spread', spread);
+                document.documentElement.style.setProperty('--glow-mode', mode);
+                document.documentElement.lang = lang;
+            } catch(e) {}
+        })();
+    </script>
     <style>
+        :root{
+          --bg-0:#06070b;
+          --bg-1:#0b0d14;
+          --bg-2:#10131c;
+          --bg-3:#161a26;
+          --line:rgba(255,255,255,0.06);
+          --text:#e7ecf3;
+          --muted:#8892a6;
+          --accent:#4f8cff;
+          --glow: 79,140,255;
+          --glow-soft: rgba(var(--glow),0.18);
+          --radius:14px;
+          --glow-intensity: 80;
+          --glow-spread: 60;
+        }
+        *{box-sizing:border-box}
+        html,body{margin:0;padding:0;height:100%}
+        body{
+          font-family:'Inter',system-ui,sans-serif;
+          background:
+            radial-gradient(1200px 600px at 80% -10%, rgba(var(--glow),0.18), transparent 60%),
+            radial-gradient(900px 500px at -10% 110%, rgba(var(--glow),0.12), transparent 60%),
+            var(--bg-0);
+          color:var(--text);
+          min-height:100vh;
+          overflow-x:hidden;
+          transition: background 0.8s ease;
+        }
+        body::before{
+          content:"";
+          position:fixed; inset:0;
+          background-image:
+            linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
+          background-size: 42px 42px;
+          mask-image: radial-gradient(ellipse at 50% 30%, black 40%, transparent 80%);
+          pointer-events:none;
+          z-index:0;
+        }
 
-        .search-box {
+        /* ===== AMBIENT LIGHT STRIP ===== */
+        .ambient{
+          position:fixed;
+          top:64px; left:0; right:0;
+          height:2px;
+          background: linear-gradient(90deg,
+            transparent 0%,
+            rgba(var(--glow),0.0) 5%,
+            rgba(var(--glow),0.9) 30%,
+            rgba(var(--glow),1) 50%,
+            rgba(var(--glow),0.9) 70%,
+            rgba(var(--glow),0.0) 95%,
+            transparent 100%);
+          box-shadow:
+            0 0 10px rgba(var(--glow),0.8),
+            0 0 24px rgba(var(--glow),0.6),
+            0 0 60px rgba(var(--glow),0.35),
+            0 0 120px rgba(var(--glow),0.2);
+          z-index:50;
+          animation: pulseGlow 4s ease-in-out infinite;
+          transition: all 0.4s ease;
+        }
+        .ambient::after{
+          content:"";
+          position:absolute;
+          top:2px; left:0; right:0;
+          height:80px;
+          background: linear-gradient(180deg, rgba(var(--glow),0.25), transparent);
+          filter: blur(10px);
+          pointer-events:none;
+        }
+        @keyframes pulseGlow{
+          0%,100%{ opacity:0.95 }
+          50%{ opacity:1 }
+        }
+        @keyframes breatheGlow{
+          0%,100%{ opacity:0.4; transform:scaleY(0.8) }
+          50%{ opacity:1; transform:scaleY(1.2) }
+        }
+        @keyframes pulseFast{
+          0%,100%{ opacity:0.6 }
+          50%{ opacity:1 }
+        }
+
+        /* ===== TOP BAR ===== */
+        .topbar{
+          position:sticky; top:0; z-index:40;
+          display:flex; align-items:center; gap:16px;
+          padding:12px 22px;
+          background: linear-gradient(180deg, rgba(10,12,18,0.85), rgba(10,12,18,0.55));
+          backdrop-filter: blur(14px);
+          -webkit-backdrop-filter: blur(14px);
+          border-bottom:1px solid var(--line);
+        }
+        .brand{
+          display:flex; align-items:center; gap:10px;
+          font-weight:700; letter-spacing:1px; font-size:15px;
+        }
+        .brand-dot{
+          width:32px; height:32px; border-radius:9px;
+          background: linear-gradient(135deg, rgba(var(--glow),0.95), rgba(var(--glow),0.4));
+          box-shadow: 0 0 18px rgba(var(--glow),0.6), inset 0 0 10px rgba(255,255,255,0.2);
+          display:grid; place-items:center;
+          transition: all .6s ease;
+          position:relative;
+        }
+        .brand-dot svg{width:18px;height:18px;color:#0a0d14}
+        .brand small{
+          display:block; font-size:9px; letter-spacing:3px;
+          color:var(--muted); font-weight:500; margin-top:1px;
+        }
+        .nav{
+          display:flex; gap:4px; margin-left:18px;
+          background: rgba(255,255,255,0.03);
+          border:1px solid var(--line);
+          padding:4px; border-radius:12px;
+        }
+        .nav button{
+          appearance:none; border:0; background:transparent;
+          color:var(--muted); font:600 13px 'Inter',sans-serif;
+          padding:8px 14px; border-radius:9px; cursor:pointer;
+          display:flex; align-items:center; gap:8px;
+          transition: all .25s ease;
+        }
+        .nav button svg{width:15px;height:15px}
+        .nav button:hover{color:var(--text); background:rgba(255,255,255,0.04)}
+        .nav button.active{
+          color:#fff;
+          background: linear-gradient(180deg, rgba(var(--glow),0.25), rgba(var(--glow),0.08));
+          box-shadow: inset 0 0 0 1px rgba(var(--glow),0.35), 0 0 18px rgba(var(--glow),0.25);
+        }
+        .spacer{flex:1}
+        .search{
+          display:flex; align-items:center; gap:8px;
+          background: rgba(255,255,255,0.04);
+          border:1px solid var(--line);
+          padding:8px 12px; border-radius:10px;
+          min-width:260px;
+        }
+        .search input{
+          background:transparent; border:0; outline:0; color:var(--text);
+          font:13px 'Inter',sans-serif; width:100%;
+        }
+        .search svg{width:14px;height:14px;color:var(--muted)}
+        .search kbd{
+          font-family:'JetBrains Mono',monospace; font-size:10px;
+          padding:2px 6px; border-radius:5px;
+          background:rgba(255,255,255,0.06); color:var(--muted);
+          border:1px solid var(--line);
+        }
+        .icon-btn{
+          width:38px; height:38px; border-radius:10px;
+          background: rgba(255,255,255,0.04);
+          border:1px solid var(--line);
+          display:grid; place-items:center; cursor:pointer;
+          color:var(--muted); transition:all .25s ease;
+          position:relative;
+        }
+        .icon-btn:hover{color:var(--text); border-color:rgba(var(--glow),0.4); box-shadow:0 0 14px rgba(var(--glow),0.25)}
+        .icon-btn svg{width:16px;height:16px}
+        .icon-btn .dot{
+          position:absolute; top:8px; right:9px;
+          width:7px; height:7px; border-radius:50%;
+          background: rgba(var(--glow),1);
+          box-shadow: 0 0 8px rgba(var(--glow),0.9);
+        }
+        .avatar{
+          width:38px; height:38px; border-radius:10px;
+          background: linear-gradient(135deg, rgba(var(--glow),0.5), rgba(var(--glow),0.15));
+          border:1px solid rgba(var(--glow),0.4);
+          display:grid; place-items:center; font-weight:700; font-size:13px;
+          cursor:pointer;
+          box-shadow: 0 0 14px rgba(var(--glow),0.25);
+          transition: all .6s ease;
+        }
+
+        /* ===== LANGUAGE SWITCHER ===== */
+        .lang-switcher{ position:relative; }
+        .lang-btn{
+          display:flex; align-items:center; gap:8px;
+          padding:8px 12px;
+          background: rgba(255,255,255,0.04);
+          border:1px solid var(--line);
+          border-radius:10px;
+          color:var(--text);
+          font:600 12px 'Inter',sans-serif;
+          cursor:pointer;
+          transition:all .25s ease;
+          min-width:90px;
+          justify-content:space-between;
+        }
+        .lang-btn:hover{
+          border-color:rgba(var(--glow),0.4);
+          box-shadow:0 0 14px rgba(var(--glow),0.2);
+          color:#fff;
+        }
+        .lang-btn .flag{ font-size:16px; line-height:1; }
+        .lang-btn .arrow{
+          width:12px; height:12px;
+          transition: transform .25s ease;
+        }
+        .lang-btn.open .arrow{ transform: rotate(180deg); }
+        .lang-menu{
+          position:absolute;
+          top:calc(100% + 8px);
+          right:0;
+          min-width:180px;
+          background: linear-gradient(180deg, rgba(18,21,30,0.98), rgba(13,15,22,0.98));
+          backdrop-filter: blur(20px);
+          border:1px solid var(--line);
+          border-radius:12px;
+          padding:6px;
+          box-shadow: 0 20px 50px rgba(0,0,0,0.5), 0 0 30px rgba(var(--glow),0.15);
+          opacity:0;
+          visibility:hidden;
+          transform: translateY(-8px);
+          transition: all .25s cubic-bezier(.2,.9,.3,1.2);
+          z-index:100;
+        }
+        .lang-menu.open{
+          opacity:1;
+          visibility:visible;
+          transform: translateY(0);
+        }
+        .lang-menu-title{
+          font-size:10px;
+          letter-spacing:1.5px;
+          color:var(--muted);
+          text-transform:uppercase;
+          padding:8px 10px 6px;
+          font-weight:600;
+        }
+        .lang-option{
+          display:flex; align-items:center; gap:10px;
+          padding:9px 10px;
+          border-radius:8px;
+          cursor:pointer;
+          color:var(--text);
+          font-size:13px;
+          font-weight:500;
+          transition: all .2s ease;
+          border:1px solid transparent;
+        }
+        .lang-option:hover{
+          background:rgba(255,255,255,0.05);
+          color:#fff;
+        }
+        .lang-option.active{
+          background: linear-gradient(90deg, rgba(var(--glow),0.2), transparent);
+          border-color: rgba(var(--glow),0.3);
+          color:#fff;
+          box-shadow: inset 0 0 0 1px rgba(var(--glow),0.25);
+        }
+        .lang-option .flag{ font-size:18px; line-height:1; }
+        .lang-option .name{ flex:1; }
+        .lang-option .check{
+          width:14px; height:14px;
+          color:rgba(var(--glow),1);
+          opacity:0;
+          transition: opacity .2s ease;
+        }
+        .lang-option.active .check{ opacity:1; }
+
+        /* ===== AMBIENT BUTTON IN TOPBAR ===== */
+        .amb-btn{
+          position:relative;
+          display:flex; align-items:center; gap:8px;
+          padding:8px 14px;
+          background: linear-gradient(135deg, rgba(var(--glow),0.15), rgba(var(--glow),0.05));
+          border:1px solid rgba(var(--glow),0.35);
+          border-radius:10px;
+          color:rgba(var(--glow),1);
+          font:600 12px 'Inter',sans-serif;
+          cursor:pointer;
+          transition:all .3s ease;
+          overflow:hidden;
+        }
+        .amb-btn::before{
+          content:"";
+          position:absolute; inset:0;
+          background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+          transform: translateX(-100%);
+          transition: transform 0.6s ease;
+        }
+        .amb-btn:hover::before{ transform: translateX(100%); }
+        .amb-btn:hover{
+          border-color:rgba(var(--glow),0.7);
+          box-shadow: 0 0 20px rgba(var(--glow),0.4), inset 0 0 12px rgba(var(--glow),0.15);
+          transform: translateY(-1px);
+        }
+        .amb-btn svg{ width:16px; height:16px; }
+        .amb-btn .amb-swatch{
+          width:14px; height:14px; border-radius:50%;
+          background: rgb(var(--glow));
+          box-shadow: 0 0 10px rgba(var(--glow),0.9), inset 0 0 4px rgba(255,255,255,0.4);
+          animation: swatchPulse 2s ease-in-out infinite;
+        }
+        @keyframes swatchPulse{
+          0%,100%{ box-shadow: 0 0 8px rgba(var(--glow),0.7), inset 0 0 4px rgba(255,255,255,0.4); }
+          50%{ box-shadow: 0 0 16px rgba(var(--glow),1), inset 0 0 6px rgba(255,255,255,0.6); }
+        }
+
+        /* ===== AMBIENT PANEL (DROPDOWN FROM TOPBAR) ===== */
+        .amb-panel{
+          position:absolute;
+          top:calc(100% + 12px);
+          right:0;
+          width:340px;
+          background: linear-gradient(180deg, rgba(18,21,30,0.98), rgba(13,15,22,0.98));
+          backdrop-filter: blur(24px);
+          -webkit-backdrop-filter: blur(24px);
+          border:1px solid var(--line);
+          border-radius:18px;
+          padding:20px;
+          box-shadow: 0 30px 80px rgba(0,0,0,0.6), 0 0 50px rgba(var(--glow),0.18);
+          opacity:0;
+          visibility:hidden;
+          transform: translateY(-10px) scale(0.96);
+          transform-origin: top right;
+          transition: all .3s cubic-bezier(.2,.9,.3,1.2);
+          z-index:120;
+        }
+        .amb-panel::before{
+          content:"";
+          position:absolute;
+          top:-6px; right:30px;
+          width:12px; height:12px;
+          background: rgba(18,21,30,0.98);
+          border-left:1px solid var(--line);
+          border-top:1px solid var(--line);
+          transform: rotate(45deg);
+        }
+        .amb-panel.open{
+          opacity:1;
+          visibility:visible;
+          transform: translateY(0) scale(1);
+        }
+        .amb-panel-head{
+          display:flex; align-items:center; justify-content:space-between;
+          margin-bottom:4px;
+        }
+        .amb-panel h4{
+          margin:0; font-size:15px; font-weight:700;
+          display:flex; align-items:center; gap:8px;
+        }
+        .amb-panel h4 .live-dot{
+          width:8px; height:8px; border-radius:50%;
+          background: rgb(var(--glow));
+          box-shadow: 0 0 10px rgba(var(--glow),1);
+          animation: swatchPulse 1.5s ease-in-out infinite;
+        }
+        .amb-panel p{
+          margin:0 0 16px; font-size:11px; color:var(--muted);
+        }
+        .amb-preview{
+          height:70px; border-radius:12px;
+          background: linear-gradient(90deg, rgba(var(--glow),0.1), rgba(var(--glow),0.6), rgba(var(--glow),0.1));
+          border:1px solid rgba(var(--glow),0.3);
+          box-shadow: inset 0 0 30px rgba(var(--glow),0.3), 0 0 20px rgba(var(--glow),0.2);
+          margin-bottom:16px;
+          position:relative; overflow:hidden;
+          transition: all .4s ease;
+        }
+        .amb-preview::before{
+          content:""; position:absolute; inset:0;
+          background: linear-gradient(90deg, transparent, rgba(255,255,255,0.25), transparent);
+          animation: sweep 2.5s ease-in-out infinite;
+        }
+        @keyframes sweep{
+          0%{transform:translateX(-100%)}
+          100%{transform:translateX(100%)}
+        }
+        .amb-preview-label{
+          position:absolute;
+          bottom:8px; left:12px;
+          font-size:10px;
+          font-family:'JetBrains Mono',monospace;
+          color:rgba(255,255,255,0.85);
+          letter-spacing:1px;
+          text-shadow: 0 1px 4px rgba(0,0,0,0.5);
+          z-index:2;
+        }
+        .colors{
+          display:grid;
+          grid-template-columns:repeat(6,1fr);
+          gap:8px;
+          margin-bottom:16px;
+        }
+        .color{
+          aspect-ratio:1; border-radius:10px; cursor:pointer;
+          border:2px solid transparent;
+          position:relative;
+          transition: all .25s cubic-bezier(.2,.9,.3,1.2);
+          box-shadow: 0 4px 14px rgba(0,0,0,0.3);
+        }
+        .color:hover{
+          transform:translateY(-3px) scale(1.08);
+          box-shadow: 0 8px 20px currentColor;
+        }
+        .color.active{
+          border-color:#fff;
+          box-shadow: 0 0 20px currentColor, 0 0 0 2px rgba(255,255,255,0.2);
+          transform: scale(1.05);
+        }
+        .color.active::after{
+          content:"✓"; position:absolute; inset:0;
+          display:grid; place-items:center; color:#fff; font-weight:700;
+          text-shadow:0 1px 3px rgba(0,0,0,0.7);
+          font-size:14px;
+        }
+        .intensity{display:flex; flex-direction:column; gap:6px}
+        .intensity label{
+          font-size:11px; color:var(--muted);
+          display:flex; justify-content:space-between;
+          font-weight:500;
+        }
+        .intensity label span:last-child{
+          color:rgba(var(--glow),1);
+          font-family:'JetBrains Mono',monospace;
+          font-weight:700;
+        }
+        .intensity input[type=range]{
+          -webkit-appearance:none; appearance:none;
+          width:100%; height:6px; border-radius:3px;
+          background: linear-gradient(90deg, rgba(var(--glow),0.3), rgba(var(--glow),1));
+          outline:none;
+          transition: all .3s ease;
+        }
+        .intensity input[type=range]::-webkit-slider-thumb{
+          -webkit-appearance:none; appearance:none;
+          width:18px; height:18px; border-radius:50%;
+          background:#fff; cursor:pointer;
+          box-shadow: 0 0 12px rgba(var(--glow),0.9), 0 2px 8px rgba(0,0,0,0.4);
+          border:2px solid rgba(var(--glow),0.7);
+          transition: all .2s ease;
+        }
+        .intensity input[type=range]::-webkit-slider-thumb:hover{
+          transform: scale(1.2);
+        }
+        .intensity input[type=range]::-moz-range-thumb{
+          width:18px; height:18px; border-radius:50%;
+          background:#fff; cursor:pointer;
+          box-shadow: 0 0 12px rgba(var(--glow),0.9);
+          border:2px solid rgba(var(--glow),0.7);
+        }
+        .modes{
+          display:grid;
+          grid-template-columns:repeat(3,1fr);
+          gap:6px;
+          margin-top:14px;
+        }
+        .mode{
+          padding:10px 8px; border-radius:10px;
+          font-size:11px; font-weight:600;
+          background:rgba(255,255,255,0.03);
+          border:1px solid var(--line);
+          color:var(--muted); cursor:pointer; text-align:center;
+          transition:all .25s ease;
+          display:flex; align-items:center; justify-content:center; gap:6px;
+        }
+        .mode svg{ width:12px; height:12px; }
+        .mode:hover{ color:var(--text); border-color:rgba(var(--glow),0.3); }
+        .mode.active{
+          color:#fff;
+          background: linear-gradient(135deg, rgba(var(--glow),0.25), rgba(var(--glow),0.08));
+          border-color:rgba(var(--glow),0.5);
+          box-shadow: inset 0 0 0 1px rgba(var(--glow),0.3), 0 0 14px rgba(var(--glow),0.2);
+        }
+        .amb-footer{
+          margin-top:14px;
+          padding-top:12px;
+          border-top:1px solid var(--line);
+          display:flex; justify-content:space-between; align-items:center;
+          font-size:10px; color:var(--muted);
+        }
+        .amb-footer .saved{
+          display:flex; align-items:center; gap:5px;
+          color:#4cd982;
+          opacity:0;
+          transition: opacity .3s ease;
+        }
+        .amb-footer .saved.show{ opacity:1; }
+
+        /* ===== LAYOUT ===== */
+        .layout{
+          position:relative; z-index:1;
+          display:grid; grid-template-columns: 240px 1fr;
+          gap:20px; padding:22px;
+          max-width:1600px; margin:0 auto;
+        }
+        .sidebar{
+          background: linear-gradient(180deg, rgba(255,255,255,0.035), rgba(255,255,255,0.01));
+          border:1px solid var(--line);
+          border-radius:var(--radius);
+          padding:16px;
+          height:fit-content;
+          position:sticky; top:88px;
+        }
+        .side-title{
+          font-size:10px; letter-spacing:2px; color:var(--muted);
+          text-transform:uppercase; margin:12px 8px 8px;
+        }
+        .side-item{
+          display:flex; align-items:center; gap:10px;
+          padding:9px 10px; border-radius:9px;
+          color:var(--muted); font-size:13px; font-weight:500;
+          cursor:pointer; transition: all .2s ease;
+          position:relative;
+        }
+        .side-item svg{width:15px;height:15px}
+        .side-item:hover{color:var(--text); background:rgba(255,255,255,0.04)}
+        .side-item.active{
+          color:#fff;
+          background: linear-gradient(90deg, rgba(var(--glow),0.18), transparent);
+        }
+        .side-item.active::before{
+          content:""; position:absolute; left:-16px; top:8px; bottom:8px;
+          width:3px; border-radius:0 3px 3px 0;
+          background: rgba(var(--glow),1);
+          box-shadow: 0 0 10px rgba(var(--glow),0.8);
+        }
+        .side-badge{
+          margin-left:auto; font-size:10px;
+          padding:2px 7px; border-radius:10px;
+          background: rgba(var(--glow),0.18);
+          color: rgba(var(--glow),1);
+          border:1px solid rgba(var(--glow),0.3);
+          font-family:'JetBrains Mono',monospace;
+        }
+        .storage{
+          margin-top:16px; padding:14px;
+          background: rgba(255,255,255,0.02);
+          border:1px solid var(--line);
+          border-radius:10px;
+        }
+        .storage-head{display:flex; justify-content:space-between; font-size:11px; margin-bottom:8px}
+        .storage-head b{color:var(--text)}
+        .storage-head span{color:var(--muted)}
+        .storage-bar{height:6px; background:rgba(255,255,255,0.06); border-radius:3px; overflow:hidden}
+        .storage-fill{
+          height:100%; width:62%;
+          background: linear-gradient(90deg, rgba(var(--glow),0.6), rgba(var(--glow),1));
+          box-shadow: 0 0 10px rgba(var(--glow),0.6);
+          border-radius:3px;
+          transition: all .6s ease;
+        }
+        .storage small{display:block; color:var(--muted); font-size:10px; margin-top:8px}
+
+        /* ===== MAIN ===== */
+        .main{display:flex; flex-direction:column; gap:20px; min-width:0}
+        .page-head{
+          display:flex; align-items:flex-end; justify-content:space-between; gap:16px;
+          flex-wrap:wrap;
+        }
+        .page-head h1{
+          margin:0; font-size:26px; font-weight:700; letter-spacing:-0.5px;
+        }
+        .page-head p{margin:4px 0 0; color:var(--muted); font-size:13px}
+        .actions{display:flex; gap:10px}
+        .btn{
+          appearance:none; border:1px solid var(--line);
+          background: rgba(255,255,255,0.04);
+          color:var(--text); font:600 13px 'Inter',sans-serif;
+          padding:10px 14px; border-radius:10px; cursor:pointer;
+          display:inline-flex; align-items:center; gap:8px;
+          transition:all .25s ease;
+        }
+        .btn svg{width:14px;height:14px}
+        .btn:hover{border-color:rgba(var(--glow),0.4); box-shadow:0 0 14px rgba(var(--glow),0.2)}
+        .btn.primary{
+          background: linear-gradient(180deg, rgba(var(--glow),0.95), rgba(var(--glow),0.65));
+          color:#0a0d14; border-color: transparent;
+          box-shadow: 0 8px 24px rgba(var(--glow),0.35), inset 0 1px 0 rgba(255,255,255,0.3);
+        }
+        .btn.primary:hover{filter:brightness(1.08); box-shadow:0 10px 28px rgba(var(--glow),0.5)}
+
+        /* ===== STATS GRID ===== */
+        .stats{display:grid; grid-template-columns:repeat(4,1fr); gap:16px}
+        .card{
+          position:relative;
+          background: linear-gradient(180deg, rgba(255,255,255,0.035), rgba(255,255,255,0.01));
+          border:1px solid var(--line);
+          border-radius:var(--radius);
+          padding:18px;
+          overflow:hidden;
+          transition: all .3s ease;
+        }
+        .card::before{
+          content:""; position:absolute; inset:-1px;
+          border-radius:var(--radius);
+          padding:1px;
+          background: linear-gradient(135deg, rgba(var(--glow),0.4), transparent 40%, transparent 60%, rgba(var(--glow),0.2));
+          -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+          -webkit-mask-composite: xor; mask-composite: exclude;
+          opacity:0; transition:opacity .3s ease;
+          pointer-events:none;
+        }
+        .card:hover::before{opacity:1}
+        .card:hover{transform:translateY(-2px); box-shadow:0 20px 40px -20px rgba(var(--glow),0.3)}
+        .stat-top{display:flex; align-items:center; justify-content:space-between}
+        .stat-label{font-size:12px; color:var(--muted); font-weight:500}
+        .stat-icon{
+          width:34px; height:34px; border-radius:9px;
+          background: rgba(var(--glow),0.12);
+          border:1px solid rgba(var(--glow),0.25);
+          display:grid; place-items:center; color:rgba(var(--glow),1);
+          box-shadow: inset 0 0 10px rgba(var(--glow),0.15);
+          transition: all .6s ease;
+        }
+        .stat-icon svg{width:16px;height:16px}
+        .stat-value{font-size:26px; font-weight:700; margin-top:12px; letter-spacing:-0.5px}
+        .stat-delta{
+          display:inline-flex; align-items:center; gap:4px;
+          font-size:11px; font-family:'JetBrains Mono',monospace;
+          padding:3px 7px; border-radius:6px; margin-top:8px;
+        }
+        .delta-up{background:rgba(76,217,130,0.12); color:#4cd982; border:1px solid rgba(76,217,130,0.25)}
+        .delta-down{background:rgba(255,99,99,0.12); color:#ff7a7a; border:1px solid rgba(255,99,99,0.25)}
+        .stat-spark{
+          margin-top:14px; height:40px;
+          background: linear-gradient(180deg, rgba(var(--glow),0.15), transparent);
+          border-radius:8px;
+          position:relative; overflow:hidden;
+        }
+        .stat-spark svg{width:100%; height:100%; display:block}
+
+        /* ===== ROWS ===== */
+        .row{display:grid; grid-template-columns: 1.6fr 1fr; gap:16px}
+        .panel{
+          background: linear-gradient(180deg, rgba(255,255,255,0.035), rgba(255,255,255,0.01));
+          border:1px solid var(--line);
+          border-radius:var(--radius);
+          padding:20px;
+        }
+        .panel-head{display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; gap:10px; flex-wrap:wrap}
+        .panel-head h3{margin:0; font-size:15px; font-weight:600}
+        .panel-head .sub{font-size:11px; color:var(--muted); margin-top:2px}
+        .tabs{display:flex; gap:4px; background:rgba(255,255,255,0.03); padding:3px; border-radius:8px; border:1px solid var(--line)}
+        .tabs button{
+          border:0; background:transparent; color:var(--muted);
+          font:600 11px 'Inter',sans-serif; padding:5px 10px; border-radius:6px; cursor:pointer;
+        }
+        .tabs button.active{color:#fff; background:rgba(var(--glow),0.2); box-shadow:inset 0 0 0 1px rgba(var(--glow),0.3)}
+
+        /* chart */
+        .chart{height:260px; position:relative}
+        .chart svg{width:100%; height:100%}
+
+        /* table */
+        table{width:100%; border-collapse:collapse}
+        th,td{text-align:left; padding:10px 8px; font-size:12.5px; border-bottom:1px solid var(--line)}
+        th{color:var(--muted); font-weight:500; font-size:11px; text-transform:uppercase; letter-spacing:1px}
+        td{color:var(--text)}
+        tbody tr{transition:background .2s ease}
+        tbody tr:hover{background:rgba(255,255,255,0.03)}
+        .doc-cell{display:flex; align-items:center; gap:10px}
+        .doc-icon{
+          width:32px; height:38px; border-radius:5px;
+          background: linear-gradient(135deg, rgba(var(--glow),0.25), rgba(var(--glow),0.05));
+          border:1px solid rgba(var(--glow),0.3);
+          display:grid; place-items:center;
+          font-size:9px; font-weight:700; letter-spacing:0.5px;
+          color:rgba(var(--glow),1);
+          font-family:'JetBrains Mono',monospace;
+          flex-shrink:0;
+          position:relative;
+        }
+        .doc-icon::after{
+          content:""; position:absolute; top:0; right:0;
+          width:8px; height:8px;
+          background: linear-gradient(135deg, transparent 50%, rgba(var(--glow),0.4) 50%);
+          border-bottom-left-radius:3px;
+        }
+        .doc-meta small{display:block; color:var(--muted); font-size:11px; margin-top:2px}
+        .pill{
+          display:inline-flex; align-items:center; gap:5px;
+          padding:3px 8px; border-radius:20px; font-size:11px; font-weight:500;
+          border:1px solid var(--line);
+        }
+        .pill::before{content:""; width:6px; height:6px; border-radius:50%; background:currentColor}
+        .pill.signed{color:#4cd982; background:rgba(76,217,130,0.08); border-color:rgba(76,217,130,0.25)}
+        .pill.pending{color:#ffb547; background:rgba(255,181,71,0.08); border-color:rgba(255,181,71,0.25)}
+        .pill.rejected{color:#ff7a7a; background:rgba(255,122,122,0.08); border-color:rgba(255,122,122,0.25)}
+        .pill.draft{color:#8892a6; background:rgba(136,146,166,0.08); border-color:rgba(136,146,166,0.2)}
+
+        /* activity */
+        .activity{display:flex; flex-direction:column; gap:14px}
+        .act{display:flex; gap:12px; align-items:flex-start}
+        .act-dot{
+          width:10px; height:10px; border-radius:50%; margin-top:6px;
+          background: rgba(var(--glow),1);
+          box-shadow: 0 0 10px rgba(var(--glow),0.8);
+          flex-shrink:0;
+        }
+        .act-body{flex:1; min-width:0}
+        .act-body p{margin:0; font-size:13px}
+        .act-body small{color:var(--muted); font-size:11px}
+
+        /* ===== SIGNERS LIST ===== */
+        .signers{display:flex; flex-direction:column; gap:10px}
+        .signer{
+          display:flex; align-items:center; gap:12px;
+          padding:10px; border-radius:10px;
+          background: rgba(255,255,255,0.02);
+          border:1px solid var(--line);
+          transition: all .2s ease;
+        }
+        .signer:hover{border-color:rgba(var(--glow),0.3); background:rgba(var(--glow),0.04)}
+        .signer-avatar{
+          width:36px; height:36px; border-radius:50%;
+          background: linear-gradient(135deg, rgba(var(--glow),0.5), rgba(var(--glow),0.15));
+          border:1px solid rgba(var(--glow),0.3);
+          display:grid; place-items:center; font-weight:700; font-size:12px;
+          flex-shrink:0;
+        }
+        .signer-info{flex:1; min-width:0}
+        .signer-info b{display:block; font-size:13px; font-weight:600}
+        .signer-info small{color:var(--muted); font-size:11px}
+        .signer-status{
+          font-size:10px; padding:3px 8px; border-radius:10px;
+          font-weight:600; letter-spacing:0.5px;
+        }
+        .status-ok{background:rgba(76,217,130,0.15); color:#4cd982; border:1px solid rgba(76,217,130,0.3)}
+        .status-wait{background:rgba(255,181,71,0.15); color:#ffb547; border:1px solid rgba(255,181,71,0.3)}
+
+        /* ===== NOTIFICATIONS ===== */
+        .notif-dropdown {
+            position: absolute;
+            top: calc(100% + 10px);
+            right: 0;
+            width: 340px;
+            background: linear-gradient(180deg, rgba(18,21,30,0.98), rgba(13,15,22,0.98));
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--line);
+            border-radius: 16px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5), 0 0 30px rgba(var(--glow),0.15);
+            z-index: 9999;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-10px);
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            overflow: hidden;
+        }
+        .notif-dropdown.active {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+        .notif-header {
+            padding: 14px 18px;
+            border-bottom: 1px solid var(--line);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .notif-header strong { font-size: 0.95rem; color: var(--text); }
+        .notif-list { max-height: 320px; overflow-y: auto; }
+        .notif-list::-webkit-scrollbar { width: 4px; }
+        .notif-list::-webkit-scrollbar-thumb { background: rgba(var(--glow),0.4); border-radius: 10px; }
+        .notif-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            padding: 12px 16px;
+            text-decoration: none;
+            color: var(--text);
+            border-bottom: 1px solid var(--line);
+            transition: background 0.2s;
             position: relative;
         }
-        .search-box i {
-            position: absolute;
-            left: 10px;
-            top: 50%;
-            transform: translateY(-50%);
-            z-index: 5;
+        .notif-item:hover { background: rgba(var(--glow),0.05); }
+        .notif-item.unread { background: rgba(var(--glow),0.08); }
+        .notif-icon {
+            width: 38px; height: 38px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            font-size: 1.1rem;
         }
-        .search-box input {
-            padding-left: 35px !important;
-            border-radius: 20px !important;
+        .notif-body { flex: 1; min-width: 0; }
+        .notif-text { font-size: 0.82rem; line-height: 1.4; color: var(--text); }
+        .notif-dot {
+            width: 8px; height: 8px;
+            border-radius: 50%;
+            background: rgba(var(--glow),1);
+            box-shadow: 0 0 8px rgba(var(--glow),1);
+            margin-top: 6px;
         }
-
-        .search-box input.blue-text-fixed {
-            color: var(--table-text) !important;
+        .notif-empty { padding: 40px 20px; text-align: center; color: var(--muted); }
+        .notif-footer {
+            padding: 10px;
+            border-top: 1px solid var(--line);
+            text-align: center;
+            background: rgba(255,255,255,0.02);
         }
-        .search-box input::placeholder {
-            color: var(--table-text);
-            opacity: 0.5;
+        .notif-footer a {
+            color: rgba(var(--glow),1);
+            text-decoration: none;
+            font-size: 0.85rem;
+            font-weight: 600;
         }
-    </style>
-    <style>
-        :root {
-            --sidebar-width: 260px;
-            --primary: #4f46e5;
-            --primary-dark: #4338ca;
-            --bg-dark: #0f172a;
-            --bg-sidebar: #1e293b;
-            --bg-main: #f1f5f9;
-            --text-light: #cbd5e1;
-            --text-white: #f8fafc;
-            --accent: #6366f1;
-            --success: #22c55e;
-            --warning: #f59e0b;
-            --danger: #ef4444;
-            --bg-card: #ffffff;
-            --bg-input: #f8fafc;
-            --border-color: #e2e8f0;
-            --text-primary: #0f172a;
-            --text-secondary: #64748b;
-            --hover-bg: #f1f5f9;
+        .notif-footer a:hover { text-decoration: underline; }
+        @keyframes notif-ping {
+            0% { transform: scale(1); opacity: 0.8; }
+            50% { transform: scale(1.5); opacity: 0; }
+            100% { transform: scale(1); opacity: 0; }
         }
-
-        html.dark {
-            --bg-main: #0f172a;
-            --bg-card: #1e293b;
-            --bg-input: #334155;
-            --border-color: #334155;
-            --text-primary: #f1f5f9;
-            --text-secondary: #94a3b8;
-            --hover-bg: #334155;
+        .bell-shaking { animation: shake 2s infinite; }
+        @keyframes shake {
+            0%, 100% { transform: rotate(0deg); }
+            10%, 30%, 50%, 70%, 90% { transform: rotate(-10deg); }
+            20%, 40%, 60%, 80% { transform: rotate(10deg); }
         }
 
-        html.dark body { background: var(--bg-main); color: var(--text-primary); }
-        html.dark .topbar { background: var(--bg-card); border-color: var(--border-color); }
-        html.dark .stat-card { background: var(--bg-card); border-color: var(--border-color); }
-        html.dark .stat-card:hover { box-shadow: 0 12px 40px rgba(0,0,0,0.3); }
-        html.dark .table-custom { background: var(--bg-card); border-color: var(--border-color); }
-        html.dark .table-custom th { background: #1a2332; color: var(--text-secondary); border-color: var(--border-color); }
-        html.dark .table-custom td { border-color: var(--border-color); color: var(--text-primary); }
-        html.dark .table-custom tr:hover td { background: var(--hover-bg); }
-        html.dark .search-box input { background: var(--bg-input); border-color: var(--border-color); color: var(--text-primary); }
-        html.dark .search-box input:focus { background: var(--bg-card); }
-        html.dark .notification-dropdown { background: var(--bg-card); border-color: var(--border-color); }
-        html.dark .notification-item { border-color: var(--border-color); }
-        html.dark .notification-item:hover { background: var(--hover-bg); }
-        html.dark .notification-item.unread { background: #1a2332; }
-        html.dark .status-draft { background: #854d0e33; color: #fbbf24; }
-        html.dark .status-pending { background: #1e3a5f33; color: #60a5fa; }
-        html.dark .status-approved { background: #16653433; color: #4ade80; }
-        html.dark .status-rejected { background: #7f1d1d33; color: #f87171; }
-        html.dark .mobile-toggle { color: var(--text-primary); }
-        html.dark .dropdown-menu { background: var(--bg-card); border-color: var(--border-color); }
-        html.dark .dropdown-item { color: var(--text-primary); }
-        html.dark .dropdown-item:hover { background: var(--hover-bg); }
-        html.dark .dropdown-divider { border-color: var(--border-color); }
-        html.dark .card { background: var(--bg-card); border-color: var(--border-color); }
-        html.dark .form-control { background: var(--bg-input); border-color: var(--border-color); color: var(--text-primary); }
-        html.dark .form-control:focus { background: var(--bg-card); color: var(--text-primary); }
-        html.dark .form-label { color: var(--text-secondary); }
-        html.dark .input-group-text { background: var(--bg-card); border-color: var(--border-color); }
-        html.dark .comment-box { background: var(--bg-input); border-color: var(--border-color); }
-        html.dark .btn-light { background: var(--bg-input); border-color: var(--border-color); color: var(--text-primary); }
-        html.dark .btn-light:hover { background: var(--hover-bg); }
-        html.dark .btn-outline-secondary { border-color: var(--border-color); color: var(--text-secondary); }
-        html.dark .text-muted { color: var(--text-secondary) !important; }
-        html.dark .fw-semibold { color: var(--text-primary); }
-        html.dark .fw-bold { color: var(--text-primary); }
-        html.dark .step-dot.pending { background: #475569; }
-        html.dark .badge { color: inherit; }
-        html.dark .step-dot { color: #fff; }
-        html.dark .stat-icon { opacity: 0.9; }
-        html.dark a:not(.nav-link):not(.btn) { color: var(--accent); }
-        html.dark .nav-link { color: var(--text-light); }
-        html.dark .nav-link:hover, html.dark .nav-link.active { color: #fff; }
-        html.dark .dropdown .btn { background: var(--bg-input); }
-        html.dark .dropdown .btn span { color: var(--text-primary); }
-        html.dark .dropdown .btn small { color: var(--text-secondary); }
-
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Inter', sans-serif; background: var(--bg-main); overflow-x: hidden; transition: background 0.3s, color 0.3s; }
-
-        .sidebar {
-            position: fixed; top: 0; left: 0; width: var(--sidebar-width);
-            height: 100vh; background: var(--bg-dark); color: var(--text-white);
-            transition: transform 0.3s ease; z-index: 1050; overflow-y: auto;
-            scrollbar-width: thin; scrollbar-color: #334155 transparent;
+        /* ===== PROFILE ===== */
+        .profile-dropdown{ position:relative; }
+        .profile-btn{
+            width:40px; height:40px; border-radius:12px; border:none;
+            background:linear-gradient(135deg, rgba(var(--glow),0.9), rgba(var(--glow),0.5));
+            color:#0a0d14; font-weight:700; font-size:15px;
+            display:flex; align-items:center; justify-content:center;
+            cursor:pointer; transition:all 0.3s ease;
+            box-shadow:0 4px 15px rgba(var(--glow),0.4);
         }
-        .sidebar::-webkit-scrollbar { width: 4px; }
-        .sidebar::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
-        .sidebar .logo { padding: 20px; border-bottom: 1px solid #334155; display: flex; align-items: center; gap: 12px; }
-        .sidebar .logo-icon { width: 42px; height: 42px; background: var(--primary); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 20px; }
-        .sidebar .nav-section { padding: 12px 16px 6px; font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px; color: #64748b; font-weight: 600; }
-        .sidebar .nav-link {
-            display: flex; align-items: center; gap: 12px; padding: 10px 20px;
-            color: var(--text-light); text-decoration: none; transition: all 0.2s;
-            border-radius: 8px; margin: 2px 10px; font-size: 14px;
+        .profile-btn:hover{
+            transform:translateY(-2px) scale(1.05);
+            box-shadow:0 8px 25px rgba(var(--glow),0.6);
         }
-        .sidebar .nav-link:hover, .sidebar .nav-link.active { background: var(--primary); color: white; }
-        .sidebar .nav-link i { font-size: 18px; width: 24px; text-align: center; }
-        .sidebar .nav-link .badge { margin-left: auto; font-size: 10px; }
-
-        .topbar {
-            position: fixed; top: 0; left: var(--sidebar-width); right: 0;
-            height: 64px; background: white; border-bottom: 1px solid #e2e8f0;
-            display: flex; align-items: center; justify-content: space-between;
-            padding: 0 24px; z-index: 1040; transition: left 0.3s ease, background 0.3s, border 0.3s;
+        .profile-btn:active{ transform:translateY(0) scale(1); }
+        .profile-menu{
+            position:absolute;
+            top:calc(100% + 8px);
+            right:0;
+            min-width:200px;
+            background: linear-gradient(180deg, rgba(18,21,30,0.98), rgba(13,15,22,0.98));
+            backdrop-filter: blur(20px);
+            border:1px solid var(--line);
+            border-radius:16px;
+            padding:8px;
+            box-shadow:0 10px 40px rgba(0,0,0,0.5), 0 0 30px rgba(var(--glow),0.15);
+            opacity:0;
+            visibility:hidden;
+            transform:translateY(-10px);
+            transition:all 0.3s ease;
+            z-index:1000;
         }
-        .topbar-left { display: flex; align-items: center; gap: 16px; }
-        .topbar-right { display: flex; align-items: center; gap: 12px; }
-
-        .main-content {
-            margin-left: var(--sidebar-width); margin-top: 64px;
-            padding: 24px; min-height: calc(100vh - 64px); transition: margin-left 0.3s ease;
+        .profile-menu.active{
+            opacity:1;
+            visibility:visible;
+            transform:translateY(0);
+        }
+        .profile-menu .menu-item{
+            display:flex;
+            align-items:center;
+            gap:10px;
+            padding:10px 14px;
+            color:var(--text);
+            text-decoration:none;
+            border-radius:10px;
+            transition:all 0.2s ease;
+            font-size:14px;
+        }
+        .profile-menu .menu-item:hover{
+            background:rgba(var(--glow),0.1);
+            transform:translateX(4px);
+        }
+        .profile-menu .menu-item.logout{ color:#ff6b6b; }
+        .profile-menu .menu-item.logout:hover{ background:rgba(255,107,107,0.15); }
+        .profile-menu .menu-divider{
+            border:0;
+            border-top:1px solid var(--line);
+            margin:6px 0;
+            opacity:0.5;
         }
 
-        .stat-card { background: white; border-radius: 16px; padding: 24px; border: 1px solid #e2e8f0; transition: all 0.3s; }
-        .stat-card:hover { transform: translateY(-4px); box-shadow: 0 12px 40px rgba(0,0,0,0.08); }
-        .stat-icon { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 22px; }
-
-        .page-section { display: none; }
-        .page-section.active { display: block; animation: fadeSlide 0.3s ease; }
-        @keyframes fadeSlide { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-
-        .lang-btn { padding: 6px 14px; border-radius: 8px; border: 1px solid #e2e8f0; background: white; cursor: pointer; font-size: 13px; font-weight: 500; transition: all 0.2s; }
-        .lang-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
-        .lang-btn:hover:not(.active) { background: #f1f5f9; }
-
-        .profile-avatar { width: 80px; height: 80px; border-radius: 50%; background: linear-gradient(135deg, var(--primary), var(--accent)); display: flex; align-items: center; justify-content: center; font-size: 32px; color: white; font-weight: 600; }
-        .profile-avatar-sm { width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, var(--primary), var(--accent)); display: flex; align-items: center; justify-content: center; font-size: 14px; color: white; font-weight: 600; }
-
-        .notification-dropdown { position: absolute; top: 50px; right: 0; width: 360px; background: white; border-radius: 16px; box-shadow: 0 20px 60px rgba(0,0,0,0.15); border: 1px solid #e2e8f0; display: none; z-index: 1060; }
-        .notification-dropdown.show { display: block; animation: fadeSlide 0.2s ease; }
-        .notification-item { padding: 12px 16px; border-bottom: 1px solid #f1f5f9; cursor: pointer; transition: background 0.2s; }
-        .notification-item:hover { background: #f8fafc; }
-        .notification-item.unread { border-left: 3px solid var(--primary); background: #faf5ff; }
-
-        .table-custom { background: white; border-radius: 16px; overflow: hidden; border: 1px solid #e2e8f0; }
-        .table-custom th { background: #f8fafc; font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; color: #64748b; padding: 14px 20px; border-bottom: 1px solid #e2e8f0; }
-        .table-custom td { padding: 14px 20px; border-bottom: 1px solid #f1f5f9; font-size: 14px; vertical-align: middle; }
-        .table-custom tr:hover td { background: #faf5ff; }
-
-        .workflow-step { display: flex; align-items: center; gap: 8px; padding: 8px 0; }
-        .step-dot { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; color: white; font-weight: 600; }
-        .step-dot.done { background: var(--success); }
-        .step-dot.current { background: var(--primary); animation: pulse 2s infinite; }
-        .step-dot.pending { background: #cbd5e1; }
-        @keyframes pulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(79,70,229,0.4); } 50% { box-shadow: 0 0 0 8px rgba(79,70,229,0); } }
-
-        .btn-primary-custom { background: var(--primary); color: white; border: none; padding: 8px 20px; border-radius: 10px; font-weight: 500; transition: all 0.2s; }
-        .btn-primary-custom:hover { background: var(--primary-dark); color: white; transform: translateY(-1px); }
-
-        .search-box { position: relative; }
-        .search-box input { padding-left: 40px; border-radius: 10px; border: 1px solid #e2e8f0; background: #f8fafc; }
-        .search-box input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(79,70,229,0.1); background: white; }
-        .search-box i { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: #94a3b8; }
-
-        .mobile-toggle { display: none; background: none; border: none; font-size: 24px; color: #334155; cursor: pointer; }
-        .overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1045; }
-
-        .status-badge { padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 500; }
-        .status-draft { background: #fef3c7; color: #92400e; }
-        .status-pending { background: #dbeafe; color: #1e40af; }
-        .status-approved { background: #dcfce7; color: #166534; }
-        .status-rejected { background: #fee2e2; color: #991b1b; }
-
-        .comment-box { background: #f8fafc; border-radius: 12px; padding: 16px; margin-bottom: 12px; border: 1px solid #e2e8f0; }
-
-
-        .theme-btn {
-            width: 40px; height: 40px; border-radius: 12px;
-            border: 2px solid #e2e8f0; background: white;
-            display: flex; align-items: center; justify-content: center;
-            cursor: pointer; transition: all 0.25s ease; font-size: 18px;
-            color: #475569;
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 1100px){
+          .stats{grid-template-columns:repeat(2,1fr)}
+          .row{grid-template-columns:1fr}
+          .layout{grid-template-columns:1fr}
+          .sidebar{position:static}
+          .search{display:none}
         }
-        .theme-btn:hover {
-            border-color: var(--primary); color: var(--primary);
-            background: #f8fafc; transform: translateY(-1px);
-        }
-        .theme-btn:active { transform: scale(0.95); }
-        .theme-btn.active { background: var(--primary); border-color: var(--primary); color: white; }
-
-        .palette-btn {
-            width: 34px; height: 34px; border-radius: 50%;
-            border: 2px solid #e2e8f0; background: white;
-            display: flex; align-items: center; justify-content: center;
-            cursor: pointer; transition: all 0.25s ease; font-size: 15px;
-            color: #475569;
-        }
-        .palette-btn:hover {
-            border-color: var(--primary); color: var(--primary);
-            background: #f8fafc; transform: translateY(-1px);
-        }
-        .palette-btn:active { transform: scale(0.95); }
-
-        html.dark .theme-btn { border-color: #334155; background: #1e293b; color: #cbd5e1; }
-        html.dark .theme-btn:hover { border-color: var(--accent); color: var(--accent); background: #334155; }
-        html.dark .palette-btn { border-color: #334155; background: #1e293b; color: #cbd5e1; }
-        html.dark .palette-btn:hover { border-color: var(--accent); color: var(--accent); background: #334155; }
-
-
-        .palette-dropdown {
-            position: absolute; top: 50px; right: 0;
-            width: 220px; background: white; border-radius: 16px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.15); border: 1px solid #e2e8f0;
-            display: none; z-index: 1070; padding: 16px;
-        }
-        html.dark .palette-dropdown { background: #1e293b; border-color: #334155; }
-        .palette-dropdown.show { display: block; animation: fadeSlide 0.2s ease; }
-        .palette-dropdown h6 { font-size: 12px; font-weight: 600; color: #94a3b8; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
-        .color-options { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
-        .color-swatch {
-            width: 32px; height: 32px; border-radius: 10px; cursor: pointer;
-            border: 2px solid transparent; transition: all 0.2s;
-        }
-        .color-swatch:hover { transform: scale(1.15); border-color: #334155; }
-        .color-swatch.active { border-color: var(--primary); box-shadow: 0 0 0 2px rgba(79,70,229,0.3); }
-
-        @media (max-width: 768px) {
-            .sidebar { transform: translateX(-100%); }
-            .sidebar.show { transform: translateX(0); }
-            .topbar { left: 0; }
-            .main-content { margin-left: 0; }
-            .mobile-toggle { display: block; }
-            .overlay.show { display: block; }
+        @media (max-width: 640px){
+          .nav{display:none}
+          .stats{grid-template-columns:1fr}
+          .amb-panel{right:12px; left:12px; width:auto}
+          .lang-btn{min-width:auto; padding:8px 10px}
+          .lang-btn .lang-name{display:none}
+          .amb-btn .amb-label{display:none}
+          .amb-btn{padding:8px 10px}
         }
     </style>
 </head>
-
 <body>
-<div id="pjax-container">
 
-
-<nav class="flex items-center justify-between p-4 bg-black text-white">
-    <div class="flex items-center gap-4">
-        <span class="font-[1000] uppercase tracking-widest text-sm">Olympiad Admin</span>
-
-
-        @if(app()->environment('local'))
-        <form action="{{ route('login.as') }}" method="POST" class="ml-4">
-            @csrf
-            <select name="user_id" onchange="this.form.submit()"
-                    class="bg-white text-black text-[10px] font-[1000] uppercase px-2 py-1 rounded border-2 border-blue-500 cursor-pointer shadow-[3px_3px_0px_rgba(59,130,246,1)] hover:scale-105 transition-all outline-none">
-                <option value="" disabled selected>👤 Switch User</option>
-                @foreach(\App\Models\User::all() as $user)
-                    <option value="{{ $user->id }}" {{ auth()->id() == $user->id ? 'selected' : '' }}>
-                        {{ $user->name }}
-                    </option>
-                @endforeach
-            </select>
-        </form>
-        @endif
-    </div>
-
-    <div class="flex items-center gap-2">
-        <span class="text-[10px] font-bold opacity-70 uppercase">Active: {{ auth()->user()->name }}</span>
-    </div>
-</nav>
-
-
-
-
-<div class="overlay" id="overlay" onclick="toggleSidebar()"></div>
-
-
-<aside class="sidebar" id="sidebar">
-    <div class="logo">
-        <div class="logo-icon"><i class="bi bi-file-earmark-text"></i></div>
+<!-- TOP BAR -->
+<header class="topbar">
+    <div class="brand">
+        <div class="brand-dot">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                <polyline points="14 2 14 8 20 8"/>
+                <path d="M9 15l2 2 4-4"/>
+            </svg>
+        </div>
         <div>
-            <div style="font-weight:700;font-size:16px;">DocSign</div>
-            <div style="font-size:11px;color:#94a3b8;" data-i18n="systemName">Document System</div>
+            DocSign
+            <small data-i18n="brand_sub">ЭДО · v2.4</small>
         </div>
     </div>
 
-    <div class="nav-section" data-i18n="mainMenu">Main</div>
-    <a href="/dashboard" class="nav-link active" data-page="dashboard" onclick="showPage('dashboard', this)">
-        <i class="bi bi-grid-1x2"></i> <span data-i18n="dashboard">Dashboard</span>
-    </a>
-
-    <li class="nav-item">
-        <a class="nav-link d-flex justify-content-between align-items-center"
-           data-bs-toggle="collapse"
-           href="#documentsMenu"
-           role="button"
-           aria-expanded="false"
-           aria-controls="documentsMenu"
-           onclick="showPage('documents', this)">
-
-            <div class="d-flex align-items-center gap-2">
-                <i class="bi bi-folder2"></i>
-                <span data-i18n="documents">Documents</span>
-            </div>
-
-            <i class="bi bi-chevron-down small"></i>
+    <nav class="nav" id="nav">
+        <button class="active" data-tab="dashboard">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>
+            <span data-i18n="dashboard">Обзор</span>
+        </button>
+        <button data-tab="docs" onclick="window.location.href='/documents'">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                <polyline points="14 2 14 8 20 8"/>
+            </svg>
+            <span data-i18n="documents">Документы</span>
+        </button>
+        <a href="/signatures" class="button-link" style="text-decoration: none; color: inherit; display: inline-flex; align-items: center;">
+            <button data-tab="sign" type="button" style="pointer-events: none;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/><path d="M2 2l7.586 7.586"/><circle cx="11" cy="11" r="2"/></svg>
+                <span data-i18n="signatures">Подписание</span>
+            </button>
+        </a>
+        <a href="/users" data-tab="counter" style="text-decoration: none; display: inline-block;">
+            <button type="button" style="pointer-events: none;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                    <circle cx="9" cy="7" r="4"/>
+                    <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>
+                </svg>
+                <span data-i18n="counterparties">Контрагенты</span>
+            </button>
         </a>
 
+    </nav>
 
+    <div class="spacer"></div>
 
-        <div class="collapse ps-4 mt-1 space-y-1" id="documentsMenu">
-            <div class="my-1 border-t border-slate-100 mx-2"></div>
+    <form action="{{ route('search') }}" method="GET" class="search">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"/>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        <input
+                type="text"
+                name="query"
+                value="{{ request('query') }}"
+                data-i18n-placeholder="search_placeholder"
+                placeholder="Поиск документов, контрагентов..."
+        />
+        <button type="submit" style="display: none;"></button>
+    </form>
 
+    @php
+    $user = auth()->user();
+    $notifications = $user ? $user->notifications()->latest()->take(5)->get() : collect();
+    $unreadCount = $user ? $user->unreadNotifications->count() : 0;
+    $notifRoute = Route::has('notifications.index') ? route('notifications.index') : '#';
+    @endphp
 
-            <a href="{{ route('documents.index') }}" class="nav-link" onclick="showPage('documents', this)">
-                <i class="bi bi-file-earmark-text"></i>
-                <span data-i18n="allDocs" class="tracking-widest uppercase text-[10px] font-bold">All</span>
-            </a>
-
-            <div class="my-1 border-t border-slate-100 mx-2"></div>
-
-            {{-- Потоки --}}
-            <a href="{{ route('documents.index', ['type' => 'incoming']) }}" class="nav-link" onclick="showPage('incoming', this)">
-                <i class="bi bi-download"></i>
-                <span data-i18n="incoming" class="tracking-widest uppercase text-[10px]">Incoming</span>
-            </a>
-
-            <a href="{{ route('documents.index', ['type' => 'outgoing']) }}" class="nav-link" onclick="showPage('outgoing', this)">
-                <i class="bi bi-upload"></i>
-                <span data-i18n="outgoing" class="tracking-widest uppercase text-[10px]">Outgoing</span>
-            </a>
-
-            <div class="my-1 border-t border-slate-100 mx-2"></div>
-
-            {{-- Статусы --}}
-            <a href="{{ route('documents.index', ['status' => 'waiting']) }}" class="nav-link text-orange-600" onclick="showPage('waiting', this)">
-                <i class="bi bi-clock-history"></i>
-                <span data-i18n="waiting" class="tracking-widest uppercase text-[10px]">Waiting</span>
-            </a>
-
-            <a href="{{ route('documents.index', ['status' => 'signed']) }}" class="nav-link text-green-600" onclick="showPage('signed', this)">
-                <i class="bi bi-check-circle"></i>
-                <span data-i18n="signed" class="tracking-widest uppercase text-[10px]">Signed</span>
-            </a>
-
-            <a href="{{ route('documents.index', ['status' => 'draft']) }}" class="nav-link text-slate-400" onclick="showPage('drafts', this)">
-                <i class="bi bi-pencil-square"></i>
-                <span data-i18n="drafts" class="tracking-widest uppercase text-[10px]">Drafts</span>
-            </a>
-        </div>
-    </li>
-
-
-    <div class="nav-section" data-i18n="management">Management</div>
-
-    <a href="/signatures" class="nav-link" data-page="signatures" onclick="showPage('signatures', this)">
-        <i class="bi bi-pen"></i> <span data-i18n="signatures">Signatures</span>
-    </a>
-    <a href="/versions" class="nav-link" data-page="versions" onclick="showPage('versions', this)">
-        <i class="bi bi-clock-history"></i> <span data-i18n="versions">Versions</span>
-    </a>
-    <a href="/logs" class="nav-link" data-page="logs" onclick="showPage('logs', this)">
-        <i class="bi bi-journal-text"></i> <span data-i18n="logs">Logs</span>
-    </a>
-    <a href="/analysis" class="nav-link" data-page="analysis" onclick="showPage('analysis', this)">
-        <i class="bi bi-bar-chart-line"></i> <span data-i18n="analysis">Analysis</span>
-    </a>
-
-<!--    <a href="{{ route('messages.index') }}" class="nav-link" data-page="messages" onclick="showPage('messages', this)">-->
-<!--        <i class="bi bi-chat-dots"></i>-->
-<!--        <span data-i18n="messages">Сообщения</span>-->
-<!--    </a>-->
-    <div class="nav-section" data-i18n="admin">Admin</div>
-    <a href="/users" class="nav-link" data-page="users" onclick="showPage('users', this)">
-        <i class="bi bi-people"></i> <span data-i18n="users">Users</span>
-    </a>
-    <a href="{{ route('notifications.index') }}" class="nav-link {{ request()->routeIs('notifications.index') ? 'active' : '' }}" data-page="notifications">
-        <i class="bi bi-bell"></i>
-        <span data-i18n="notifications">Уведомления</span>
-
-        {{-- Проверяем, есть ли непрочитанные уведомления --}}
-        @if(isset($unreadCount) && $unreadCount > 0)
-            <span class="badge bg-danger">{{ $unreadCount }}</span>
-        @endif
-    </a>
-
-    <div class="nav-section" data-i18n="account">Account</div>
-    <a href="/profile" class="nav-link" data-page="profile" onclick="showPage('profile', this)">
-        <i class="bi bi-person-circle"></i> <span data-i18n="profile">Profile</span>
-    </a>
-    {{-- КРАСИВОЕ МОДАЛЬНОЕ ОКНО ВЫХОДА --}}
-    <a href="#" class="nav-link" onclick="event.preventDefault(); openLogoutModal()">
-        <i class="bi bi-box-arrow-left"></i> <span data-i18n="logout">Logout</span>
-    </a>
-
-    {{-- КРАСИВОЕ МОДАЛЬНОЕ ОКНО ВЫХОДА --}}
-    <div id="logoutModal" class="fixed inset-0 z-50 flex items-center justify-center hidden px-4 antialiased font-inter">
-        {{-- Темный полупрозрачный задний фон --}}
-        <div class="absolute inset-0 bg-slate-950/60 backdrop-blur-xs"></div>
-
-        {{-- Контент модалки --}}
-        {{-- Контент модалки с принудительно черным текстом --}}
-        <div class="relative bg-white border border-slate-200 rounded-2xl max-w-sm w-full p-6 shadow-2xl transform scale-95 opacity-0 transition-all duration-300 ease-out" id="logoutModalCard">
-            <div class="flex flex-col items-center text-center">
-                {{-- Иконка предупреждения --}}
-                <div class="w-12 h-12 rounded-full bg-red-50 text-red-500 flex items-center justify-center mb-4 shadow-xs">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                    </svg>
-                </div>
-
-                {{-- Заголовок - строго черный --}}
-                <h3 class="text-base font-bold text-black mb-2" style="color: #000000 !important;" data-i18n="logoutModalTitle">Выход из системы</h3>
-
-                {{-- Описание - строго глубокий темный --}}
-                <p class="text-xs text-slate-800 leading-relaxed mb-6" style="color: #1e293b !important;" id="logoutModalText">Вы уверены, что хотите выйти из системы?</p>
-
-                {{-- Кнопки управления --}}
-                <div class="flex items-center gap-3 w-full">
-                    {{-- Кнопка Отмена - фон светло-серый, текст строго черный --}}
-                    <button type="button" onclick="closeLogoutModal()" class="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-black font-bold text-xs uppercase tracking-wider rounded-xl transition border border-slate-300" style="color: #000000 !important;" data-i18n="logoutModalCancel">
-                        Отмена
-                    </button>
-                    {{-- Кнопка Выйти --}}
-                    <button type="button" onclick="confirmLogoutAction()" class="flex-1 py-2.5 bg-red-600 hover:bg-red-500 text-white font-bold text-xs uppercase tracking-wider rounded-xl transition shadow-lg shadow-red-600/20" data-i18n="logoutModalConfirm">
-                        Выйти
-                    </button>
-                </div>
-            </div>
-        </div> </div>
-</aside>
-
-<!-- Topbar -->
-<header class="topbar">
-    <div class="topbar-left">
-        <button class="mobile-toggle" onclick="toggleSidebar()"><i class="bi bi-list"></i></button>
-        <div class="search-box d-none d-md-block">
-            <style>
-                .search-container {
-                    position: relative;
-                    width: 280px; /* Фиксированная ширина как на фото */
-                    display: flex;
-                    align-items: center;
-                }
-
-                .search-input-custom {
-                    width: 100%;
-                    background: #f8fafc; /* Светлый фон как в админке */
-                    border: 1px solid #ced4da;
-                    border-radius: 20px; /* Овальная форма */
-                    padding-left: 35px !important; /* Отступ под лупу */
-                    padding-right: 35px !important; /* Отступ под стрелку */
-                    font-size: 0.85rem;
-                    transition: all 0.3s ease;
-                }
-
-                .search-input-custom:focus {
-                    border-color: #86b7fe !important;
-                    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.1);
-                    background-color: #fff;
-                }
-
-                /* Иконка лупы слева */
-                .search-icon-left {
-                    position: absolute;
-                    left: 12px;
-                    color: #94a3b8;
-                    pointer-events: none;
-                    z-index: 5;
-                }
-
-                /* Кнопка-стрелка справа внутри */
-                .search-submit-btn {
-                    position: absolute;
-                    right: 8px;
-                    background: none;
-                    border: none;
-                    padding: 0;
-                    color: #86b7fe;
-                    display: none; /* Скрыта если пусто */
-                    cursor: pointer;
-                    transition: all 0.2s;
-                    z-index: 5;
-                }
-
-                .search-submit-btn:hover {
-                    color: #0d6efd;
-                    transform: scale(1.1);
-                }
-
-                /* Магия CSS: показываем стрелку при вводе текста */
-                .search-input-custom:not(:placeholder-shown) + .search-submit-btn {
-                    display: block;
-                }
-            </style>
-
-            <form action="{{ route('search') }}" method="GET" class="search-container">
-                {{-- Иконка поиска слева --}}
-                <i class="bi bi-search search-icon-left"></i>
-
-                <input
-                    type="text"
-                    name="query"
-                    id="searchInput"
-                    value="{{ request('query') }}"
-                    class="form-control form-control-sm search-input-custom"
-                    placeholder="..."
-                    autocomplete="off"
-                >
-
-                {{-- Кнопка-стрелка справа --}}
-                <button type="submit" class="search-submit-btn" id="searchArrow" style="
-    position: absolute;
-    right: 5px;
-    top: 50%;
-    transform: translateY(-50%);
-    background-color: #2563eb; /* Синий фон */
-    color: white;             /* Белый текст */
-    border: none;
-    border-radius: 20px;      /* Скругление */
-    padding: 2px 12px;        /* Отступы по бокам для текста Ок */
-    height: 30px;             /* Фиксированная высота */
-    font-size: 12px;
-    font-weight: bold;
-    display: none;            /* Управляется вашим JS */
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: background-color 0.2s;
-">
-                    Ок
-                </button>
-            </form>
-        </div>
-
-        <script>
-            // JS для мгновенной реакции на ввод/удаление
-            document.addEventListener('DOMContentLoaded', function() {
-                const input = document.getElementById('searchInput');
-                const arrow = document.getElementById('searchArrow');
-
-                const toggleArrow = () => {
-                    arrow.style.display = input.value.trim().length > 0 ? 'block' : 'none';
-                };
-
-                input.addEventListener('input', toggleArrow);
-                toggleArrow(); // Проверка при загрузке страницы
-            });
-        </script>
-    </div>
-
-    <div class="topbar-right">
-
-        <!-- Theme Toggle & Palette Buttons -->
-        <button id="themeToggleBtn" class="theme-btn-circle" onclick="toggleTheme()" title="Toggle Dark Mode">
-            <i id="themeIcon" class="bi bi-moon-stars"></i>
+    {{-- ===== AMBIENT BUTTON В TOPBAR ===== --}}
+    <div class="lang-switcher" id="ambWrapper" style="position:relative;">
+        <button class="amb-btn" id="ambBtn" data-i18n-title="color_title" title="Цвет подсветки">
+            <div class="amb-swatch"></div>
+            <span class="amb-label" data-i18n="color_title">Цвет</span>
+            <svg class="arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width:12px;height:12px;">
+                <polyline points="6 9 12 15 18 9"/>
+            </svg>
         </button>
 
-        <style>
-            .theme-btn-circle {
-                /* Делаем круг */
-                width: 38px;
-                height: 38px;
-                border-radius: 50%;
+        <div class="amb-panel" id="ambPanel">
+            <div class="amb-panel-head">
+                <h4>
+                    <span class="live-dot"></span>
+                    <span data-i18n="ambient_title">Ambient Lighting</span>
+                </h4>
+            </div>
+            <p data-i18n="ambient_desc">Настройте подсветку как в премиальном авто</p>
 
-                /* Центрируем иконку */
-                display: flex;
-                align-items: center;
-                justify-content: center;
+            <div class="amb-preview" id="ambPreview">
+                <div class="amb-preview-label" id="ambPreviewLabel">RGB(79, 140, 255)</div>
+            </div>
 
-                /* Стили под твой дизайн */
-                border: 1px solid rgba(var(--primary-rgb), 0.2);
-                background: var(--card-bg, #fff);
-                color: var(--heading-color, #64748b);
+            <div class="colors" id="colors"></div>
 
-                /* Эффекты */
-                cursor: pointer;
-                transition: all 0.2s ease;
-                padding: 0;
-                box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-            }
+            <div class="intensity">
+                <label>
+                    <span data-i18n="intensity">Интенсивность</span>
+                    <span id="intVal">80%</span>
+                </label>
+                <input type="range" id="intensity" min="20" max="100" value="80"/>
+            </div>
 
-            .theme-btn-circle:hover {
-                background: rgba(var(--primary-rgb), 0.1);
-                color: var(--primary-color);
-                transform: scale(1.05); /* Легкое увеличение при наведении */
-            }
+            <div class="intensity" style="margin-top:12px">
+                <label>
+                    <span data-i18n="spread">Распространение</span>
+                    <span id="spreadVal">60%</span>
+                </label>
+                <input type="range" id="spread" min="20" max="100" value="60"/>
+            </div>
 
-            /* Адаптация иконки под темную тему */
-            [data-theme='dark'] .theme-btn-circle {
-                background: rgba(255, 255, 255, 0.05);
-                border-color: rgba(255, 255, 255, 0.1);
-                color: #fff;
-            }
-        </style>
-        <style>
-            :root {
-                --primary: #4f46e5;
-                --primary-dark: #4338ca;
-                --accent: #6366f1;
-                --dropdown-bg: #ffffff;
-            }
-
-            /* Поддержка темной темы */
-            .dark .palette-dropdown { background-color: #1e293b; border: 1px solid #334155; }
-            .dark .palette-dropdown h6 { color: #f1f5f9; }
-
-            .palette-dropdown {
-                display: none;
-                position: absolute;
-                right: 0;
-                top: 45px;
-                background: var(--dropdown-bg);
-                padding: 16px;
-                border-radius: 12px;
-                box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.2);
-                z-index: 1000;
-                width: 200px;
-                border: 1px solid #e2e8f0;
-                text-align: center;
-            }
-
-            .palette-dropdown.show { display: block; }
-
-            .palette-dropdown h6 {
-                margin: 0 0 12px 0;
-                font-size: 0.8rem;
-                text-transform: uppercase;
-                letter-spacing: 0.05em;
-                color: #64748b;
-                font-weight: 700;
-            }
-
-            .color-options {
-                display: grid;
-                grid-template-columns: repeat(5, 30px);
-                gap: 10px;
-                justify-content: center;
-            }
-
-            .color-swatch {
-                width: 30px;
-                height: 30px;
-                border-radius: 50%;
-                cursor: pointer;
-                transition: transform 0.2s;
-                border: 2px solid transparent;
-                box-sizing: border-box;
-            }
-
-            .color-swatch:hover { transform: scale(1.1); }
-            .color-swatch.active { border-color: #000; box-shadow: 0 0 0 2px #fff inset; }
-
-            .palette-btn {
-                cursor: pointer;
-                background: transparent;
-                border: none;
-                color: var(--primary);
-                padding: 8px;
-                border-radius: 50%;
-            }
-        </style>
-
-        <div class="position-relative">
-            <button class="palette-btn" onclick="togglePalette()" title="Theme Colors">
-                <i class="bi bi-palette"></i>
-            </button>
-            <div class="palette-dropdown" id="paletteDropdown">
-                <h6>Primary Color</h6>
-                <div class="color-options">
-                    <div class="color-swatch active" style="background:#4f46e5" onclick="setColor('#4f46e5','#4338ca','#6366f1',this)"></div>
-                    <div class="color-swatch" style="background:#0ea5e9" onclick="setColor('#0ea5e9','#0284c7','#38bdf8',this)"></div>
-                    <div class="color-swatch" style="background:#22c55e" onclick="setColor('#22c55e','#16a34a','#4ade80',this)"></div>
-                    <div class="color-swatch" style="background:#f59e0b" onclick="setColor('#f59e0b','#d97706','#fbbf24',this)"></div>
-                    <div class="color-swatch" style="background:#ef4444" onclick="setColor('#ef4444','#dc2626','#f87171',this)"></div>
-                    <div class="color-swatch" style="background:#8b5cf6" onclick="setColor('#8b5cf6','#7c3aed','#a78bfa',this)"></div>
-                    <div class="color-swatch" style="background:#ec4899" onclick="setColor('#ec4899','#db2777','#f472b6',this)"></div>
-                    <div class="color-swatch" style="background:#14b8a6" onclick="setColor('#14b8a6','#0d9488','#2dd4bf',this)"></div>
-                    <div class="color-swatch" style="background:#f97316" onclick="setColor('#f97316','#ea580c','#fb923c',this)"></div>
-                    <div class="color-swatch" style="background:#6366f1" onclick="setColor('#6366f1','#4f46e5','#818cf8',this)"></div>
+            <div class="modes">
+                <div class="mode active" data-mode="solid">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="4"/></svg>
+                    <span data-i18n="mode_solid">Статичный</span>
+                </div>
+                <div class="mode" data-mode="pulse">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                    <span data-i18n="mode_pulse">Пульс</span>
+                </div>
+                <div class="mode" data-mode="breathe">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+                    <span data-i18n="mode_breathe">Дыхание</span>
                 </div>
             </div>
+
+            <div class="amb-footer">
+                <span data-i18n="auto_save">Автосохранение</span>
+                <span class="saved" id="savedIndicator">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="width:12px;height:12px;">
+                        <polyline points="20 6 9 17 4 12"/>
+                    </svg>
+                    <span data-i18n="saved">Сохранено</span>
+                </span>
+            </div>
         </div>
+    </div>
 
-        <script>
-            function togglePalette() {
-                document.getElementById('paletteDropdown').classList.toggle('show');
-            }
+    <!-- LANGUAGE SWITCHER -->
+    <div class="lang-switcher" id="langSwitcher">
+        <button class="lang-btn" id="langBtn" title="Язык / Language / Забон">
+            <span class="flag" id="langFlag">🇷🇺</span>
+            <span class="lang-name" id="langName">Русский</span>
+            <svg class="arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="6 9 12 15 18 9"/>
+            </svg>
+        </button>
+        <div class="lang-menu" id="langMenu">
+            <div class="lang-menu-title" data-i18n="choose_language">Выберите язык</div>
+            <div class="lang-option active" data-lang="ru">
+                <span class="flag">🇷🇺</span>
+                <span class="name">Русский</span>
+                <svg class="check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="20 6 9 17 4 12"/>
+                </svg>
+            </div>
+            <div class="lang-option" data-lang="tj">
+                <span class="flag">🇹🇯</span>
+                <span class="name">Тоҷикӣ</span>
+                <svg class="check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="20 6 9 17 4 12"/>
+                </svg>
+            </div>
+            <div class="lang-option" data-lang="en">
+                <span class="flag">🇬🇧</span>
+                <span class="name">English</span>
+                <svg class="check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="20 6 9 17 4 12"/>
+                </svg>
+            </div>
+        </div>
+    </div>
 
-            function setColor(primary, dark, accent, element) {
-                // Применяем новые цвета
-                const root = document.documentElement.style;
-                root.setProperty('--primary', primary);
-                root.setProperty('--primary-dark', dark);
-                root.setProperty('--accent', accent);
+    <div id="notifWrapper" class="position-relative d-inline-block" style="position:relative;">
+        <button id="notifBtn" class="icon-btn position-relative {{ $unreadCount > 0 ? 'bell-shaking' : '' }}"
+                data-i18n-title="notifications"
+                title="Уведомления"
+                style="background: none; border: none; padding: 8px; cursor: pointer; color: inherit;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24" height="24">
+                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+                <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+            </svg>
+            @if($unreadCount > 0)
+            <span id="notifPing" class="position-absolute bg-danger rounded-circle"
+                  style="top: 4px; right: 4px; width: 10px; height: 10px; animation: notif-ping 1.5s infinite; opacity: 0.7;"></span>
+            <span id="notifBadge" class="position-absolute rounded-pill notif-badge"
+                  style="top: -5px; right: -5px; font-size: 10px; padding: 2px 6px;
+                     background: #dc3545; color: #fff; border: 2px solid #fff;
+                     font-weight: bold; min-width: 18px; text-align: center;
+                     box-shadow: 0 2px 4px rgba(220,53,69,0.4);">
+            {{ $unreadCount }}
+        </span>
+            @endif
+        </button>
 
-                // Сохраняем настройки
-                localStorage.setItem('theme-primary', primary);
-                localStorage.setItem('theme-primary-dark', dark);
-                localStorage.setItem('theme-accent', accent);
+        <div id="notifDropdown" class="notif-dropdown">
+            <div class="notif-header">
+                <strong data-i18n="notifications">Уведомления</strong>
+                <span id="headerBadge" class="badge rounded-pill {{ $unreadCount > 0 ? '' : 'd-none' }}"
+                      style="background: #dc3545; color: #fff;">{{ $unreadCount }}</span>
+            </div>
+            <div id="notifList" class="notif-list">
+                @forelse($notifications as $notification)
+                @php
+                $data = is_string($notification->data) ? json_decode($notification->data, true) : ($notification->data ?? []);
+                $sender = $data['sender_name'] ?? $data['user_name'] ?? 'Система';
+                $docName = $data['document_name'] ?? $data['document_title'] ?? 'Документ';
+                $message = $notification->messages ?? '';
+                $isComment = str_contains(strtolower($message), 'коммент')
+                || ($data['type'] ?? '') === 'comment'
+                || $notification->type === 'comment';
+                $action = $isComment ? 'оставил комментарий к' : 'назначил вам документ';
+                $iconClass = $isComment ? 'bi-chat-left-text' : 'bi-pin-angle-fill';
+                $iconColor = $isComment ? '#22c55e' : '#f97316';
+                $isUnread = !$notification->is_read;
+                $url = $data['url'] ?? (isset($data['document_id']) ? route('documents.show', $data['document_id']) : '#');
+                @endphp
+                <a href="{{ $url }}" class="notif-item {{ $isUnread ? 'unread' : '' }}"
+                   data-id="{{ $notification->id }}" data-url="{{ $url }}" data-ts="{{ $notification->created_at->timestamp }}">
+                    <div class="notif-icon" style="background: {{ $isComment ? 'rgba(34,197,94,0.1)' : 'rgba(249,115,22,0.1)' }};">
+                        <i class="bi {{ $iconClass }}" style="color: {{ $iconColor }};"></i>
+                    </div>
+                    <div class="notif-body">
+                        <div class="notif-text">
+                            <strong>{{ $sender }}</strong>
+                            <span class="notif-action">{{ $action }}</span>
+                            <strong>{{ $docName }}</strong>
+                        </div>
+                        <small class="text-muted">{{ $notification->created_at->diffForHumans() }}</small>
+                    </div>
+                    @if($isUnread)
+                    <span class="notif-dot"></span>
+                    @endif
+                </a>
+                @empty
+                <div class="notif-empty">
+                    <i class="bi bi-inbox" style="font-size: 2rem;"></i>
+                    <div class="mt-2" data-i18n="no_notifications">Нет уведомлений</div>
+                </div>
+                @endforelse
+            </div>
+            <div class="notif-footer">
+                <a href="{{ $notifRoute }}" data-i18n="all_notifications">Все уведомления →</a>
+            </div>
+        </div>
+    </div>
 
-                // Обновляем UI (активность)
-                document.querySelectorAll('.color-swatch').forEach(sw => sw.classList.remove('active'));
-                element.classList.add('active');
+    <style>
+        @keyframes notif-fresh-pulse {
+            0% { box-shadow: 0 0 0 0 rgba(79, 140, 255, 0.6); }
+            70% { box-shadow: 0 0 0 10px rgba(79, 140, 255, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(79, 140, 255, 0); }
+        }
+        .notif-item.fresh {
+            animation: notif-fresh-pulse 1.5s ease-out 2;
+            background: rgba(79, 140, 255, 0.08) !important;
+            border-left: 3px solid #4f8cff !important;
+        }
+        .notif-item.fresh:hover {
+            background: rgba(79, 140, 255, 0.15) !important;
+        }
+        @keyframes bell-ring {
+            0%, 100% { transform: rotate(0); }
+            10%, 30% { transform: rotate(-15deg); }
+            20%, 40% { transform: rotate(15deg); }
+        }
+        #notifBtn.ringing svg {
+            animation: bell-ring 0.8s ease-in-out;
+            transform-origin: top center;
+        }
+    </style>
 
-                // Закрываем
-                document.getElementById('paletteDropdown').classList.remove('show');
-            }
+    <script>
+        (function() {
+            const btn = document.getElementById('notifBtn');
+            const dropdown = document.getElementById('notifDropdown');
+            const wrapper = document.getElementById('notifWrapper');
+            const list = document.getElementById('notifList');
+            const badge = document.getElementById('notifBadge');
+            const ping = document.getElementById('notifPing');
+            const headerBadge = document.getElementById('headerBadge');
 
-            // Закрытие при клике вне меню
-            document.addEventListener('click', (e) => {
-                if (!e.target.closest('.position-relative')) {
-                    document.getElementById('paletteDropdown').classList.remove('show');
+            let lastKnownTimestamp = Math.max(...Array.from(document.querySelectorAll('.notif-item[data-ts]'))
+                .map(el => parseInt(el.dataset.ts) || 0), 0);
+
+            // Открытие/закрытие
+            btn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                dropdown.classList.toggle('active');
+            });
+
+            document.addEventListener('click', function(e) {
+                if (!wrapper.contains(e.target)) {
+                    dropdown.classList.remove('active');
                 }
             });
-        </script>
 
-        <!-- Language Selector -->
-        <div class="d-flex align-items-center gap-1">
-            <div class="relative" id="custom-lang-selector">
-                <button type="button" onclick="document.getElementById('lang-options').classList.toggle('hidden')"
-                        class="flex items-center group transition-all outline-none">
-                    <div class="p-1 hover:bg-gray-100 rounded-full transition-colors">
-                        <img id="current-flag" src="https://flagcdn.com/w20/us.png" class="w-5 h-auto rounded-sm shadow-sm">
+            // Клик по уведомлению — отметка прочитанного + переход
+            list.addEventListener('click', function(e) {
+                const item = e.target.closest('.notif-item.unread');
+                if (!item) return;
+
+                const id = item.dataset.id;
+                const url = item.dataset.url;
+
+                item.classList.remove('unread');
+                const dot = item.querySelector('.notif-dot');
+                if (dot) dot.remove();
+
+                fetch(`/notifications/${id}/read`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || '',
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                }).catch(() => {});
+
+                if (url && url !== '#') {
+                    e.preventDefault();
+                    setTimeout(() => { window.location.href = url; }, 150);
+                }
+            });
+
+            // Обновление бейджа
+            function updateBadge(count) {
+                if (count > 0) {
+                    if (!badge) {
+                        const newBadge = document.createElement('span');
+                        newBadge.id = 'notifBadge';
+                        newBadge.className = 'position-absolute rounded-pill notif-badge';
+                        newBadge.style.cssText = 'top:-5px;right:-5px;font-size:10px;padding:2px 6px;background:#dc3545;color:#fff;border:2px solid #fff;font-weight:bold;min-width:18px;text-align:center;box-shadow:0 2px 4px rgba(220,53,69,0.4);';
+                        newBadge.textContent = count;
+                        btn.appendChild(newBadge);
+                    } else {
+                        badge.textContent = count;
+                    }
+
+                    if (!ping) {
+                        const newPing = document.createElement('span');
+                        newPing.id = 'notifPing';
+                        newPing.className = 'position-absolute bg-danger rounded-circle';
+                        newPing.style.cssText = 'top:4px;right:4px;width:10px;height:10px;animation:notif-ping 1.5s infinite;opacity:0.7;';
+                        btn.appendChild(newPing);
+                    }
+
+                    headerBadge.textContent = count;
+                    headerBadge.classList.remove('d-none');
+                    btn.classList.add('bell-shaking');
+                } else {
+                    const b = document.getElementById('notifBadge');
+                    const p = document.getElementById('notifPing');
+                    if (b) b.remove();
+                    if (p) p.remove();
+                    headerBadge.classList.add('d-none');
+                    btn.classList.remove('bell-shaking');
+                }
+            }
+
+            // Рендер нового уведомления
+            function renderNotification(n) {
+                const isComment = n.type === 'comment' || /коммент/i.test(n.message || '');
+                const action = isComment ? 'оставил комментарий к' : 'назначил вам документ';
+                const iconClass = isComment ? 'bi-chat-left-text' : 'bi-pin-angle-fill';
+                const iconColor = isComment ? '#22c55e' : '#f97316';
+                const bgColor = isComment ? 'rgba(34,197,94,0.1)' : 'rgba(249,115,22,0.1)';
+
+                const item = document.createElement('a');
+                item.href = n.url || '#';
+                item.className = 'notif-item unread fresh';
+                item.dataset.id = n.id;
+                item.dataset.url = n.url || '#';
+                item.dataset.ts = n.createdAt;
+
+                item.innerHTML = `
+                    <div class="notif-icon" style="background:${bgColor};">
+                        <i class="bi ${iconClass}" style="color:${iconColor};"></i>
                     </div>
-                </button>
-                <div id="lang-options" class="hidden absolute right-0 mt-2 w-36 bg-white rounded-xl shadow-[0_10px_40px_-10px_rgba(0,0,0,0.1)] border border-gray-50 z-50 overflow-hidden py-1">
-                    <button onclick="changeLangUI('en', 'https://flagcdn.com/w20/us.png', this)" class="w-full flex items-center gap-3 px-3 py-2 hover:bg-gray-50 transition-colors">
-                        <img src="https://flagcdn.com/w20/us.png" class="w-4 h-auto rounded-[1px]">
-                        <span class="text-[11px] font-bold text-gray-600">English</span>
-                    </button>
-                    <button onclick="changeLangUI('ru', 'https://flagcdn.com/w20/ru.png', this)" class="w-full flex items-center gap-3 px-3 py-2 hover:bg-gray-50 transition-colors">
-                        <img src="https://flagcdn.com/w20/ru.png" class="w-4 h-auto rounded-[1px]">
-                        <span class="text-[11px] font-bold text-gray-600">Russian</span>
-                    </button>
-                    <button onclick="changeLangUI('tj', 'https://flagcdn.com/w20/tj.png', this)" class="w-full flex items-center gap-3 px-3 py-2 hover:bg-gray-50 transition-colors">
-                        <img src="https://flagcdn.com/w20/tj.png" class="w-4 h-auto rounded-[1px]">
-                        <span class="text-[11px] font-bold text-gray-600">Tajikistan</span>
-                    </button>
-                </div>
-            </div>
-        </div>
-
-        <!-- Notifications -->
-{{--        <div class="position-relative">--}}
-{{--            <div class="position-relative">--}}
-{{--                <button class="btn-action-circle position-relative hover-scale"--}}
-{{--                        onclick="toggleNotifications()"--}}
-{{--                        style="width:38px; height:38px; border-radius: 50%; display:flex; align-items:center; justify-content:center; border:1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.05); padding:0; color: inherit;">--}}
-
-{{--                    <i class="bi bi-bell" style="font-size: 1.1rem;"></i>--}}
-
-{{--                    <span class="position-absolute badge rounded-pill bg-danger border border-dark"--}}
-{{--                          style="top: -2px; right: -2px; font-size: 9px; padding: 3px 5px; min-width: 18px;">--}}
-{{--            3--}}
-{{--        </span>--}}
-{{--                </button>--}}
-{{--            </div>--}}
-
-{{--            <div class="notification-dropdown" id="notifDropdown">--}}
-{{--                <div class="d-flex justify-content-between align-items-center p-3 border-bottom">--}}
-{{--                    <strong data-i18n="notifications">Notifications</strong>--}}
-{{--                    <a href="/notifications/clear-all" class="btn btn-sm btn-outline-danger" onclick="event.preventDefault(); clearNotifications()" data-i18n="clearAll">Clear All</a>--}}
-{{--                </div>--}}
-{{--                <div class="notification-item unread">--}}
-{{--                    <div class="d-flex align-items-center gap-2">--}}
-{{--                        <div class="step-dot current" style="width:32px;height:32px;font-size:14px;"><i class="bi bi-file-earmark-check"></i></div>--}}
-{{--                        <div>--}}
-{{--                            <div style="font-size:13px;font-weight:500;" data-i18n="notifDocApproved">Document #1042 approved</div>--}}
-{{--                            <div style="font-size:11px;color:#94a3b8;">2 min ago</div>--}}
-{{--                        </div>--}}
-{{--                    </div>--}}
-{{--                </div>--}}
-{{--                <div class="notification-item unread">--}}
-{{--                    <div class="d-flex align-items-center gap-2">--}}
-{{--                        <div class="step-dot done" style="width:32px;height:32px;font-size:14px;"><i class="bi bi-pen"></i></div>--}}
-{{--                        <div>--}}
-{{--                            <div style="font-size:13px;font-weight:500;" data-i18n="notifSignReq">Signature requested</div>--}}
-{{--                            <div style="font-size:11px;color:#94a3b8;">1 hour ago</div>--}}
-{{--                        </div>--}}
-{{--                    </div>--}}
-{{--                </div>--}}
-{{--                <div class="notification-item unread">--}}
-{{--                    <div class="d-flex align-items-center gap-2">--}}
-{{--                        <div class="step-dot pending" style="width:32px;height:32px;font-size:14px;"><i class="bi bi-person-plus"></i></div>--}}
-{{--                        <div>--}}
-{{--                            <div style="font-size:13px;font-weight:500;" data-i18n="notifNewUser">New user registered</div>--}}
-{{--                            <div style="font-size:11px;color:#94a3b8;">3 hours ago</div>--}}
-{{--                        </div>--}}
-{{--                    </div>--}}
-{{--                </div>--}}
-{{--                <a href="/notifications" class="d-block text-center p-3" style="color:var(--primary);font-size:13px;font-weight:500;text-decoration:none;" data-i18n="viewAll">View All</a>--}}
-{{--            </div>--}}
-{{--        </div>--}}
-
-{{--        <!-- Profile Dropdown -->--}}
-
-        @php
-            $user = auth()->user();
-            $notifications = $user ? $user->notifications()->latest()->take(5)->get() : collect();
-            $unreadCount = $user ? $user->unreadNotifications->count() : 0;
-        @endphp
-
-        <div class="position-relative">
-
-            {{-- 🔔 BUTTON --}}
-            <div class="position-relative" id="pjax-bell">
-
-                {{-- 🔔 BUTTON --}}
-                <div class="position-relative">
-
-                    <button class="btn-action-circle position-relative hover-scale {{ $unreadCount > 0 ? 'bell-shaking' : '' }}"
-                            onclick="toggleNotifications()"
-                            style="width:38px; height:38px; border-radius: 50%; display:flex; align-items:center; justify-content:center; border:1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.05); padding:0; color: inherit; transition: all 0.3s ease;">
-
-                        <i class="bi bi-bell" style="font-size: 1.1rem; display: inline-block;"></i>
-
-                        {{-- 🔴 REAL COUNT С АНИМАЦИЕЙ --}}
-                        @if($unreadCount > 0)
-                            {{-- Размытая пульсирующая волна на фоне --}}
-                            <span class="position-absolute rounded-pill bg-danger"
-                                  style="top: -2px; right: -2px; font-size: 9px; padding: 3px 5px; min-width: 18px; height: 15px; animation: notification-ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite; opacity: 0.65; z-index: 1;">
-                </span>
-
-                            {{-- Основной красный кружок с цифрой --}}
-                            <span class="position-absolute badge rounded-pill bg-danger border border-dark"
-                                  style="top: -2px; right: -2px; font-size: 9px; padding: 3px 5px; min-width: 18px; z-index: 2; box-shadow: 0 0 10px rgba(220, 53, 69, 0.8);">
-                    {{ $unreadCount }}
-                </span>
-                        @endif
-
-                    </button>
-                </div>
-            </div>
-
-            {{-- 🎨 СТИЛИ ДЛЯ ВАУ-ЭФФЕКТА (Вставь прямо сюда или в свой CSS файл) --}}
-            <style>
-                /* 1. Эффект расходящейся волны (Пульс) */
-                @keyframes notification-ping {
-                    0% {
-                        transform: scale(1);
-                        opacity: 1;
-                    }
-                    70%, 100% {
-                        transform: scale(2);
-                        opacity: 0;
-                    }
-                }
-
-                /* 2. Эффект живого покачивания колокольчика */
-                .bell-shaking i {
-                    animation: bell-wobble 3.5s ease-in-out infinite;
-                }
-
-                @keyframes bell-wobble {
-                    0%, 80%, 100% { transform: rotate(0deg); }
-                    82% { transform: rotate(20deg); }
-                    84% { transform: rotate(-18deg); }
-                    86% { transform: rotate(14deg); }
-                    88% { transform: rotate(-12deg); }
-                    90% { transform: rotate(8deg); }
-                    92% { transform: rotate(-4deg); }
-                    94% { transform: rotate(0deg); }
-                }
-
-                /* Красивый блик при наведении на саму кнопку */
-                .btn-action-circle:hover {
-                    background: rgba(255, 255, 255, 0.12) !important;
-                    border-color: rgba(255, 255, 255, 0.25) !important;
-                    box-shadow: 0 0 12px rgba(255, 255, 255, 0.15);
-                }
-            </style>
-
-            {{-- 📩 DROPDOWN --}}
-            <div class="notification-dropdown" id="notifDropdown">
-
-                {{-- HEADER --}}
-                <div class="d-flex justify-content-between align-items-center p-3 border-bottom">
-                    <strong>Notifications</strong>
-
-
-                </div>
-
-                {{-- LIST --}}
-                <div style="max-height:300px; overflow-y:auto;">
-
-                    @forelse($notifications as $notification)
-                        <a href="{{ $notification->data['url'] ?? route('notifications.index') }}"
-                           class="text-decoration-none d-block mb-2" style="color: inherit;">
-
-                            <div class="notification-card"
-                                 style="background: #f8faff; border-radius: 18px; padding: 12px 16px; display: flex; align-items: center; gap: 12px; transition: 0.3s; border: 1px solid rgba(226, 232, 240, 0.6);">
-
-                                @php
-                                    // Собираем текст динамически, если в data есть поля sender_name и document_name
-                                    $sender = $notification->data['sender_name'] ?? 'Система';
-                                    $docName = $notification->data['document_name'] ?? ($notification->data['title'] ?? 'Документ');
-                                    $message = $notification->data['messages'] ?? '';
-
-                                    // Определяем действие (назначил или прокомментировал)
-                                    $isComment = str_contains(strtolower($message), 'коммент') || str_contains(strtolower($message), 'оставил');
-                                    $action = $isComment ? 'оставил комментарий к' : 'назначил вам документ';
-
-                                    $iconBg = $isComment ? '#f0fff4' : '#fff5eb';
-                                    $iconClass = $isComment ? 'bi-chat-left-text' : 'bi-pin-angle-fill';
-                                    $iconColor = $isComment ? '#22c55e' : '#f97316';
-                                @endphp
-
-                                {{-- Левая часть: Иконка --}}
-                                <div style="width: 42px; height: 42px; background: {{ $iconBg }}; border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-                                    <i class="bi {{ $iconClass }}" style="color: {{ $iconColor }}; font-size: 1.1rem;"></i>
-                                </div>
-
-                                {{-- Центральная часть: Текст --}}
-                                <div style="flex-grow: 1;">
-                                    <div style="font-size: 13px; color: #1e293b; line-height: 1.4;">
-                                        {{-- Amir Aminov (жирным) --}}
-                                        <strong style="font-weight: 700;">{{ $sender }}</strong>
-                                        {{-- действие --}}
-                                        {{ $action }}
-                                        {{-- «Название» (синим) --}}
-                                        <span style="color: #4f46e5; font-weight: 700;">«{{ $docName }}»</span>
-                                    </div>
-
-                                    {{-- Время --}}
-                                    <div style="margin-top: 4px;">
-                    <span style="font-size: 10px; color: #4f46e5; background: #edf2ff; padding: 2px 10px; border-radius: 6px; font-weight: 600; display: inline-flex; align-items: center; gap: 4px;">
-                        <i class="bi bi-clock" style="font-size: 10px;"></i>
-                        {{ $notification->created_at->diffForHumans() }}
-                    </span>
-                                    </div>
-                                </div>
-
-                                {{-- Правая часть: Точка --}}
-                                @if(!$notification->read_at)
-                                    <div style="width: 8px; height: 8px; background: #4f46e5; border-radius: 50%; flex-shrink: 0;"></div>
-                                @endif
-                            </div>
-                        </a>
-                    @empty
-                        <div style="padding:30px; text-align:center; color:#94a3b8; font-size: 13px;">
-                            <i class="bi bi-bell-slash d-block mb-2" style="font-size: 20px; opacity: 0.5;"></i>
-                            Нет новых уведомлений
+                    <div class="notif-body">
+                        <div class="notif-text">
+                            <strong>${escapeHtml(n.sender)}</strong>
+                            <span class="notif-action">${action}</span>
+                            <strong>${escapeHtml(n.docName)}</strong>
                         </div>
-                    @endforelse
+                        <small class="text-muted">${escapeHtml(n.time)}</small>
+                    </div>
+                    <span class="notif-dot"></span>
+                `;
 
-                    <style>
-                        .notification-card:hover {
-                            background: #ffffff !important;
-                            transform: translateY(-1px);
-                            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-                            border-color: #4f46e5 !important;
+                // Удаляем "пусто" если было
+                const empty = list.querySelector('.notif-empty');
+                if (empty) empty.remove();
+
+                // Вставляем сверху
+                list.insertBefore(item, list.firstChild);
+
+                // Убираем подсветку через 3 секунды
+                setTimeout(() => item.classList.remove('fresh'), 3000);
+            }
+
+            function escapeHtml(str) {
+                const div = document.createElement('div');
+                div.textContent = str || '';
+                return div.innerHTML;
+            }
+
+            // Звонок колокольчика
+            function ringBell() {
+                btn.classList.remove('ringing');
+                void btn.offsetWidth; // reflow
+                btn.classList.add('ringing');
+                setTimeout(() => btn.classList.remove('ringing'), 800);
+            }
+
+            // Real-time polling
+            async function checkNotifications() {
+                try {
+                    const res = await fetch('/notifications/check', {
+                        headers: {
+                            'Accept': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest'
                         }
-                    </style>
+                    });
+                    if (!res.ok) return;
 
-                </div>
+                    const data = await res.json();
+                    updateBadge(data.unreadCount);
 
-                {{-- FOOTER (ADMIN LINK) --}}
+                    // Ищем новые уведомления
+                    const newOnes = (data.notifications || [])
+                        .filter(n => n.createdAt > lastKnownTimestamp)
+                        .sort((a, b) => a.createdAt - b.createdAt);
 
+                    if (newOnes.length > 0) {
+                        newOnes.forEach(n => renderNotification(n));
+                        lastKnownTimestamp = Math.max(...newOnes.map(n => n.createdAt));
+                        ringBell();
 
-            </div>
-        </div>
-
-
-
-
-        <div class="dropdown">
-            <button class="btn d-flex align-items-center gap-2 dropdown-toggle profile-container-link shadow-sm"
-                    data-bs-toggle="dropdown"
-                    style="border: 1px solid rgba(var(--primary-rgb), 0.2); background: rgba(var(--primary-rgb), 0.1); border-radius:12px; padding:4px 12px 4px 4px;">
-
-                <div class="profile-avatar-sm" style="background-color: var(--primary-color) !important; color: #fff !important; font-weight: bold; width: 35px; height: 35px; display: flex; align-items: center; justify-content: center; border-radius: 10px;">
-                    {{ Str::upper(Str::substr(auth()->user()->name, 0, 1)) }}{{ Str::upper(Str::substr(explode(' ', auth()->user()->name)[1] ?? '', 0, 1)) }}
-                </div>
-
-                <div class="d-none d-md-block text-start">
-                    <div class="text-muted" style="font-size:13px; font-weight:600; line-height: 1.2;">
-                        {{ auth()->user()->name }}
-                    </div>
-                    <div class="text-muted" style="font-size:11px; opacity: 0.8;">
-                        {{ auth()->user()->email }}
-                    </div>
-                </div>
-            </button>
-
-            <ul class="dropdown-menu dropdown-menu-end p-2 shadow border-0" style="border-radius:12px; min-width: 200px; background: var(--card-bg, #fff);">
-                <li>
-                    <a class="dropdown-item rounded-2 py-2" href="{{ route('profile.show') }}">
-                        <i class="bi bi-person me-2"></i>
-                        <span data-i18n="profile">Профиль</span>
-                    </a>
-                </li>
-                <li><hr class="dropdown-divider opacity-50"></li>
-                <li>
-                    <form method="POST" action="{{ route('logout') }}" id="logout-form">
-                        @csrf
-                        <a class="dropdown-item text-danger rounded-2 py-2" href="#" onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
-                            <i class="bi bi-box-arrow-left me-2"></i>
-                            <span data-i18n="logout">Выйти</span>
-                        </a>
-                    </form>
-                </li>
-            </ul>
-        </div>
-
-        <style>
-            /* Убираем принудительный черный цвет */
-            .profile-container-link {
-                color: inherit !important;
+                        // Показываем dropdown если скрыт
+                        if (!dropdown.classList.contains('active')) {
+                            dropdown.classList.add('active');
+                            setTimeout(() => dropdown.classList.remove('active'), 5000);
+                        }
+                    }
+                } catch (e) {
+                    // тихо игнорируем
+                }
             }
 
-            /* Гарантируем, что в темной теме всё будет светлым */
-            [data-theme='dark'] .text-muted {
-                color: rgba(255, 255, 255, 0.7) !important;
-            }
-        </style>
+            // Запускаем проверку каждые 15 секунд
+            setInterval(checkNotifications, 15000);
+
+            // Первая проверка через 5 секунд после загрузки
+            setTimeout(checkNotifications, 5000);
+        })();
+    </script>
+
+    <div class="profile-dropdown" id="profileWrapper">
+        <button class="profile-btn" id="profileBtn">
+            {{ Str::upper(Str::substr(auth()->user()->name, 0, 1)) }}{{ Str::upper(Str::substr(explode(' ', auth()->user()->name)[1] ?? '', 0, 1)) }}
+        </button>
+        <div class="profile-menu" id="profileMenu">
+            <a class="menu-item" href="{{ route('profile.show') }}">
+                <i class="bi bi-person"></i><span data-i18n="profile">Профиль</span>
+            </a>
+            <hr class="menu-divider">
+            <form method="POST" action="{{ route('logout') }}" id="logout-form">@csrf</form>
+            <a class="menu-item logout" href="#" onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
+                <i class="bi bi-box-arrow-left"></i><span data-i18n="logout">Выйти</span>
+            </a>
+        </div>
     </div>
+
+    <script>
+        (function() {
+            const btn = document.getElementById('profileBtn');
+            const menu = document.getElementById('profileMenu');
+            const wrapper = document.getElementById('profileWrapper');
+            btn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                menu.classList.toggle('active');
+            });
+            document.addEventListener('click', function(e) {
+                if (!wrapper.contains(e.target)) {
+                    menu.classList.remove('active');
+                }
+            });
+        })();
+    </script>
 </header>
 
-<!-- Main Content -->
-<main class="main-content" id="mainContent">
+<!-- AMBIENT LIGHT STRIP -->
+<div class="ambient" id="ambient"></div>
 
-    <!-- Dashboard Page -->
-    @yield('content')
-    <!-- Documents Page -->
-
-    <!-- Search Page -->
-    <section class="page-section" id="page-search">
-        <h4 class="fw-bold mb-4" data-i18n="search">Search</h4>
-        <div class="row justify-content-center">
-            <div class="col-lg-8">
-                <div class="input-group input-group-lg mb-4">
-                    <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
-                    <input type="text" class="form-control border-start-0" placeholder="Search documents, users, comments..." data-i18n-placeholder="searchPlaceholder">
-                    <button class="btn-primary-custom" data-i18n="search">Search</button>
-                </div>
-                <div class="card border-0 shadow-sm rounded-4">
-                    <div class="card-body p-4">
-                        <p class="text-muted text-center mb-0" data-i18n="searchHint">Type to search across documents, users, and comments</p>
-                    </div>
-                </div>
+<!-- LAYOUT -->
+<div class="layout">
+    <aside class="sidebar">
+        <div class="side-title" data-i18n="workspace">Рабочее пространство</div>
+        <a href="/dashboard" style="text-decoration: none; color: inherit; display: block;">
+            <div class="side-item active">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="3" width="7" height="7"/>
+                    <rect x="14" y="3" width="7" height="7"/>
+                    <rect x="14" y="14" width="7" height="7"/>
+                    <rect x="3" y="14" width="7" height="7"/>
+                </svg>
+                <span data-i18n="control_panel">Панель управления</span>
             </div>
-        </div>
-    </section>
+        </a>
+        <a href="{{ route('documents.index', ['type' => 'outgoing']) }}" class="side-item" style="text-decoration: none; color: inherit;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            <span data-i18n="incoming">Входящие</span>
+        </a>
+        <a href="{{ route('documents.index', ['type' => 'incoming']) }}"  class="side-item" style="text-decoration: none; color: inherit;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+            <span data-i18n="outgoing">Исходящие</span>
+        </a>
+        <a href="{{ route('documents.index', ['status' => 'waiting']) }}" style="text-decoration: none; color: inherit; display: block;">
+            <div class="side-item">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 19l7-7 3 3-7 7-3-3z"/>
+                    <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/>
+                </svg>
+                <span data-i18n="on_signing">На подписании</span>
+            </div>
+        </a>
+        <a href="{{ route('documents.index', ['status' => 'draft']) }}" style="text-decoration: none; color: inherit; display: block;">
+            <div class="side-item">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="21 8 21 21 3 21 3 8"/>
+                    <rect x="1" y="3" width="22" height="5"/>
+                    <line x1="10" y1="12" x2="14" y2="12"/>
+                </svg>
+                <span data-i18n="archive">Архив</span>
+            </div>
+        </a>
 
-    <!-- Workflow Page -->
+        <div class="side-title" data-i18n="management">Управление</div>
+        <a href="/analysis"
+           class="side-item"
+           data-page="analysis"
+           onclick="showPage('analysis', this)"
+           style="text-decoration: none;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="side-icon">
+                <path d="M18 20V10M12 20V4M6 20v-6"/>
+            </svg>
+            <span data-i18n="analysis">Анализ</span>
 
+        </a>
+        <a href="{{ route('notifications.index') }}"
+           class="side-item"
+           data-page="notifications"
+           onclick="showPage('notifications', this)"
+           style="text-decoration: none;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="side-icon">
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                <line x1="16" y1="2" x2="16" y2="6"/>
+                <line x1="8" y1="2" x2="8" y2="6"/>
+                <line x1="3" y1="10" x2="21" y2="10"/>
+            </svg>
+            <span data-i18n="notifications">Уведомления</span>
+            @if(isset($unreadCount) && $unreadCount > 0)
+            <span class="side-badge">{{ $unreadCount }}</span>
+            @endif
+        </a>
+        <a href="/logs"
+           class="side-item"
+           style="text-decoration: none !important;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="side-icon">
+                <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+            </svg>
+            <span data-i18n="history">История</span>
+        </a>
+        <a href="/profile" style="text-decoration: none; color: inherit; display: block;">
+            <div class="side-item">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24" height="24">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                    <circle cx="12" cy="7" r="4"/>
+                </svg>
+                <span data-i18n="profile">Профиль</span>
+            </div>
+        </a>
+        <a href="/site"
+           class="side-item"
+           style="text-decoration: none !important;"
+           data-page="logout">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="side-icon">
+                <circle cx="12" cy="12" r="3"/>
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4"/>
+            </svg>
+            <span data-i18n="exit">Выход</span>
+        </a>
+    </aside>
 
-    <!-- Signatures Page -->
-
-    <!-- Versions Page -->
-
-
-    <!-- Logs Page -->
-
-
-    <!-- Users Page -->
-
-
-    <!-- Notifications Page -->
-
-
-    <!-- Profile Page -->
-
-
-    <!-- Profile Edit Page -->
-
-
-</main>
-
-<!-- Toast -->
-<div class="position-fixed bottom-0 end-0 p-3" style="z-index:1100">
-    <div class="toast align-items-center text-bg-success border-0" id="toastSuccess" role="alert">
-        <div class="d-flex">
-            <div class="toast-body" id="toastMsg">Saved successfully!</div>
-            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
-        </div>
-    </div>
+    <!-- MAIN -->
+    @yield('content')
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        // Единый объект переводов (все дубликаты объединены)
-        const translations = {
-            en: {
-                systemName: "Document System", mainMenu: "Main", dashboard: "Dashboard", documents: "Documents",
-                search: "Search", management: "Management", workflow: "Workflow", signatures: "Signatures",
-                versions: "Versions", logs: "Logs", admin: "Admin", users: "Users", notifications: "Notifications",
-                account: "Account", profile: "Profile", settings: "Settings", logout: "Logout",
-                welcomeBack: "Welcome back {{ strtok(auth()->user()->name, ' ') }} !", dashSubtitle: "Here's what's happening with your documents today.",
-                newDocument: "New Document", totalDocs: "Total Documents", pendingReview: "Pending Review",
-                signed: "Signed", activeUsers: "Active Users", recentDocuments: "Recent Documents", viewAll: "View All",
-                document: "Document", author: "Author", status: "Status", date: "Date", actions: "Actions",
-                approved: "Approved", pending: "Pending", draft: "Draft", rejected: "Rejected",
-                quickActions: "Quick Actions", createDocument: "Create Document", reviewWorkflow: "Review analysis",
-                manageSignatures: "Manage Signatures", checkNotifications: "Check Notifications",
-                activityLog: "Activity Log", workflowSubtitle: "Document approval workflow",
-                newWorkflow: "New Workflow", wfCreated: "Created", wfReviewed: "Reviewed by Manager",
-                wfApproval: "Approval", wfSigned: "Signed", approve: "Approve", reject: "Reject",
-                signer: "Signer", addUser: "Add User", name: "Name", role: "Role",
-                roleAdmin: "Administrator", personalInfo: "Personal Information", fullName: "Full Name",
-                phone: "Phone", department: "Department", bio: "Bio", saveChanges: "Save Changes",
-                cancel: "Cancel", changePassword: "Change Password", currentPassword: "Current Password",
-                newPassword: "New Password", confirmPassword: "Confirm Password", updatePassword: "Update Password",
-                dangerZone: "Danger Zone", deleteAccount: "Delete Account", editProfile: "Edit Profile",
-                activity: "Activity", docsCreated: "Docs Created", docsSigned: "Docs Signed", comments: "Comments",
-                category: "Category", user: "User", action: "Action", ip: "IP",
-                notifDocApproved: "Document #1042 approved", notifSignReq: "Signature requested",
-                notifNewUser: "New user registered", newNotification: "New Notification",
-                markRead: "Mark Read", clearAll: "Clear All", myProfile: "My Profile",
-                searchHint: "Type to search across documents, users, and comments",
-                sign: "Sign", profileSaved: "Profile saved successfully!", profileDeleted: "Account deleted!",
-                loggedOut: "Logged out successfully!",
-                allDocs: "All", incoming: "Incoming", outgoing: "Outgoing", waiting: "Waiting",
-                drafts: "Drafts", analysis: "Analysis", searchPlaceholder: "Search on site...",
-                // Ключи для красивой модалки выхода:
-                logoutModalTitle: "Sign Out",
-                logoutModalCancel: "Cancel",
-                logoutModalConfirm: "Logout",
-                confirmLogout: "Are you sure you want to log out?"
-            },
-            ru: {
-                systemName: "Система Документов", mainMenu: "Главное", dashboard: "Панель", documents: "Документы",
-                search: "Поиск", management: "Управление", workflow: "Процессы", signatures: "Подписи",
-                versions: "Версии", logs: "Журналы", admin: "Админ", users: "Пользователи", notifications: "Уведомления",
-                account: "Аккаунт", profile: "Профиль", settings: "Настройки", logout: "Выйти",
-                welcomeBack: "Добро пожаловать, {{ strtok(auth()->user()->name, ' ') }} ! ", dashSubtitle: "Вот что происходит с вашими документами сегодня.",
-                newDocument: "Новый документ", totalDocs: "Всего документов", pendingReview: "На рассмотрении",
-                signed: "Подписано", activeUsers: "Активных пользователей", recentDocuments: "Последние документы", viewAll: "Все",
-                document: "Документ", author: "Автор", status: "Статус", date: "Дата", actions: "Действия",
-                approved: "Утвержён", pending: "Ожидает", draft: "Черновик", rejected: "Отклонён",
-                quickActions: "Быстрые действия", createDocument: "Создать документ", reviewWorkflow: "Проверить анализы",
-                manageSignatures: "Управление подписями", checkNotifications: "Проверить уведомления",
-                activityLog: "Журнал активности", workflowSubtitle: "Процесс утверждения документов",
-                newWorkflow: "Новый процесс", wfCreated: "Создан", wfReviewed: "Проверен менеджером",
-                wfApproval: "Утверждение", wfSigned: "Подписан", approve: "Утвердить", reject: "Отклонить",
-                signer: "Подписант", addUser: "Добавить пользователя", name: "Имя", role: "Роль",
-                roleAdmin: "Администратор", personalInfo: "Личная информация", fullName: "Полное имя",
-                phone: "Телефон", department: "Отдел", bio: "О себе", saveChanges: "Сохранить",
-                cancel: "Отмена", changePassword: "Изменить пароль", currentPassword: "Текущий пароль",
-                newPassword: "Новый пароль", confirmPassword: "Подтвердить пароль", updatePassword: "Обновить пароль",
-                dangerZone: "Опасная зона", deleteAccount: "Удалить аккаунт", editProfile: "Редактировать профиль",
-                activity: "Активность", docsCreated: "Создано документов", docsSigned: "Подписано документов", comments: "Комментарии",
-                category: "Категория", user: "Пользователь", action: "Действие", ip: "IP",
-                notifDocApproved: "Документ #1042 утверждён", notifSignReq: "Запрошена подпись",
-                notifNewUser: "Новый пользователь зарегистрирован", newNotification: "Новое уведомление",
-                markRead: "Отметить прочитанным", clearAll: "Очистить все", myProfile: "Мой профиль",
-                searchHint: "Введите текст для поиска по документам, пользователям и комментариям",
-                sign: "Подписать", profileSaved: "Профиль сохранён!", profileDeleted: "Аккаунт удалён!",
-                loggedOut: "Вы вышли из системы!",
-                allDocs: "Все ", incoming: "Входящие", outgoing: "Исходящие", waiting: "Ожидают",
-                drafts: "Черновики", analysis: "Аналитика", searchPlaceholder: "Поиск по сайту...",
-                // Ключи для красивой модалки выхода:
-                logoutModalTitle: "Выход из системы",
-                logoutModalCancel: "Отмена",
-                logoutModalConfirm: "Выйти",
-                confirmLogout: "Вы уверены, что хотите выйти из системы?"
-            },
-            tj: {
-                systemName: "Системаи Ҳуҷҷатҳо", mainMenu: "Асосӣ", dashboard: "Панел", documents: "Ҳуҷҷатҳо",
-                search: "Ҷустуҷӯ", management: "Идоракунӣ", workflow: "Равандҳо", signatures: "Имзоҳо",
-                versions: "Версияҳо", logs: "Журналҳо", admin: "Админ", users: "Корбарон", notifications: "Огоҳиҳо",
-                account: "Аккаунт", profile: "Профил", settings: "Танзимот", logout: "Баромадан",
-                welcomeBack: "Хуш омадед, {{ strtok(auth()->user()->name, ' ') }} ! ", dashSubtitle: "Инҷо вазъи ҳуҷҷатҳои шумо имрӯз.",
-                newDocument: "Ҳуҷҷати нав", totalDocs: "Ҳамаи ҳуҷҷатҳо", pendingReview: "Дар интизорӣ",
-                signed: "Имзошуда", activeUsers: "Корбарони фаъол", recentDocuments: "Ҳуҷҷатҳои охирин", viewAll: "Ҳама",
-                document: "Ҳуҷҷат", author: "Муаллиф", status: "Ҳолат", date: "Сана", actions: "Амалҳо",
-                approved: "Тасдиқшуда", pending: "Дар интизорӣ", draft: "Пешнавис", rejected: "Радшуда",
-                quickActions: "Амалҳои зуд", createDocument: "Сохтани ҳуҷҷат", reviewWorkflow: "Таҳлил",
-                manageSignatures: "Идоракунии имзоҳо", checkNotifications: "Санҷиши огоҳиҳо",
-                activityLog: "Журнали фаъолият", workflowSubtitle: "Раванди тасдиқи ҳуҷҷатҳо",
-                newWorkflow: "Раванди нав", wfCreated: "Сохта шуд", wfReviewed: "Аз ҷониби менеҷер баррасӣ шуд",
-                wfApproval: "Тасдиқ", wfSigned: "Имзо шуд", approve: "Тасдиқ кардан", reject: "Рад кардан",
-                signer: "Имзокунанда", addUser: "Иловаи корбар", name: "Ном", role: "Нақш",
-                roleAdmin: "Администратор", personalInfo: "Маълумоти шахсӣ", fullName: "Номи пурра",
-                phone: "Телефон", department: "Шӯъба", bio: "Дар бораи худ", saveChanges: "Захира кардан",
-                cancel: "Бекор кардан", changePassword: "Тағйири парол", currentPassword: "Пароли ҷорӣ",
-                newPassword: "Пароли нав", confirmPassword: "Тасдиқи парол", updatePassword: "Навсозии парол",
-                dangerZone: "Минтақаи хатарнок", deleteAccount: "Нест кардани аккаунт", editProfile: "Таҳрири профил",
-                activity: "Фаъолият", docsCreated: "Ҳуҷҷатҳои сохташуда", docsSigned: "Ҳуҷҷатҳои имзошуда", comments: "Шарҳҳо",
-                searchPlaceholder: "Ҷустуҷӯи ҳуҷҷатҳо, корбарон, шарҳҳо...", documentsSubtitle: "Ҳамаи ҳуҷҷатҳоро идора кунед",
-                category: "Категория", user: "Корбар", action: "Амал", ip: "IP",
-                notifDocApproved: "Ҳуҷҷати #1042 тасдиқ шуд", notifSignReq: "Имзо дархост шуд",
-                notifNewUser: "Корбари нав ба қайд гирифта шуд", newNotification: "Огоҳии нав",
-                markRead: "Хондашуда ишора кардан", clearAll: "Тоза кардани ҳама", myProfile: "Профили ман",
-                searchHint: "Барои ҷустуҷӯ дар ҳуҷҷатҳо, корбарон ва шарҳҳо нависед",
-                sign: "Имзо кардан", profileSaved: "Профил захира шуд!", profileDeleted: "Аккаунт нест карда шуд!",
-                loggedOut: "Шумо аз система баромадед!",
-                allDocs: "Ҳама", incoming: "Воридотӣ", outgoing: "Содиротӣ", waiting: "Дар интизорӣ",
-                signed: "Имзошуда", drafts: "Пешнавсҳо", analysis: "Таҳлил", searchPlaceholder: "Ҷустуҷӯ дар сайт...",
-                // Ключи для красивой модалки выхода:
-                logoutModalTitle: "Баромад аз система",
-                logoutModalCancel: "Илғо",
-                logoutModalConfirm: "Баромад",
-                confirmLogout: "Шумо боварӣ доред, ки аз система мебароед?"
-            }
-        };
+@verbatim
+<script>
+    // ============================================================
+    // ===== AMBIENT LIGHTING — ПОЛНАЯ СИСТЕМА С СОХРАНЕНИЕМ =====
+    // ============================================================
+    const AMBIENT_KEY = 'docsign_ambient';
 
-        let currentLang = localStorage.getItem('app-lang') || 'ru';
+    const COLORS = [
+      { nameKey:'color_electric', rgb:'79,140,255',  hex:'#4f8cff' },
+      { nameKey:'color_gold',     rgb:'234,179,8',   hex:'#eab308' },
+      { nameKey:'color_sunset',   rgb:'249,115,22',  hex:'#f97316' },
+      { nameKey:'color_cardinal', rgb:'239,68,68',   hex:'#ef4444' },
+      { nameKey:'color_fuchsia',  rgb:'236,72,153',  hex:'#ec4899' },
+      { nameKey:'color_rose',     rgb:'244,114,182', hex:'#f472b6' },
+      { nameKey:'color_neon',     rgb:'168,85,247',  hex:'#a855f7' },
+      { nameKey:'color_indigo',   rgb:'99,102,241',  hex:'#6366f1' },
+      { nameKey:'color_aqua',     rgb:'6,182,212',   hex:'#06b6d4' },
+      { nameKey:'color_mint',     rgb:'45,212,191',  hex:'#2dd4bf' },
+      { nameKey:'color_lime',     rgb:'34,197,94',   hex:'#22c55e' },
+      { nameKey:'color_ice',      rgb:'226,232,240', hex:'#e2e8f0' },
+    ];
 
-        function setLang(lang, btn) {
-            currentLang = lang;
-            localStorage.setItem('app-lang', lang);
+    // Загрузка настроек
+    function loadAmbient(){
+        try {
+            const s = JSON.parse(localStorage.getItem(AMBIENT_KEY));
+            if (s && s.color) return s;
+        } catch(e) {}
+        return { color:'79,140,255', intensity:80, spread:60, mode:'solid' };
+    }
 
-            document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
-            if (btn) btn.classList.add('active');
+    // Сохранение
+    function saveAmbient(settings){
+        localStorage.setItem(AMBIENT_KEY, JSON.stringify(settings));
+    }
 
-            const t = translations[lang];
-            if (!t) return;
+    // Применение цвета ко всей странице
+    function applyColor(rgb){
+        document.documentElement.style.setProperty('--glow', rgb);
 
-            document.querySelectorAll('[data-i18n]').forEach(el => {
-                const key = el.getAttribute('data-i18n');
-                if (t[key]) el.textContent = t[key];
+        // Обновляем превью
+        const preview = document.getElementById('ambPreview');
+        if (preview) {
+            preview.style.background = `linear-gradient(90deg, rgba(${rgb},0.1), rgba(${rgb},0.7), rgba(${rgb},0.1))`;
+            preview.style.boxShadow = `inset 0 0 30px rgba(${rgb},0.4), 0 0 20px rgba(${rgb},0.3)`;
+            preview.style.borderColor = `rgba(${rgb},0.4)`;
+        }
+        const label = document.getElementById('ambPreviewLabel');
+        if (label) label.textContent = `RGB(${rgb})`;
+    }
+
+    // Применение режима анимации
+    function applyMode(mode){
+        const ambient = document.getElementById('ambient');
+        if (!ambient) return;
+        ambient.style.animation = 'none';
+        void ambient.offsetWidth; // reflow
+        if (mode === 'pulse') {
+            ambient.style.animation = 'pulseFast 1.5s ease-in-out infinite';
+        } else if (mode === 'breathe') {
+            ambient.style.animation = 'breatheGlow 4s ease-in-out infinite';
+        } else {
+            ambient.style.animation = 'pulseGlow 4s ease-in-out infinite';
+        }
+    }
+
+    // Применение интенсивности
+    function applyIntensity(val){
+        const ambient = document.getElementById('ambient');
+        if (ambient) ambient.style.opacity = val / 100;
+    }
+
+    // Применение spread
+    function applySpread(val){
+        const ambient = document.getElementById('ambient');
+        if (!ambient) return;
+        const scale = val / 60;
+        ambient.style.transform = `scaleY(${scale})`;
+        ambient.style.filter = `blur(${Math.max(0,(val-60)/20)}px)`;
+    }
+
+    // Показ индикатора "Сохранено"
+    let saveTimer = null;
+    function flashSaved(){
+        const ind = document.getElementById('savedIndicator');
+        if (!ind) return;
+        ind.classList.add('show');
+        clearTimeout(saveTimer);
+        saveTimer = setTimeout(()=> ind.classList.remove('show'), 1500);
+    }
+
+    // Инициализация при загрузке
+    document.addEventListener('DOMContentLoaded', () => {
+        const settings = loadAmbient();
+
+        // Строим палитру цветов
+        const colorsEl = document.getElementById('colors');
+        if (colorsEl) {
+            COLORS.forEach((c)=>{
+                const el = document.createElement('div');
+                el.className = 'color' + (c.rgb === settings.color ? ' active' : '');
+                el.style.background = `radial-gradient(circle at 30% 30%, rgba(${c.rgb},1), rgba(${c.rgb},0.5))`;
+                el.style.color = `rgb(${c.rgb})`;
+                el.style.boxShadow = `0 4px 14px rgba(${c.rgb},0.4), inset 0 0 10px rgba(255,255,255,0.15)`;
+                el.dataset.rgb = c.rgb;
+                el.dataset.nameKey = c.nameKey;
+                el.title = c.nameKey;
+                el.addEventListener('click', ()=>{
+                    document.querySelectorAll('.color').forEach(x=>x.classList.remove('active'));
+                    el.classList.add('active');
+                    const cur = loadAmbient();
+                    cur.color = c.rgb;
+                    saveAmbient(cur);
+                    applyColor(c.rgb);
+                    flashSaved();
+                });
+                colorsEl.appendChild(el);
             });
-
-            document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
-                const key = el.getAttribute('data-i18n-placeholder');
-                if (t[key]) el.placeholder = t[key];
-            });
-
-            document.documentElement.lang = lang;
-
-            const currentFlagImg = document.getElementById('current-flag');
-            if (currentFlagImg) {
-                const flagMap = {
-                    'en': 'https://flagcdn.com/w20/us.png',
-                    'ru': 'https://flagcdn.com/w20/ru.png',
-                    'tj': 'https://flagcdn.com/w20/tj.png'
-                };
-                currentFlagImg.src = flagMap[lang];
-            }
         }
 
-        function changeLangUI(lang, flagUrl, element) {
-            setLang(lang, element);
-            const options = document.getElementById('lang-options');
-            if(options) options.classList.add('hidden');
-        }
+        // Устанавливаем значения контролов
+        const intInput = document.getElementById('intensity');
+        const intVal = document.getElementById('intVal');
+        if (intInput) intInput.value = settings.intensity;
+        if (intVal) intVal.textContent = settings.intensity + '%';
 
-        // --- ФУНКЦИИ КРАСИВОЙ МОДАЛКИ ВЫХОДА ---
-        function openLogoutModal() {
-            const modal = document.getElementById('logoutModal');
-            const card = document.getElementById('logoutModalCard');
-            const textEl = document.getElementById('logoutModalText');
+        const spreadInput = document.getElementById('spread');
+        const spreadVal = document.getElementById('spreadVal');
+        if (spreadInput) spreadInput.value = settings.spread;
+        if (spreadVal) spreadVal.textContent = settings.spread + '%';
 
-            const t = translations[currentLang] || translations['ru'];
-            if (t && t.confirmLogout) {
-                textEl.textContent = t.confirmLogout;
-            }
-
-            modal.classList.remove('hidden');
-
-            setTimeout(() => {
-                card.classList.remove('scale-95', 'opacity-0');
-                card.classList.add('scale-100', 'opacity-100');
-            }, 20);
-        }
-
-        function closeLogoutModal() {
-            const modal = document.getElementById('logoutModal');
-            const card = document.getElementById('logoutModalCard');
-
-            card.classList.remove('scale-100', 'opacity-100');
-            card.classList.add('scale-95', 'opacity-0');
-
-            setTimeout(() => {
-                modal.classList.add('hidden');
-            }, 300);
-        }
-
-        function confirmLogoutAction() {
-            closeLogoutModal();
-            if (typeof handleLogout === 'function') {
-                handleLogout();
-            } else {
-                const logoutForm = document.getElementById('logout-form');
-                if (logoutForm) logoutForm.submit();
-            }
-        }
-
-        // --- ОСТАЛЬНЫЕ СИСТЕМНЫЕ ФУНКЦИИ ---
-        document.addEventListener('DOMContentLoaded', () => {
-            setLang(currentLang);
-            initThemeAndColors();
+        // Режим
+        document.querySelectorAll('.mode').forEach(m=>{
+            m.classList.toggle('active', m.dataset.mode === settings.mode);
         });
 
-        function initThemeAndColors() {
-            const savedTheme = localStorage.getItem('color-theme');
-            if (savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-                document.documentElement.classList.add('dark');
-                if(document.getElementById('themeIcon')) document.getElementById('themeIcon').className = 'bi bi-sun';
-            }
+        // Применяем всё
+        applyColor(settings.color);
+        applyIntensity(settings.intensity);
+        applySpread(settings.spread);
+        applyMode(settings.mode);
 
-            const savedPrimary = localStorage.getItem('theme-primary');
-            if (savedPrimary) {
-                document.documentElement.style.setProperty('--primary', savedPrimary);
-                document.documentElement.style.setProperty('--primary-dark', localStorage.getItem('theme-primary-dark'));
-                document.documentElement.style.setProperty('--accent', localStorage.getItem('theme-accent'));
-            }
-        }
+        // === ОБРАБОТЧИКИ ===
 
-        function showPage(pageId, clickedLink) {
-            document.querySelectorAll('.page-section').forEach(s => s.classList.remove('active'));
-            const target = document.getElementById('page-' + pageId);
-            if (target) target.classList.add('active');
-
-            if (clickedLink) {
-                document.querySelectorAll('.sidebar .nav-link').forEach(l => l.classList.remove('active'));
-                clickedLink.classList.add('active');
-            }
-            if (window.innerWidth <= 768) {
-                document.getElementById('sidebar').classList.remove('show');
-                document.getElementById('overlay').classList.remove('show');
-            }
-        }
-
-        function toggleSidebar() {
-            document.getElementById('sidebar').classList.toggle('show');
-            document.getElementById('overlay').classList.toggle('show');
-        }
-
-        function toggleNotifications() {
-            document.getElementById('notifDropdown').classList.toggle('show');
-        }
-
-        function clearNotifications() {
-            document.getElementById('notifDropdown').classList.remove('show');
-            showToast(translations[currentLang].profileSaved);
-        }
-
-        function markRead(btn) {
-            const item = btn.closest('.notification-item');
-            if (item) item.classList.remove('unread');
-            showToast(translations[currentLang].profileSaved);
-        }
-
-        function saveProfile() {
-            showToast(translations[currentLang].profileSaved);
-        }
-
-        function deleteProfile() {
-            const t = translations[currentLang] || translations['ru'];
-            // Тут по желанию тоже можно будет сделать красивую модалку, пока оставил фикс текста
-            if (confirm(t.confirmLogout || 'Вы уверены?')) {
-                showToast(t.profileDeleted);
-            }
-        }
-
-        function handleLogout() {
-            showToast(translations[currentLang].loggedOut);
-            setTimeout(() => window.location.href = '/', 1000);
-        }
-
-        function showToast(msg) {
-            const toastBox = document.getElementById('toastMsg');
-            if(toastBox) toastBox.textContent = msg;
-            const toastEl = document.getElementById('toastSuccess');
-            if (toastEl && typeof bootstrap !== 'undefined') {
-                const toast = new bootstrap.Toast(toastEl);
-                toast.show();
-            }
-        }
-
-        function toggleTheme() {
-            document.documentElement.classList.toggle('dark');
-            const icon = document.getElementById('themeIcon');
-            if (icon) {
-                if (document.documentElement.classList.contains('dark')) {
-                    icon.className = 'bi bi-sun';
-                    localStorage.setItem('color-theme', 'dark');
-                } else {
-                    icon.className = 'bi bi-moon-stars';
-                    localStorage.setItem('color-theme', 'light');
+        // Кнопка открытия панели
+        const ambBtn = document.getElementById('ambBtn');
+        const ambPanel = document.getElementById('ambPanel');
+        const ambWrapper = document.getElementById('ambWrapper');
+        if (ambBtn && ambPanel) {
+            ambBtn.addEventListener('click', (e)=>{
+                e.stopPropagation();
+                ambPanel.classList.toggle('open');
+                ambBtn.classList.toggle('open');
+            });
+            document.addEventListener('click', (e)=>{
+                if (!ambWrapper.contains(e.target)) {
+                    ambPanel.classList.remove('open');
+                    ambBtn.classList.remove('open');
                 }
-            }
+            });
         }
 
-        function togglePalette() {
-            document.getElementById('paletteDropdown').classList.toggle('show');
+        // Интенсивность
+        if (intInput) {
+            intInput.addEventListener('input', (e)=>{
+                const v = parseInt(e.target.value);
+                if (intVal) intVal.textContent = v + '%';
+                applyIntensity(v);
+                const cur = loadAmbient();
+                cur.intensity = v;
+                saveAmbient(cur);
+                flashSaved();
+            });
         }
+
+        // Spread
+        if (spreadInput) {
+            spreadInput.addEventListener('input', (e)=>{
+                const v = parseInt(e.target.value);
+                if (spreadVal) spreadVal.textContent = v + '%';
+                applySpread(v);
+                const cur = loadAmbient();
+                cur.spread = v;
+                saveAmbient(cur);
+                flashSaved();
+            });
+        }
+
+        // Режимы
+        document.querySelectorAll('.mode').forEach(m=>{
+            m.addEventListener('click', ()=>{
+                document.querySelectorAll('.mode').forEach(x=>x.classList.remove('active'));
+                m.classList.add('active');
+                const cur = loadAmbient();
+                cur.mode = m.dataset.mode;
+                saveAmbient(cur);
+                applyMode(cur.mode);
+                flashSaved();
+            });
+        });
+    });
+
+    // ============================================================
+    // ===== ПЕРЕВОДЫ / TRANSLATIONS / ТАРҶУМАҲО =====
+    // ============================================================
+    const TRANSLATIONS = {
+        ru: {
+            brand_sub: 'ЭДО',
+            dashboard: 'Обзор',
+            documents: 'Документы',
+            signatures: 'Подписание',
+            counterparties: 'Команда',
+            reports: 'Отчёты',
+            search_placeholder: 'Поиск документов, контрагентов...',
+            choose_language: 'Выберите язык',
+            notifications: 'Уведомления',
+            all_notifications: 'Все уведомления →',
+            no_notifications: 'Нет уведомлений',
+            notif_action_comment: 'оставил комментарий к',
+            notif_action_assign: 'назначил вам документ',
+            system: 'Система',
+            document: 'Документ',
+            profile: 'Профиль',
+            logout: 'Выйти',
+            workspace: 'Рабочее пространство',
+            control_panel: 'Панель управления',
+            incoming: 'Входящие',
+            outgoing: 'Исходящие',
+            on_signing: 'На подписании',
+            archive: 'Архив',
+            management: 'Управление',
+            analysis: 'Анализ',
+            history: 'История',
+            exit: 'Выход',
+            ambient_title: 'Ambient Lighting',
+            ambient_desc: 'Настройте подсветку как в премиальном авто',
+            intensity: 'Интенсивность',
+            spread: 'Распространение',
+            mode_solid: 'Статичный',
+            mode_pulse: 'Пульс',
+            mode_breathe: 'Дыхание',
+            color_title: 'Цвет',
+            color_electric: 'Электрик',
+            color_neon: 'Неон',
+            color_cardinal: 'Кардинал',
+            color_sunset: 'Закат',
+            color_lime: 'Лайм',
+            color_aqua: 'Аква',
+            color_fuchsia: 'Фуксия',
+            color_gold: 'Золото',
+            color_ice: 'Лёд',
+            color_mint: 'Мята',
+            color_indigo: 'Индиго',
+            color_rose: 'Роза',
+            auto_save: 'Автосохранение',
+            saved: 'Сохранено',
+            status_signed: 'Подписан',
+            status_pending: 'Ожидает',
+            status_rejected: 'Отклонён',
+            status_draft: 'Черновик'
+        },
+        tj: {
+            brand_sub: 'Ҳуҷҷатгардонӣ',
+            dashboard: 'Панели асосӣ',
+            documents: 'Ҳуҷҷатҳо',
+            signatures: 'Имзо',
+            counterparties: 'Даста',
+            reports: 'Ҳисоботҳо',
+            search_placeholder: 'Ҷустуҷӯи ҳуҷҷатҳо, ҳамкорон...',
+            choose_language: 'Забонро интихоб кунед',
+            notifications: 'Огоҳиҳо',
+            all_notifications: 'Ҳамаи огоҳиҳо →',
+            no_notifications: 'Огоҳиҳо нест',
+            notif_action_comment: 'шарҳ гузошт ба',
+            notif_action_assign: 'ба шумо ҳуҷҷат таъин кард',
+            system: 'Система',
+            document: 'Ҳуҷҷат',
+            profile: 'Профил',
+            logout: 'Баромад',
+            workspace: 'Фазои корӣ',
+            control_panel: 'Панели идоракунӣ',
+            incoming: 'Ворида',
+            outgoing: 'Содира',
+            on_signing: 'Дар имзо',
+            archive: 'Бойгонӣ',
+            management: 'Идоракунӣ',
+            analysis: 'Таҳлил',
+            history: 'Таърих',
+            exit: 'Баромад',
+            ambient_title: 'Равшании муҳит',
+            ambient_desc: 'Равшаниро мисли мошини премиум танзим кунед',
+            intensity: 'Шиддат',
+            spread: 'Паҳншавӣ',
+            mode_solid: 'Собит',
+            mode_pulse: 'Пулс',
+            mode_breathe: 'Нафас',
+            color_title: 'Ранг',
+            color_electric: 'Электрик',
+            color_neon: 'Неон',
+            color_cardinal: 'Кардинал',
+            color_sunset: 'Ғуруб',
+            color_lime: 'Лайм',
+            color_aqua: 'Обӣ',
+            color_fuchsia: 'Фуксия',
+            color_gold: 'Тилло',
+            color_ice: 'Ях',
+            color_mint: 'Наъно',
+            color_indigo: 'Индиго',
+            color_rose: 'Гул',
+            auto_save: 'Нигоҳдории худкор',
+            saved: 'Нигоҳ дошта шуд',
+            status_signed: 'Имзо шуд',
+            status_pending: 'Дар интизорӣ',
+            status_rejected: 'Рад шуд',
+            status_draft: 'Лоиҳа'
+        },
+        en: {
+            brand_sub: 'EDMS · v2.4',
+            dashboard: 'Dashboard',
+            documents: 'Documents',
+            signatures: 'Signatures',
+            counterparties: 'Team',
+            reports: 'Reports',
+            search_placeholder: 'Search documents, counterparties...',
+            choose_language: 'Choose language',
+            notifications: 'Notifications',
+            all_notifications: 'All notifications →',
+            no_notifications: 'No notifications',
+            notif_action_comment: 'left a comment on',
+            notif_action_assign: 'assigned you a document',
+            system: 'System',
+            document: 'Document',
+            profile: 'Profile',
+            logout: 'Logout',
+            workspace: 'Workspace',
+            control_panel: 'Control Panel',
+            incoming: 'Incoming',
+            outgoing: 'Outgoing',
+            on_signing: 'On Signing',
+            archive: 'Archive',
+            management: 'Management',
+            analysis: 'Analysis',
+            history: 'History',
+            exit: 'Exit',
+            ambient_title: 'Ambient Lighting',
+            ambient_desc: 'Set up lighting like in a premium car',
+            intensity: 'Intensity',
+            spread: 'Spread',
+            mode_solid: 'Static',
+            mode_pulse: 'Pulse',
+            mode_breathe: 'Breathe',
+            color_title: 'Color',
+            color_electric: 'Electric',
+            color_neon: 'Neon',
+            color_cardinal: 'Cardinal',
+            color_sunset: 'Sunset',
+            color_lime: 'Lime',
+            color_aqua: 'Aqua',
+            color_fuchsia: 'Fuchsia',
+            color_gold: 'Gold',
+            color_ice: 'Ice',
+            color_mint: 'Mint',
+            color_indigo: 'Indigo',
+            color_rose: 'Rose',
+            auto_save: 'Auto-save',
+            saved: 'Saved',
+            status_signed: 'Signed',
+            status_pending: 'Pending',
+            status_rejected: 'Rejected',
+            status_draft: 'Draft'
+        }
+    };
+
+    const LANG_META = {
+        ru: { flag: '🇷🇺', name: 'Русский', html: 'ru' },
+        tj: { flag: '🇹🇯', name: 'Тоҷикӣ', html: 'tj' },
+        en: { flag: '🇬🇧', name: 'English', html: 'en' }
+    };
+
+    let currentLang = localStorage.getItem('docsign_lang') || 'ru';
+
+    function applyLanguage(lang) {
+        if (!TRANSLATIONS[lang]) lang = 'ru';
+        currentLang = lang;
+        localStorage.setItem('docsign_lang', lang);
+
+        const dict = TRANSLATIONS[lang];
+        const meta = LANG_META[lang];
+
+        document.documentElement.lang = meta.html;
+
+        const flagEl = document.getElementById('langFlag');
+        const nameEl = document.getElementById('langName');
+        if (flagEl) flagEl.textContent = meta.flag;
+        if (nameEl) nameEl.textContent = meta.name;
+
+        document.querySelectorAll('.lang-option').forEach(opt => {
+            opt.classList.toggle('active', opt.dataset.lang === lang);
+        });
+
+        document.querySelectorAll('[data-i18n]').forEach(el => {
+            const key = el.getAttribute('data-i18n');
+            if (dict[key] !== undefined) el.textContent = dict[key];
+        });
+
+        document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+            const key = el.getAttribute('data-i18n-placeholder');
+            if (dict[key] !== undefined) el.setAttribute('placeholder', dict[key]);
+        });
+
+        document.querySelectorAll('[data-i18n-title]').forEach(el => {
+            const key = el.getAttribute('data-i18n-title');
+            if (dict[key] !== undefined) el.setAttribute('title', dict[key]);
+        });
+
+        document.querySelectorAll('.notif-action').forEach(el => {
+            const action = el.dataset.action;
+            if (action === 'comment' && dict.notif_action_comment) el.textContent = dict.notif_action_comment;
+            else if (action === 'assign' && dict.notif_action_assign) el.textContent = dict.notif_action_assign;
+        });
+
+        // Обновляем tooltip у цветов
+        document.querySelectorAll('.color').forEach(el => {
+            const key = el.dataset.nameKey;
+            if (key && dict[key]) el.title = dict[key];
+        });
+
+        window.dispatchEvent(new CustomEvent('docsign:lang-changed', {
+            detail: { lang, dict }
+        }));
+    }
+
+    // Language switcher
+    document.addEventListener('DOMContentLoaded', () => {
+        const langBtn = document.getElementById('langBtn');
+        const langMenu = document.getElementById('langMenu');
+        const langSwitcher = document.getElementById('langSwitcher');
+
+        if (langBtn) {
+            langBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                const isOpen = langMenu.classList.toggle('open');
+                langBtn.classList.toggle('open', isOpen);
+            });
+        }
+
+        document.querySelectorAll('.lang-option').forEach(opt => {
+            opt.addEventListener('click', function(e) {
+                e.stopPropagation();
+                applyLanguage(this.dataset.lang);
+                langMenu.classList.remove('open');
+                langBtn.classList.remove('open');
+            });
+        });
 
         document.addEventListener('click', function(e) {
-            const dd = document.getElementById('notifDropdown');
-            if (dd && dd.classList.contains('show') && !e.target.closest('.position-relative') && !e.target.closest('.hover-scale')) {
-                dd.classList.remove('show');
-            }
-            const pd = document.getElementById('paletteDropdown');
-            if (pd && pd.classList.contains('show') && !e.target.closest('.position-relative') && !e.target.closest('.palette-btn')) {
-                pd.classList.remove('show');
-            }
-            const langSel = document.getElementById('custom-lang-selector');
-            if (langSel && !langSel.contains(e.target)) {
-                const options = document.getElementById('lang-options');
-                if(options) options.classList.add('hidden');
+            if (langSwitcher && !langSwitcher.contains(e.target)) {
+                langMenu.classList.remove('open');
+                langBtn.classList.remove('open');
             }
         });
-    </script>
-    <script>
-        setInterval(function() {
-            const currentUrl = window.location.href;
 
-            // 1. Стоп на страницах создания и редактирования (чтобы не мешать заполнению форм)
-            if (currentUrl.includes('/create') || currentUrl.includes('/edit')) {
-                return;
-            }
+        applyLanguage(currentLang);
 
-            // 2. Бесшумная проверка ТОЛЬКО колокольчика уведомлений
-            fetch(window.location.href)
-                .then(response => {
-                    if (!response.ok) throw new Error('Сеть не отвечает');
-                    return response.text();
-                })
-                .then(html => {
-                    const parser = new DOMParser();
-                    const doc = parser.parseFromString(html, 'text/html');
-
-                    const newBell = doc.getElementById('pjax-bell');
-                    const oldBell = document.getElementById('pjax-bell');
-
-                    // Если нашли колокольчик на текущей странице и в скачанном ответе
-                    if (newBell && oldBell) {
-                        // Проверяем, изменилось ли количество уведомлений
-                        if (oldBell.innerHTML.trim() !== newBell.innerHTML.trim()) {
-                            // Точечно меняем только колокольчик и цифру (включаются новые анимации!)
-                            oldBell.innerHTML = newBell.innerHTML;
-                            console.log('Колокольчик уведомлений обновлен! Пришли новые данные 🔔');
-                        }
-                    }
-                })
-                .catch(error => console.error('Ошибка проверки уведомлений:', error));
-
-        }, 5000); // Строго каждые 5 секунд
-    </script>
-
-</div>
+        // Nav tabs
+        document.querySelectorAll('#nav button').forEach(b=>{
+          b.addEventListener('click',()=>{
+            document.querySelectorAll('#nav button').forEach(x=>x.classList.remove('active'));
+            b.classList.add('active');
+          });
+        });
+        document.querySelectorAll('.tabs button').forEach(b=>{
+          b.addEventListener('click',()=>{
+            b.parentElement.querySelectorAll('button').forEach(x=>x.classList.remove('active'));
+            b.classList.add('active');
+          });
+        });
+        document.querySelectorAll('.side-item').forEach(b=>{
+          b.addEventListener('click',()=>{
+            document.querySelectorAll('.side-item').forEach(x=>x.classList.remove('active'));
+            b.classList.add('active');
+          });
+        });
+    });
+</script>
+@endverbatim
 </body>
 </html>
 

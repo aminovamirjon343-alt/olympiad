@@ -1,219 +1,514 @@
 @extends('layouts.admin')
 
 @section('content')
+<style>
+    /* === Кастомные стили для страницы документов в стиле админки === */
+    .doc-page-custom { color: var(--text); }
 
-    <div class="doc-page-v2 bg-blue-theme min-h-[calc(100vh-64px)] py-6 px-4 md:px-8 relative">
+    .doc-page-custom .page-head-custom {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 24px;
+        flex-wrap: wrap;
+        gap: 16px;
+    }
 
-        <div class="relative z-10 max-w-7xl mx-auto">
+    .doc-page-custom h1 {
+        margin: 0;
+        font-size: 26px;
+        font-weight: 700;
+        letter-spacing: -0.5px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
 
-            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-                <div>
-                    <h1 class="text-xl font-bold doc-main-title tracking-tight flex items-center gap-2">
-                        <span class="w-2 h-6 bg-blue-500 rounded-full shadow-[0_0_10px_rgba(59,130,246,0.5)]"></span>
-                        <span data-i18n="documents">DOCUMENTS</span>
-                    </h1>
-                </div>
-                <style>
-                    .btn-primary-custom,
-                    .btn-primary-custom [data-i18n="newDocument"] {
-                        color: #ffffff !important;
-                    }
-                </style>
-                <form action="{{ route('documents.index') }}" method="GET" class="flex items-center gap-2">
+    .doc-page-custom h1 .accent-bar {
+        width: 4px;
+        height: 26px;
+        background: rgba(var(--glow), 1);
+        border-radius: 2px;
+        box-shadow: 0 0 12px rgba(var(--glow), 0.8);
+    }
 
+    .doc-page-custom .btn-new {
+        appearance: none;
+        border: 0;
+        background: linear-gradient(180deg, rgba(var(--glow), 0.95), rgba(var(--glow), 0.65));
+        color: #0a0d14;
+        font: 600 13px 'Inter', sans-serif;
+        padding: 10px 18px;
+        border-radius: 10px;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        text-decoration: none;
+        box-shadow: 0 8px 24px rgba(var(--glow), 0.35), inset 0 1px 0 rgba(255,255,255,0.3);
+        transition: all .25s ease;
+    }
+    .doc-page-custom .btn-new:hover {
+        filter: brightness(1.08);
+        transform: translateY(-2px);
+        box-shadow: 0 12px 28px rgba(var(--glow), 0.5), inset 0 1px 0 rgba(255,255,255,0.4);
+    }
+    .doc-page-custom .btn-new i { color: #0a0d14; font-size: 14px; }
 
-                    <a href="{{route('documents.create')}}"
-                       class="btn-primary-custom"
-                       style="color: #ffffff !important;"
-                       onclick="showPage('documents', null)">
-                        <i class="bi bi-plus-lg me-1" style="color: #ffffff !important;"></i>
-                        <span data-i18n="newDocument">New Document</span>
-                    </a>
-                </form>
-            </div>
+    .doc-table-wrap {
+        background: linear-gradient(180deg, rgba(255,255,255,0.035), rgba(255,255,255,0.01));
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        padding: 4px;
+        overflow: hidden;
+        position: relative;
+    }
+    .doc-table-wrap::before {
+        content: "";
+        position: absolute;
+        inset: -1px;
+        border-radius: 14px;
+        padding: 1px;
+        background: linear-gradient(135deg, rgba(var(--glow), 0.4), transparent 40%, transparent 60%, rgba(var(--glow), 0.2));
+        -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+        -webkit-mask-composite: xor;
+        mask-composite: exclude;
+        pointer-events: none;
+        opacity: 0.6;
+    }
 
+    .doc-table { width: 100%; border-collapse: collapse; }
 
-            <div class="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
-                <table class="w-full text-left border-collapse bg-white">
-                    <thead>
-                    <tr class="border-b border-slate-200 bg-slate-50/50">
+    .doc-table th {
+        text-align: left;
+        padding: 14px 16px;
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        border-bottom: 1px solid var(--line);
+        background: rgba(255,255,255,0.02);
+    }
+    .doc-table th.center { text-align: center; }
+    .doc-table th.right { text-align: right; }
 
-                        <th class="px-4 py-2 text-[11px] font-semibold text-black">
-                            <span data-i18n="id">Id</span>
-                        </th>
+    .doc-table td {
+        padding: 16px;
+        font-size: 13px;
+        color: var(--text);
+        border-bottom: 1px solid var(--line);
+        transition: all .2s ease;
+    }
+    .doc-table td.center { text-align: center; }
+    .doc-table td.right { text-align: right; }
 
-                        <th class="px-4 py-2 text-[11px] font-semibold text-black">
-                            <span data-i18n="docInfo">Document</span>
-                        </th>
+    .doc-table tbody tr { transition: all .25s ease; }
+    .doc-table tbody tr:last-child td { border-bottom: 0; }
+    .doc-table tbody tr:hover {
+        background: linear-gradient(90deg, rgba(var(--glow), 0.06), transparent 60%);
+    }
+    .doc-table tbody tr:hover td:first-child {
+        box-shadow: inset 3px 0 0 0 rgba(var(--glow), 1);
+    }
 
-                        <th class="px-4 py-2 text-center text-[11px] font-semibold text-black">
-                            <span data-i18n="deadline">Date</span>
-                        </th>
+    .doc-id {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 11px;
+        color: var(--muted);
+    }
 
-                        <th class="px-4 py-2 text-center text-[11px] font-semibold text-black">
-                            <span data-i18n="status">Status</span>
-                        </th>
+    .doc-title {
+        font-weight: 600;
+        font-size: 13.5px;
+        color: var(--text);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+    }
 
-                        <th class="px-4 py-2 text-right text-[11px] font-semibold text-black">
-                            <span data-i18n="actions">Action</span>
-                        </th>
+    .doc-number {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 10px;
+        color: rgba(var(--glow), 1);
+        background: rgba(var(--glow), 0.1);
+        padding: 2px 7px;
+        border-radius: 5px;
+        border: 1px solid rgba(var(--glow), 0.25);
+        letter-spacing: 0.5px;
+    }
 
-                    </tr>
-                    </thead>
-                    <tbody class="divide-y divide-slate-100">
-                    @forelse($documents as $index=>$doc)
-                        <tr class="group hover:bg-slate-50 transition-all">
-                            <td class="px-4 py-2 text-[10px] text-black font-normal italic">#{{ ($documents->currentPage() - 1) * $documents->perPage() + $index + 1 }}</td>
+    .doc-author { font-size: 11px; color: var(--muted); margin-top: 3px; }
+    .doc-desc { font-size: 11.5px; color: var(--muted); margin-top: 4px; opacity: 0.75; }
+    .doc-date {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 12px;
+        color: var(--muted);
+    }
 
-                            <td class="px-4 py-2">
-                                <div class="flex flex-col">
-                                    <div class="flex items-center gap-2">
-                                        <span class="text-[11px] font-medium text-black uppercase tracking-wider">
-                                            {{ Str::limit($doc->title, 45) }}
-                                        </span>
-                                        <span class="text-[10px] font-bold text-blue-600 ">
-                                            {{ $doc->number ?? $doc->id }}
-                                        </span>
-                                    </div>
+    .status-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 0.3px;
+        text-transform: uppercase;
+        border: 1px solid;
+    }
+    .status-pill::before {
+        content: "";
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: currentColor;
+        box-shadow: 0 0 8px currentColor;
+    }
 
-                                    @if(auth()->user()->is_admin)
-                                        <span class="text-[8px] font-bold text-slate-400 uppercase tracking-tighter">
-                                            <span data-i18n="by">By</span>: {{ $doc->createdBy->name ?? 'System' }}
-                                        </span>
-                                    @endif
+    .status-draft { color: #8892a6; background: rgba(136,146,166,0.08); border-color: rgba(136,146,166,0.2); }
+    .status-active, .status-processing { color: #ffb547; background: rgba(255,181,71,0.08); border-color: rgba(255,181,71,0.25); }
+    .status-approved, .status-completed { color: #4cd982; background: rgba(76,217,130,0.08); border-color: rgba(76,217,130,0.25); }
+    .status-rejected { color: #ff7a7a; background: rgba(255,122,122,0.08); border-color: rgba(255,122,122,0.25); }
 
-                                    <span class="text-[9px] text-black font-normal opacity-80 mt-0.5">
-                                        {{ Str::limit($doc->content, 40) ?: 'No description' }}
-                                    </span>
-                                </div>
-                            </td>
+    .action-btn {
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+        background: rgba(255,255,255,0.04);
+        border: 1px solid var(--line);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--muted);
+        text-decoration: none;
+        transition: all .2s ease;
+    }
+    .action-btn:hover {
+        color: rgba(var(--glow), 1);
+        border-color: rgba(var(--glow), 0.4);
+        background: rgba(var(--glow), 0.1);
+        box-shadow: 0 0 12px rgba(var(--glow), 0.3);
+        transform: scale(1.05);
+    }
+    .action-btn i { font-size: 13px; }
 
-                            <td class="px-4 py-2 text-center">
-                                <span class="text-[10px] font-normal text-black italic">
-                                    {{ $doc->deadline ? $doc->deadline->format('d.m.Y') : '—' }}
-                                </span>
-                            </td>
-                            <td class="px-4 py-2 text-center">
-                                @php
-                                    $status = strtolower($doc->status);
-                                    $colors = match($status) {
-                                        'draft'      => ['bg' => '#f1f5f9', 'text' => '#475569', 'border' => '#cbd5e1'],
-                                        'active'     => ['bg' => '#eff6ff', 'text' => '#1d4ed8', 'border' => '#93c5fd'],
-                                        'approved', 'completed' => ['bg' => '#f0fdf4', 'text' => '#166534', 'border' => '#bbf7d0'], // Зеленый для готовых
-                                        'processing' => ['bg' => '#fefce8', 'text' => '#854d0e', 'border' => '#fef08a'], // Желтый для процесса
-                                        'rejected'   => ['bg' => '#fef2f2', 'text' => '#dc2626', 'border' => '#fecaca'],
-                                        default      => ['bg' => '#fff7ed', 'text' => '#ea580c', 'border' => '#fdba74'],
-                                    };
-                                @endphp
+    .empty-state { padding: 60px 20px; text-align: center; }
+    .empty-icon {
+        width: 64px;
+        height: 64px;
+        border-radius: 50%;
+        background: rgba(var(--glow), 0.08);
+        border: 1px solid rgba(var(--glow), 0.2);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 16px;
+        color: rgba(var(--glow), 1);
+        font-size: 24px;
+        box-shadow: 0 0 20px rgba(var(--glow), 0.15);
+    }
+    .empty-title { font-size: 14px; font-weight: 600; color: var(--text); margin-bottom: 4px; }
+    .empty-sub { font-size: 12px; color: var(--muted); margin-bottom: 20px; }
+    .empty-btn {
+        display: inline-flex;
+        align-items: center;
+        padding: 8px 16px;
+        background: rgba(255,255,255,0.04);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        color: var(--text);
+        font-size: 12px;
+        font-weight: 600;
+        text-decoration: none;
+        transition: all .2s ease;
+    }
+    .empty-btn:hover {
+        border-color: rgba(var(--glow), 0.4);
+        background: rgba(var(--glow), 0.1);
+        color: rgba(var(--glow), 1);
+        box-shadow: 0 0 12px rgba(var(--glow), 0.2);
+    }
 
-                                <span style="display: inline-flex; align-items: center; justify-content: center; background-color: {{ $colors['bg'] }}; color: {{ $colors['text'] }}; border: 1px solid {{ $colors['border'] }}; padding: 4px 12px; border-radius: 6px; font-weight: 800; font-size: 9px; text-transform: uppercase; letter-spacing: 0.5px; min-width: 90px;">
-        @if($status == 'processing')
-                                        В процессе
-                                    @elseif($status == 'completed')
-                                        Завершено
-                                    @else
-                                        {{ $doc->status_label }}
-                                    @endif
-    </span>
-                            </td>
+    .pagination-wrap { margin-top: 24px; display: flex; justify-content: center; }
+    .pagination-wrap nav {
+        display: flex;
+        gap: 4px;
+        background: rgba(255,255,255,0.03);
+        border: 1px solid var(--line);
+        padding: 4px;
+        border-radius: 10px;
+    }
+    .pagination-wrap .pagination {
+        display: flex;
+        gap: 4px;
+        list-style: none;
+        margin: 0;
+        padding: 0;
+    }
+    .pagination-wrap .pagination li { display: inline-flex; }
+    .pagination-wrap .pagination li a,
+    .pagination-wrap .pagination li span {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 32px;
+        height: 32px;
+        padding: 0 10px;
+        border-radius: 6px;
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--muted);
+        text-decoration: none;
+        transition: all .2s ease;
+        border: none;
+        background: transparent;
+    }
+    .pagination-wrap .pagination li a:hover {
+        color: var(--text);
+        background: rgba(255,255,255,0.05);
+    }
+    .pagination-wrap .pagination li.active span,
+    .pagination-wrap .pagination li span[aria-current="page"] {
+        color: #0a0d14;
+        background: linear-gradient(180deg, rgba(var(--glow), 0.95), rgba(var(--glow), 0.65));
+        box-shadow: 0 4px 12px rgba(var(--glow), 0.3);
+    }
+    .pagination-wrap .pagination li.disabled span {
+        opacity: 0.4;
+        pointer-events: none;
+    }
+</style>
 
-                            <td class="px-4 py-2 text-right">
-                                <div class="flex justify-end gap-3 text-black opacity-40 group-hover:opacity-100 transition-opacity">
-                                    <a href="{{ route('documents.show', $doc->id) }}" title="View"><i class="bi bi-eye text-[11px]"></i></a>
-                                </div>
-                            </td>
-                        </tr>
-                    @empty
-                        <tr>
-                            <td colspan="5" class="py-16 text-center">
-                                <div class="flex flex-col items-center justify-center">
-                                    <div class="w-12 h-12 rounded-full flex items-center justify-center mb-3" style="background-color: #f1f5f9; border: 1px solid #e2e8f0;">
-                                        <i class="bi bi-search text-xl text-black opacity-30"></i>
-                                    </div>
-                                    <p class="text-[11px] font-bold uppercase tracking-widest text-black" data-i18n="docNotFound">Документ не найден</p>
-                                    <p class="text-[9px] mt-1 mb-4 uppercase text-black opacity-70" data-i18n="tryDifferentSearch">Попробуйте изменить запрос</p>
-                                    <a href="{{ route('documents.index') }}" class="px-3 py-1 bg-slate-100 hover:bg-blue-600 hover:text-white text-slate-600 text-[9px] font-bold uppercase rounded transition-all" data-i18n="resetSearch">
-                                        Сбросить поиск
-                                    </a>
-                                </div>
-                            </td>
-                        </tr>
-                    @endforelse
-                    </tbody>
-                </table>
-            </div>
-
-            <div class="mt-4">
-                {{ $documents->links() }}
-            </div>
-        </div>
+<div class="doc-page-custom">
+    <!-- Заголовок страницы -->
+    <div class="page-head-custom">
+        <h1>
+            <span class="accent-bar"></span>
+            <span data-i18n="documents">DOCUMENTS</span>
+        </h1>
+        <a href="{{ route('documents.create') }}" class="btn-new">
+            <i class="bi bi-plus-lg"></i>
+            <span data-i18n="newDocument">New Document</span>
+        </a>
     </div>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const translations = {
-                en: {
-                    documents: "DOCUMENTS",
-                    searchPlaceholder: "Search...",
-                    newDocument: "New Document",
-                    id: "ID",
-                    docInfo: "Document Info",
-                    deadline: "Deadline",
-                    status: "Status",
-                    actions: "Actions",
-                    by: "By",
-                    docNotFound: "Document not found",
-                    tryDifferentSearch: "Try changing your search query",
-                    resetSearch: "Reset search"
-                },
-                ru: {
-                    documents: "ДОКУМЕНТЫ",
-                    searchPlaceholder: "Поиск...",
-                    newDocument: "Новый документ",
-                    id: "ID",
-                    docInfo: "Инфо о документе",
-                    deadline: "Срок",
-                    status: "Статус",
-                    actions: "Действия",
-                    by: "От",
-                    docNotFound: "Документ не найден",
-                    tryDifferentSearch: "Попробуйте изменить запрос",
-                    resetSearch: "Сбросить поиск"
-                },
-                tj: {
-                    documents: "ҲУҶҶАТҲО",
-                    searchPlaceholder: "Ҷустуҷӯ...",
-                    newDocument: "Ҳуҷҷати нав",
-                    id: "ID",
-                    docInfo: "Маълумоти ҳуҷҷат",
-                    deadline: "Мӯҳлат",
-                    status: "Статус",
-                    actions: "Амалҳо",
-                    by: "Аз ҷониби",
-                    docNotFound: "Ҳуҷҷат ёфт нашуд",
-                    tryDifferentSearch: "Кӯшиш кунед дархостро иваз кунед",
-                    resetSearch: "Тоза кардани ҷустуҷӯ"
-                }
+    <!-- Таблица документов -->
+    <div class="doc-table-wrap">
+        <table class="doc-table">
+            <thead>
+            <tr>
+                <th><span data-i18n="doc_id">ID</span></th>
+                <th><span data-i18n="docInfo">Document</span></th>
+                <th class="center"><span data-i18n="doc_deadline">Date</span></th>
+                <th class="center"><span data-i18n="status">Status</span></th>
+                <th class="right"><span data-i18n="doc_actions">Action</span></th>
+            </tr>
+            </thead>
+            <tbody>
+            @forelse($documents as $index => $doc)
+            @php
+            $status = strtolower($doc->status);
+            $statusClass = match($status) {
+            'draft' => 'status-draft',
+            'active', 'processing' => 'status-processing',
+            'approved', 'completed' => 'status-completed',
+            'rejected' => 'status-rejected',
+            default => 'status-draft',
             };
+            // data-status-key — для JS-перевода статуса
+            $statusKey = match($status) {
+            'draft' => 'status_draft',
+            'active', 'processing' => 'status_processing',
+            'approved', 'completed' => 'status_completed',
+            'rejected' => 'status_rejected',
+            default => 'status_draft',
+            };
+            @endphp
+            <tr>
+                <td>
+                    <span class="doc-id">#{{ ($documents->currentPage() - 1) * $documents->perPage() + $index + 1 }}</span>
+                </td>
+                <td>
+                    <div class="doc-title">
+                        {{ Str::limit($doc->title, 45) }}
+                        <span class="doc-number">{{ $doc->number ?? $doc->id }}</span>
+                    </div>
+                    @if(auth()->user()->is_admin)
+                    <div class="doc-author">
+                        <span data-i18n="doc_by">By</span>: {{ $doc->createdBy->name ?? 'System' }}
+                    </div>
+                    @endif
+                    <div class="doc-desc">
+                        {{ Str::limit($doc->content, 40) ?: __('No description') }}
+                    </div>
+                </td>
+                <td class="center">
+                    <span class="doc-date">
+                        {{ $doc->deadline ? $doc->deadline->format('d.m.Y') : '—' }}
+                    </span>
+                </td>
+                <td class="center">
+                    <span class="status-pill {{ $statusClass }}" data-status-key="{{ $statusKey }}">
+                        {{ $doc->status_label ?? ucfirst($status) }}
+                    </span>
+                </td>
+                <td class="right">
+                    <a href="{{ route('documents.show', $doc->id) }}" class="action-btn" data-i18n-title="doc_view" title="View">
+                        <i class="bi bi-eye"></i>
+                    </a>
+                </td>
+            </tr>
+            @empty
+            <tr>
+                <td colspan="5">
+                    <div class="empty-state">
+                        <div class="empty-icon">
+                            <i class="bi bi-search"></i>
+                        </div>
+                        <div class="empty-title" data-i18n="docNotFound">Документ не найден</div>
+                        <div class="empty-sub" data-i18n="tryDifferentSearch">Попробуйте изменить запрос</div>
+                        <a href="{{ route('documents.index') }}" class="empty-btn" data-i18n="resetSearch">
+                            Сбросить поиск
+                        </a>
+                    </div>
+                </td>
+            </tr>
+            @endforelse
+            </tbody>
+        </table>
+    </div>
 
-            function applyTranslations() {
-                const lang = localStorage.getItem('app-lang') || 'ru';
-                const t = translations[lang];
-                if (!t) return;
+    <!-- Пагинация -->
+    @if($documents->hasPages())
+    <div class="pagination-wrap">
+        {{ $documents->links() }}
+    </div>
+    @endif
+</div>
 
-                document.querySelectorAll('[data-i18n]').forEach(el => {
-                    const key = el.getAttribute('data-i18n');
-                    if (t[key]) el.textContent = t[key];
-                });
-
-                document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
-                    const key = el.getAttribute('data-i18n-placeholder');
-                    if (t[key]) el.setAttribute('placeholder', t[key]);
-                });
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // ============================================================
+        // ЛОКАЛЬНЫЙ СЛОВАРЬ СТРАНИЦЫ ДОКУМЕНТОВ
+        // (дополняет глобальный TRANSLATIONS из layouts/admin.blade.php)
+        // ============================================================
+        const DOC_TRANSLATIONS = {
+            ru: {
+                documents: 'ДОКУМЕНТЫ',
+                newDocument: 'Новый документ',
+                doc_id: 'ID',
+                docInfo: 'Инфо о документе',
+                doc_deadline: 'Срок',
+                status: 'Статус',
+                doc_actions: 'Действия',
+                doc_by: 'От',
+                doc_view: 'Просмотр',
+                docNotFound: 'Документ не найден',
+                tryDifferentSearch: 'Попробуйте изменить запрос',
+                resetSearch: 'Сбросить поиск',
+                no_description: 'Нет описания',
+                status_draft: 'Черновик',
+                status_processing: 'В процессе',
+                status_completed: 'Завершено',
+                status_rejected: 'Отклонён'
+            },
+            tj: {
+                documents: 'ҲУҶҶАТҲО',
+                newDocument: 'Ҳуҷҷати нав',
+                doc_id: 'ID',
+                docInfo: 'Маълумоти ҳуҷҷат',
+                doc_deadline: 'Мӯҳлат',
+                status: 'Статус',
+                doc_actions: 'Амалҳо',
+                doc_by: 'Аз ҷониби',
+                doc_view: 'Дидан',
+                docNotFound: 'Ҳуҷҷат ёфт нашуд',
+                tryDifferentSearch: 'Кӯшиш кунед дархостро иваз кунед',
+                resetSearch: 'Тоза кардани ҷустуҷӯ',
+                no_description: 'Тавсиф нест',
+                status_draft: 'Лоиҳа',
+                status_processing: 'Дар раванд',
+                status_completed: 'Анҷом ёфт',
+                status_rejected: 'Рад шуд'
+            },
+            en: {
+                documents: 'DOCUMENTS',
+                newDocument: 'New Document',
+                doc_id: 'ID',
+                docInfo: 'Document Info',
+                doc_deadline: 'Date',
+                status: 'Status',
+                doc_actions: 'Actions',
+                doc_by: 'By',
+                doc_view: 'View',
+                docNotFound: 'Document not found',
+                tryDifferentSearch: 'Try changing your search query',
+                resetSearch: 'Reset search',
+                no_description: 'No description',
+                status_draft: 'Draft',
+                status_processing: 'Processing',
+                status_completed: 'Completed',
+                status_rejected: 'Rejected'
             }
+        };
 
-            applyTranslations();
-            setInterval(applyTranslations, 1000);
+        // ============================================================
+        // ФУНКЦИЯ ПРИМЕНЕНИЯ ПЕРЕВОДОВ НА ЭТОЙ СТРАНИЦЕ
+        // ============================================================
+        function applyDocTranslations(lang) {
+            const dict = DOC_TRANSLATIONS[lang] || DOC_TRANSLATIONS.ru;
+
+            // 1) Переводим все элементы с data-i18n
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if (dict[key] !== undefined) el.textContent = dict[key];
+            });
+
+            // 2) Переводим title (подсказки)
+            document.querySelectorAll('[data-i18n-title]').forEach(el => {
+                const key = el.getAttribute('data-i18n-title');
+                if (dict[key] !== undefined) el.setAttribute('title', dict[key]);
+            });
+
+            // 3) Переводим placeholder
+            document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+                const key = el.getAttribute('data-i18n-placeholder');
+                if (dict[key] !== undefined) el.setAttribute('placeholder', dict[key]);
+            });
+
+            // 4) Переводим СТАТУСЫ документов через data-status-key
+            document.querySelectorAll('[data-status-key]').forEach(el => {
+                const key = el.getAttribute('data-status-key');
+                if (dict[key]) el.textContent = dict[key];
+            });
+        }
+
+        // ============================================================
+        // 1. Применяем сразу при загрузке
+        // ============================================================
+        const initialLang = localStorage.getItem('docsign_lang') || 'ru';
+        applyDocTranslations(initialLang);
+
+        // ============================================================
+        // 2. Слушаем событие смены языка от layouts/admin.blade.php
+        //    (когда юзер кликает на 🇷🇺/🇹🇯/🇬🇧 в админке)
+        // ============================================================
+        window.addEventListener('docsign:lang-changed', (e) => {
+            const lang = e.detail?.lang || 'ru';
+            applyDocTranslations(lang);
         });
-    </script>
+
+        // ============================================================
+        // 3. Синхронизация между вкладками браузера
+        // ============================================================
+        window.addEventListener('storage', (e) => {
+            if (e.key === 'docsign_lang' && e.newValue) {
+                applyDocTranslations(e.newValue);
+            }
+        });
+    });
+</script>
 @endsection

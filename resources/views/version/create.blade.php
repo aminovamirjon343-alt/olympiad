@@ -128,42 +128,85 @@
         </div>
     </div>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            const translations = {
-                ru: {
-                    titleRevision: "РЕВИЗИЯ",
-                    subtitleRevision: "Version Control & Deployment",
-                    backBtn: "Вернуться",
-                    labelDoc: "Основной документ",
-                    labelFile: "Новая редакция файла",
-                    submitBtn: "Зафиксировать"
-                },
-                tj: {
-                    titleRevision: "РЕВИЗИЯ",
-                    subtitleRevision: "Назорати нусхаҳо ва ҷойгиркунӣ",
-                    backBtn: "Бозгашт",
-                    labelDoc: "Ҳуҷҷати асосӣ",
-                    labelFile: "Таҳрири нави файл",
-                    submitBtn: "Сабт кардан"
-                },
-                en: {
-                    titleRevision: "REVISION",
-                    subtitleRevision: "Version Control & Deployment",
-                    backBtn: "Go Back",
-                    labelDoc: "Main Document",
-                    labelFile: "New File Revision",
-                    submitBtn: "Commit Version"
-                }
-            };
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // ============================================================
+        // ЛОКАЛЬНЫЙ СЛОВАРЬ СТРАНИЦЫ РЕВИЗИИ
+        // ============================================================
+        const REVISION_TRANSLATIONS = {
+            ru: {
+                titleRevision: 'РЕВИЗИЯ',
+                subtitleRevision: 'Контроль версий и развёртывание',
+                backBtn: 'Вернуться',
+                labelDoc: 'Основной документ',
+                labelFile: 'Новая редакция файла',
+                submitBtn: 'Зафиксировать'
+            },
+            tj: {
+                titleRevision: 'РЕВИЗИЯ',
+                subtitleRevision: 'Назорати нусхаҳо ва ҷойгиркунӣ',
+                backBtn: 'Бозгашт',
+                labelDoc: 'Ҳуҷҷати асосӣ',
+                labelFile: 'Таҳрири нави файл',
+                submitBtn: 'Сабт кардан'
+            },
+            en: {
+                titleRevision: 'REVISION',
+                subtitleRevision: 'Version Control & Deployment',
+                backBtn: 'Go Back',
+                labelDoc: 'Main Document',
+                labelFile: 'New File Revision',
+                submitBtn: 'Commit Version'
+            }
+        };
 
-            const lang = localStorage.getItem('app-lang') || 'ru';
-            const t = translations[lang];
+        // ============================================================
+        // ФУНКЦИЯ ПРИМЕНЕНИЯ ПЕРЕВОДОВ
+        // ============================================================
+        function applyRevisionTranslations(lang) {
+            const dict = REVISION_TRANSLATIONS[lang] || REVISION_TRANSLATIONS.ru;
 
+            // 1) Переводим все элементы с data-i18n
             document.querySelectorAll('[data-i18n]').forEach(el => {
                 const key = el.getAttribute('data-i18n');
-                if (t[key]) el.textContent = t[key];
+                if (dict[key] !== undefined) el.textContent = dict[key];
             });
+
+            // 2) Переводим placeholder
+            document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+                const key = el.getAttribute('data-i18n-placeholder');
+                if (dict[key] !== undefined) el.setAttribute('placeholder', dict[key]);
+            });
+
+            // 3) Переводим title (подсказки)
+            document.querySelectorAll('[data-i18n-title]').forEach(el => {
+                const key = el.getAttribute('data-i18n-title');
+                if (dict[key] !== undefined) el.setAttribute('title', dict[key]);
+            });
+        }
+
+        // ============================================================
+        // 1. Применяем сразу при загрузке
+        // ============================================================
+        const initialLang = localStorage.getItem('docsign_lang') || 'ru';
+        applyRevisionTranslations(initialLang);
+
+        // ============================================================
+        // 2. Слушаем событие смены языка от layouts/admin.blade.php
+        // ============================================================
+        window.addEventListener('docsign:lang-changed', (e) => {
+            const lang = e.detail?.lang || 'ru';
+            applyRevisionTranslations(lang);
         });
-    </script>
+
+        // ============================================================
+        // 3. Синхронизация между вкладками браузера
+        // ============================================================
+        window.addEventListener('storage', (e) => {
+            if (e.key === 'docsign_lang' && e.newValue) {
+                applyRevisionTranslations(e.newValue);
+            }
+        });
+    });
+</script>
 @endsection

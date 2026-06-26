@@ -18,37 +18,37 @@ class UserController extends Controller
     {
         $authUser = auth()->user();
 
-        // Находим админа компании (level = 1)
-        $admin = User::where('level', 1)
-            ->where('company_id', $authUser->company_id)
-            ->first();
-
-        // Если админ не найден, ищем любого админа
-        if (!$admin) {
-            $admin = User::where('level', 1)->first();
+        // Супер-админ видит все компании
+        if ($authUser->isSuperAdmin()) {
+            $companies = Company::all();
+            $users = User::where('is_super_admin', false)->get();
+            $companyName = 'Все компании';
         }
-
-        // Название компании берём от админа
-        $companyName = $admin ? $admin->company : ($authUser->company ?? __('users.my_team'));
-
-        // Получаем пользователей компании
-        if ($authUser->company_id) {
-            $users = User::where('company_id', $authUser->company_id)->get()->keyBy('id');
-        } else {
-            $users = User::all()->keyBy('id');
+        // Админ или работник видят только свою компанию
+        elseif ($authUser->company_id) {
+            $users = User::where('company_id', $authUser->company_id)
+                ->where('is_super_admin', false)
+                ->get();
+            $company = $authUser->companyRelation;
+            $companyName = $company ? $company->name : ($authUser->company ?? 'Моя команда');
+        }
+        // Пользователь без компании не видит ничего
+        else {
+            return view('users.no_company');
         }
 
         $groupedByLevel = $users->groupBy('level')->sortKeys();
 
         return view('users.index', compact('users', 'groupedByLevel', 'authUser', 'companyName'));
     }
+
     public function create()
     {
         $authUser = auth()->user();
 
-        // Только админ (level 1) может добавлять пользователей
+        // Только админ может добавлять
         if (!$authUser->isAdmin()) {
-            return redirect()->route('users.index')->with('error', __('users.only_admin_can_add'));
+            return redirect()->route('users.index')->with('error', 'Только администратор может добавлять пользователей');
         }
 
         return view('users.create');
@@ -58,9 +58,8 @@ class UserController extends Controller
     {
         $authUser = auth()->user();
 
-        // Только админ может добавлять
         if (!$authUser->isAdmin()) {
-            return redirect()->route('users.index')->with('error', __('users.only_admin_can_add'));
+            return redirect()->route('users.index')->with('error', 'Только администратор может добавлять пользователей');
         }
 
         $data = $request->validate([
@@ -73,35 +72,26 @@ class UserController extends Controller
             'avatar'   => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
         ]);
 
-        // Получаем компанию админа
+        // Работник получает компанию админа
         $companyId = $authUser->company_id;
         $companyName = $authUser->company;
 
-        // Если у админа нет company_id, но есть название компании
+        // Если у админа нет company_id, создаём компанию
         if (!$companyId && $companyName) {
-            $company = Company::where('name', $companyName)->first();
-
-            if (!$company) {
-                $company = Company::create([
-                    'name' => $companyName,
-                    'owner_id' => $authUser->id,
-                ]);
-            }
-
+            $company = Company::firstOrCreate(
+                ['name' => $companyName],
+                ['owner_id' => $authUser->id]
+            );
             $companyId = $company->id;
-
-            $authUser->update([
-                'company_id' => $companyId,
-            ]);
+            $authUser->update(['company_id' => $companyId]);
         }
 
-        // Хешируем пароль
         $data['password'] = Hash::make($data['password']);
-
-        // Работник автоматически получает компанию админа
         $data['created_by'] = $authUser->id;
         $data['company_id'] = $companyId;
         $data['company'] = $companyName;
+        $data['is_admin'] = false;
+        $data['is_super_admin'] = false;
 
         if ($request->hasFile('avatar')) {
             $data['avatar'] = $request->file('avatar')->store('avatars', 'public');
@@ -109,15 +99,16 @@ class UserController extends Controller
 
         User::create($data);
 
-        return redirect()->route('users.index')->with('success', __('users.created_success'));
+        return redirect()->route('users.index')->with('success', 'Пользователь создан');
     }
+
     public function show(User $user)
     {
         $authUser = auth()->user();
 
         // Проверка: пользователь должен быть из той же компании
-        if ($authUser->company_id && $user->company_id !== $authUser->company_id) {
-            abort(403);
+        if (!$authUser->isSuperAdmin() && $authUser->company_id && $user->company_id !== $authUser->company_id) {
+            abort(403, 'Нет доступа');
         }
 
         $year = now()->year;
@@ -146,34 +137,32 @@ class UserController extends Controller
         $authUser = auth()->user();
 
         // Проверка компании
-        if ($authUser->company_id && $user->company_id !== $authUser->company_id) {
-            return redirect()->route('users.index')->with('error', __('users.not_in_team'));
+        if (!$authUser->isSuperAdmin() && $authUser->company_id && $user->company_id !== $authUser->company_id) {
+            return redirect()->route('users.index')->with('error', 'Нет доступа');
         }
 
-        // Админ может редактировать всех, обычный пользователь только себя
+        // Админ может редактировать всех, работник только себя
         $canEdit = $authUser->isAdmin() || ($user->id === $authUser->id);
 
         if ($canEdit) {
             return view('users.edit', compact('user'));
         }
 
-        return redirect()->route('users.index')->with('error', __('users.cannot_edit'));
+        return redirect()->route('users.index')->with('error', 'Нет прав для редактирования');
     }
 
     public function update(Request $request, User $user)
     {
         $authUser = auth()->user();
 
-        // Проверка компании
-        if ($authUser->company_id && $user->company_id !== $authUser->company_id) {
-            return redirect()->route('users.index')->with('error', __('users.not_in_team'));
+        if (!$authUser->isSuperAdmin() && $authUser->company_id && $user->company_id !== $authUser->company_id) {
+            return redirect()->route('users.index')->with('error', 'Нет доступа');
         }
 
-        // Админ может редактировать всех, обычный пользователь только себя
         $canEdit = $authUser->isAdmin() || ($user->id === $authUser->id);
 
         if (!$canEdit) {
-            return redirect()->route('users.index')->with('error', __('users.cannot_edit'));
+            return redirect()->route('users.index')->with('error', 'Нет прав для редактирования');
         }
 
         $rules = [
@@ -187,12 +176,11 @@ class UserController extends Controller
         // Только админ может менять роль и уровень
         if ($authUser->isAdmin()) {
             $rules['role'] = 'required|string|max:50';
-            $rules['level'] = 'required|integer|min:1|max:20';
+            $rules['level'] = 'required|integer|min:2|max:20';
         }
 
         $data = $request->validate($rules);
 
-        // Если не админ, сохраняем старые значения роли и уровня
         if (!$authUser->isAdmin()) {
             $data['role'] = $user->role;
             $data['level'] = $user->level;
@@ -214,26 +202,23 @@ class UserController extends Controller
 
         $user->update($data);
 
-        return redirect()->route('users.index')->with('success', __('users.updated_success'));
+        return redirect()->route('users.index')->with('success', 'Данные обновлены');
     }
 
     public function destroy(User $user)
     {
         $authUser = auth()->user();
 
-        // Проверка компании
-        if ($authUser->company_id && $user->company_id !== $authUser->company_id) {
-            return back()->with('error', __('users.not_in_team'));
+        if (!$authUser->isSuperAdmin() && $authUser->company_id && $user->company_id !== $authUser->company_id) {
+            return back()->with('error', 'Нет доступа');
         }
 
-        // Нельзя удалить себя
         if ($user->id === $authUser->id) {
-            return back()->with('error', __('users.cannot_delete_self'));
+            return back()->with('error', 'Нельзя удалить себя');
         }
 
-        // Только админ может удалять
         if (!$authUser->isAdmin()) {
-            return back()->with('error', __('users.only_admin_can_delete'));
+            return back()->with('error', 'Только администратор может удалять');
         }
 
         if ($user->avatar) {
@@ -242,6 +227,6 @@ class UserController extends Controller
 
         $user->delete();
 
-        return redirect()->route('users.index')->with('success', __('users.deleted_success'));
+        return redirect()->route('users.index')->with('success', 'Пользователь удалён');
     }
 }

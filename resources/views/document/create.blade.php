@@ -1,481 +1,1064 @@
 @extends('layouts.admin')
 
 @section('content')
-<div class="min-h-[calc(100vh-64px)] bg-slate-50 py-10 px-4 md:px-8 font-inter text-slate-900">
-    <div class="max-w-5xl mx-auto">
+<style>
+    /* === КОМПАКТНАЯ СТРАНИЦА СОЗДАНИЯ ДОКУМЕНТА === */
+    .doc-create-page {
+        color: #e7ecf3;
+        padding: 24px 16px;
+    }
 
-        <div class="flex items-center gap-3 mb-6">
-            <a href="{{ route('documents.index') }}"
-               class="w-11 h-11 flex items-center justify-center rounded-xl bg-white border border-slate-200 shadow-sm hover:bg-black hover:text-white transition">
-                <i class="bi bi-arrow-left text-base"></i>
-            </a>
-            <div class="text-sm font-medium tracking-widest text-slate-600 uppercase">Назад</div>
-        </div>
+    .form-card {
+        background: linear-gradient(180deg, rgba(22, 26, 38, 0.95), rgba(16, 19, 28, 0.95));
+        border: 1px solid rgba(255,255,255,0.1);
+        border-radius: 16px;
+        padding: 28px;
+        position: relative;
+        overflow: hidden;
+        box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+    }
+    .form-card::before {
+        content: "";
+        position: absolute;
+        inset: -1px;
+        border-radius: 16px;
+        padding: 1px;
+        background: linear-gradient(135deg, rgba(79,140,255,0.5), transparent 40%, transparent 60%, rgba(79,140,255,0.3));
+        -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+        -webkit-mask-composite: xor;
+        mask-composite: exclude;
+        pointer-events: none;
+        opacity: 0.7;
+    }
+
+    .back-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 14px;
+        background: rgba(255,255,255,0.04);
+        border: 1px solid rgba(255,255,255,0.1);
+        border-radius: 8px;
+        color: #8892a6;
+        text-decoration: none;
+        font-size: 12px;
+        font-weight: 600;
+        transition: all 0.25s ease;
+        margin-bottom: 16px;
+    }
+    .back-btn:hover {
+        color: #fff;
+        border-color: rgba(79,140,255, 0.5);
+        background: rgba(79,140,255, 0.08);
+        box-shadow: 0 0 12px rgba(79,140,255, 0.2);
+        transform: translateX(-2px);
+    }
+
+    .page-title {
+        font-size: 18px;
+        font-weight: 700;
+        color: #fff;
+        margin-bottom: 4px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .page-title::before {
+        content: "";
+        width: 4px;
+        height: 18px;
+        background: linear-gradient(180deg, #4f8cff, rgba(79,140,255,0.3));
+        border-radius: 2px;
+        box-shadow: 0 0 8px rgba(79,140,255,0.6);
+    }
+    .page-subtitle {
+        font-size: 11px;
+        color: #8892a6;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        margin-bottom: 20px;
+    }
+
+    .field-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+        margin-bottom: 12px;
+    }
+    .field-row.single {
+        grid-template-columns: 1fr;
+    }
+
+    .field-group {
+        display: flex;
+        flex-direction: column;
+    }
+    .field-label {
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 1.2px;
+        text-transform: uppercase;
+        color: #8892a6;
+        margin-bottom: 6px;
+    }
+    .field-label .required {
+        color: #ff6b6b;
+        margin-left: 2px;
+    }
+
+    .input-field {
+        width: 100%;
+        height: 40px;
+        background: rgba(255,255,255,0.03);
+        border: 1px solid rgba(255,255,255,0.1);
+        border-radius: 8px;
+        padding: 0 12px;
+        color: #fff;
+        font: 500 13px 'Inter', sans-serif;
+        outline: none;
+        transition: all 0.2s ease;
+    }
+    .input-field::placeholder {
+        color: rgba(255,255,255,0.3);
+    }
+    .input-field:focus {
+        border-color: rgba(79,140,255, 0.7);
+        box-shadow: 0 0 0 2px rgba(79,140,255, 0.15), 0 0 12px rgba(79,140,255, 0.1);
+        background: rgba(255,255,255,0.05);
+    }
+    textarea.input-field {
+        min-height: 80px;
+        padding: 10px 12px;
+        resize: vertical;
+        line-height: 1.5;
+        height: auto;
+    }
+    select.input-field {
+        appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%238892a6' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10l-5 5z'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 12px center;
+        padding-right: 32px;
+        cursor: pointer;
+    }
+    input[type="date"].input-field::-webkit-calendar-picker-indicator {
+        filter: invert(0.8);
+        cursor: pointer;
+    }
+
+    .receiver-section {
+        margin-top: 16px;
+        padding-top: 16px;
+        border-top: 1px solid rgba(255,255,255,0.06);
+    }
+    .section-title {
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 1.2px;
+        text-transform: uppercase;
+        color: #8892a6;
+        margin-bottom: 10px;
+    }
+
+    .mode-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 8px;
+        margin-bottom: 12px;
+    }
+    .mode-btn {
+        background: rgba(255,255,255,0.02);
+        border: 1.5px solid rgba(255,255,255,0.1);
+        border-radius: 10px;
+        padding: 12px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        position: relative;
+        color: #fff;
+        text-align: left;
+        width: 100%;
+    }
+    .mode-btn:hover {
+        border-color: rgba(79,140,255, 0.5);
+        background: rgba(79,140,255, 0.05);
+        transform: translateY(-2px);
+        box-shadow: 0 6px 16px rgba(79,140,255, 0.15);
+    }
+    .mode-btn.active {
+        border-color: rgba(79,140,255, 1);
+        background: rgba(79,140,255, 0.12);
+        box-shadow: 0 0 16px rgba(79,140,255, 0.3), inset 0 0 8px rgba(79,140,255, 0.05);
+    }
+    .mode-btn .mode-icon {
+        width: 28px;
+        height: 28px;
+        border-radius: 7px;
+        background: rgba(79,140,255, 0.15);
+        border: 1px solid rgba(79,140,255, 0.3);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #4f8cff;
+        font-size: 13px;
+        margin-bottom: 8px;
+        transition: all 0.2s ease;
+    }
+    .mode-btn.active .mode-icon {
+        background: rgba(79,140,255, 0.3);
+        box-shadow: 0 0 10px rgba(79,140,255, 0.4);
+    }
+    .mode-btn .mode-title {
+        font-size: 11px;
+        font-weight: 700;
+        color: #fff;
+        margin-bottom: 2px;
+    }
+    .mode-btn .mode-desc {
+        font-size: 9px;
+        color: #8892a6;
+        line-height: 1.3;
+    }
+    .mode-btn .mode-check {
+        position: absolute;
+        top: 8px;
+        right: 8px;
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        border: 1.5px solid rgba(255,255,255,0.15);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s ease;
+    }
+    .mode-btn.active .mode-check {
+        background: #4f8cff;
+        border-color: #4f8cff;
+        color: #0a0d14;
+        box-shadow: 0 0 8px rgba(79,140,255, 0.8);
+    }
+    .mode-btn.active .mode-check::after {
+        content: "\F26A";
+        font-family: "bootstrap-icons";
+        font-size: 9px;
+        font-weight: 900;
+    }
+
+    .receiver-block {
+        background: rgba(255,255,255,0.02);
+        border: 1px solid rgba(255,255,255,0.08);
+        border-radius: 10px;
+        padding: 14px;
+        margin-top: 10px;
+    }
+    .receiver-block.hidden {
+        display: none;
+    }
+
+    .chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background: rgba(79,140,255, 0.15);
+        border: 1px solid rgba(79,140,255, 0.4);
+        color: #4f8cff;
+        padding: 4px 10px;
+        border-radius: 14px;
+        font-size: 11px;
+        font-weight: 600;
+    }
+    .chip button {
+        background: none;
+        border: none;
+        color: inherit;
+        cursor: pointer;
+        opacity: 0.7;
+        display: flex;
+        padding: 0;
+        font-size: 10px;
+    }
+    .chip button:hover {
+        opacity: 1;
+        color: #ff7a7a;
+    }
+
+    .search-dropdown {
+        background: rgba(16, 19, 28, 0.98);
+        border: 1px solid rgba(79,140,255,0.3);
+        border-radius: 8px;
+        margin-top: 6px;
+        max-height: 200px;
+        overflow-y: auto;
+        box-shadow: 0 8px 24px rgba(0,0,0,0.6), 0 0 16px rgba(79,140,255,0.1);
+        z-index: 100;
+        position: absolute;
+        left: 0;
+        right: 0;
+        width: 100%;
+    }
+    .search-dropdown.hidden {
+        display: none !important;
+    }
+    .dropdown-item {
+        padding: 10px 14px;
+        border-bottom: 1px solid rgba(255,255,255,0.05);
+        cursor: pointer;
+        transition: all 0.15s ease;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    .dropdown-item:last-child {
+        border-bottom: none;
+    }
+    .dropdown-item:hover {
+        background: rgba(79,140,255, 0.15);
+    }
+    .dropdown-item .name {
+        font-size: 12px;
+        font-weight: 600;
+        color: #fff;
+        display: block;
+        margin-bottom: 2px;
+    }
+    .dropdown-item .meta {
+        font-size: 10px;
+        color: #8892a6;
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+    }
+    .dropdown-item .meta span {
+        display: block;
+    }
+    .dropdown-item .meta .company {
+        color: #4f8cff;
+        font-weight: 500;
+    }
+    .dropdown-item .add-icon {
+        color: #4f8cff;
+        font-size: 14px;
+        opacity: 0.7;
+        transition: all 0.2s;
+    }
+    .dropdown-item:hover .add-icon {
+        opacity: 1;
+        transform: scale(1.2);
+    }
+    .dropdown-empty {
+        padding: 12px 14px;
+        font-size: 11px;
+        color: #8892a6;
+        text-align: center;
+    }
+
+    .search-wrapper {
+        position: relative;
+    }
+
+    .file-upload {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        height: 40px;
+        background: rgba(255,255,255,0.03);
+        border: 1px dashed rgba(255,255,255,0.15);
+        border-radius: 8px;
+        padding: 0 14px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        color: #8892a6;
+        font-size: 12px;
+    }
+    .file-upload:hover {
+        border-color: rgba(79,140,255, 0.5);
+        background: rgba(79,140,255, 0.05);
+        color: #fff;
+    }
+    .file-upload input[type="file"] {
+        display: none;
+    }
+
+    .btn-submit {
+        appearance: none;
+        border: 1.5px solid rgba(79,140,255, 0.6);
+        background: linear-gradient(180deg, rgba(79,140,255, 0.2), rgba(79,140,255, 0.1));
+        color: #fff;
+        font: 700 12px 'Inter', sans-serif;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        padding: 12px 24px;
+        border-radius: 10px;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        box-shadow: 0 0 16px rgba(79,140,255, 0.2);
+        transition: all 0.2s ease;
+        width: 100%;
+        max-width: 280px;
+        margin: 0 auto;
+    }
+    .btn-submit:hover {
+        background: linear-gradient(180deg, rgba(79,140,255, 0.3), rgba(79,140,255, 0.15));
+        border-color: rgba(79,140,255, 0.8);
+        box-shadow: 0 0 24px rgba(79,140,255, 0.35);
+        transform: translateY(-1px);
+    }
+
+    .error-box {
+        background: rgba(255, 99, 99, 0.05);
+        border: 1px solid rgba(255, 99, 99, 0.25);
+        border-left: 3px solid #ff6b6b;
+        border-radius: 8px;
+        padding: 12px;
+        color: #ff9999;
+        margin-bottom: 16px;
+    }
+    .error-box .title {
+        font-weight: 700;
+        font-size: 12px;
+        margin-bottom: 4px;
+        color: #ff6b6b;
+    }
+    .error-box ul {
+        font-size: 11px;
+        margin: 0;
+        padding-left: 16px;
+    }
+
+    @media (max-width: 768px) {
+        .field-row {
+            grid-template-columns: 1fr;
+        }
+        .mode-grid {
+            grid-template-columns: 1fr;
+        }
+        .form-card {
+            padding: 20px;
+        }
+    }
+</style>
+
+<div class="doc-create-page">
+    <div class="max-w-3xl mx-auto">
+
+        <a href="{{ route('documents.index') }}" class="back-btn">
+            <i class="bi bi-arrow-left"></i>
+            <span data-i18n="back">Назад</span>
+        </a>
 
         @if($errors->any())
-        <div class="max-w-5xl mx-auto mb-4">
-            <div class="bg-red-50 border-l-4 border-red-500 rounded-xl p-4 shadow-sm">
-                <div class="flex items-center gap-3">
-                    <i class="bi bi-exclamation-triangle-fill text-red-600 text-xl"></i>
-                    <div>
-                        <p class="text-sm font-bold text-red-800">Ошибка при создании документа</p>
-                        <ul class="text-xs text-red-700 mt-1 list-disc list-inside">
-                            @foreach($errors->all() as $error)
-                            <li>{{ $error }}</li>
-                            @endforeach
-                        </ul>
-                    </div>
-                </div>
-            </div>
+        <div class="error-box">
+            <div class="title" data-i18n="errorTitle">Ошибка при создании документа</div>
+            <ul>
+                @foreach($errors->all() as $error)
+                <li>{{ $error }}</li>
+                @endforeach
+            </ul>
         </div>
         @endif
 
-        <div class="bg-white rounded-3xl border border-slate-200 shadow-xl overflow-hidden">
-            <div class="p-9 md:p-11">
+        <div class="form-card">
+            <h1 class="page-title" data-i18n="pageTitle">Новый документ</h1>
+            <p class="page-subtitle" data-i18n="pageSubtitle">Заполните информацию о документе</p>
 
-                <div class="text-center mb-10">
-                    <div class="w-16 h-16 mx-auto bg-black text-white rounded-2xl flex items-center justify-center text-2xl mb-4">📄</div>
-                    <h1 class="text-3xl font-semibold text-black tracking-tight">Новый документ</h1>
-                    <p class="text-sm font-medium text-black tracking-widest uppercase mt-2 opacity-70">Панель управления</p>
+            <form action="{{ route('documents.store') }}" method="POST" enctype="multipart/form-data" id="documentForm">
+                @csrf
+
+                {{-- Номер, Тип и Статус --}}
+                <div class="field-row">
+                    <div class="field-group">
+                        <label class="field-label">
+                            <span data-i18n="labelNumber">Номер документа</span>
+                            <span class="required">*</span>
+                        </label>
+                        <input type="text" name="number" class="input-field"
+                               value="{{ old('number', '№ ') }}"
+                               data-i18n-placeholder="numberPlaceholder"
+                               placeholder="№ 001" required>
+                    </div>
+                    <div class="field-group">
+                        <label class="field-label">
+                            <span data-i18n="labelType">Тип документа</span>
+                            <span class="required">*</span>
+                        </label>
+                        <input type="text" name="type" class="input-field"
+                               data-i18n-placeholder="typePlaceholder"
+                               placeholder="Договор, Акт..." value="{{ old('type') }}" required>
+                    </div>
                 </div>
 
-                <form action="{{ route('documents.store') }}" method="POST" enctype="multipart/form-data" class="space-y-6" id="documentForm">
-                    @csrf
+                {{-- Статус и Дедлайн --}}
+                <div class="field-row">
+                    <div class="field-group">
+                        <label class="field-label">
+                            <span data-i18n="labelStatus">Статус документа</span>
+                            <span class="required">*</span>
+                        </label>
+                        <select name="status" class="input-field" required>
+                            <option value="active" {{ old('status') == 'active' ? 'selected' : '' }} data-i18n="statusSend">Отправить на подпись</option>
+                            <option value="draft" {{ old('status') == 'draft' ? 'selected' : '' }} data-i18n="statusDraft">Сохранить как черновик</option>
+                        </select>
+                    </div>
+                    <div class="field-group">
+                        <label class="field-label" data-i18n="labelDeadline">Дедлайн</label>
+                        <input type="date" name="deadline" class="input-field" value="{{ old('deadline') }}">
+                    </div>
+                </div>
 
-                    <div>
-                        <label class="label">Номер документа</label>
-                        <input type="text" id="doc_number" name="number"
-                               value="{{ old('number', '№ ') }}"
-                               class="input font-[1000] !text-black" required>
+                {{-- Заголовок --}}
+                <div class="field-row single">
+                    <div class="field-group">
+                        <label class="field-label">
+                            <span data-i18n="labelTitle">Заголовок</span>
+                            <span class="required">*</span>
+                        </label>
+                        <input type="text" name="title" class="input-field"
+                               data-i18n-placeholder="titlePlaceholder"
+                               placeholder="Название документа" value="{{ old('title') }}" required>
+                    </div>
+                </div>
+
+                {{-- Описание --}}
+                <div class="field-row single">
+                    <div class="field-group">
+                        <label class="field-label" data-i18n="labelDescription">Описание</label>
+                        <textarea name="content" rows="3" class="input-field"
+                                  data-i18n-placeholder="descriptionPlaceholder"
+                                  placeholder="Краткое описание документа...">{{ old('content') }}</textarea>
+                    </div>
+                </div>
+
+                {{-- Файл --}}
+                <div class="field-row single">
+                    <div class="field-group">
+                        <label class="field-label">
+                            <span data-i18n="labelFile">Прикрепить файл</span>
+                            <span class="required">*</span>
+                        </label>
+                        <label class="file-upload">
+                            <span id="file-name" data-i18n="filePlaceholder">Выберите файл...</span>
+                            <i class="bi bi-paperclip"></i>
+                            <input type="file" name="file_path" id="file-input" required>
+                        </label>
+                    </div>
+                </div>
+
+                {{-- Секция получателей --}}
+                <div class="receiver-section">
+                    <div class="section-title">
+                        <span data-i18n="labelReceiverMode">Способ отправки</span>
+                        <span class="required" style="color:#ff6b6b">*</span>
                     </div>
 
-                    <div class="grid md:grid-cols-2 gap-5">
-                        <div>
-                            <label class="label">Тип документа</label>
-                            <input type="text" name="type" class="input"
-                                   placeholder="Например: Договор"
-                                   value="{{ old('type') }}" required>
-                        </div>
-                        <div>
-                            <label class="label">Дедлайн</label>
-                            <input type="date" name="deadline" class="input" value="{{ old('deadline') }}">
-                        </div>
-                    </div>
+                    <div class="mode-grid">
+                        <button type="button" data-mode="all_team" class="mode-btn">
+                            <div class="mode-icon"><i class="bi bi-people-fill"></i></div>
+                            <div class="mode-title" data-i18n="modeAllTeam">Всей команде</div>
+                            <div class="mode-desc" data-i18n="modeAllTeamDesc">Всем участникам</div>
+                            <div class="mode-check"></div>
+                        </button>
 
-                    <div>
-                        <label class="label">Заголовок</label>
-                        <input type="text" name="title" class="input"
-                               placeholder="Введите название..."
-                               value="{{ old('title') }}" required>
-                    </div>
+                        <button type="button" data-mode="select_team" class="mode-btn">
+                            <div class="mode-icon"><i class="bi bi-person-check-fill"></i></div>
+                            <div class="mode-title" data-i18n="modeSelectTeam">Выбрать</div>
+                            <div class="mode-desc" data-i18n="modeSelectTeamDesc">До 5 человек</div>
+                            <div class="mode-check"></div>
+                        </button>
 
-                    <div>
-                        <label class="label">Описание</label>
-                        <textarea name="content" rows="5" class="input"
-                                  placeholder="Добавьте описание...">{{ old('content') }}</textarea>
-                    </div>
-
-                    {{-- ТРИ КНОПКИ ВЫБОРА ПОЛУЧАТЕЛЕЙ --}}
-                    <div>
-                        <label class="label">Способ отправки <span class="text-red-500">*</span></label>
-
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
-                            <button type="button" data-mode="all_team"
-                                    class="mode-btn group relative overflow-hidden rounded-2xl border-2 border-slate-200 bg-white p-5 text-left transition hover:border-blue-500 hover:shadow-lg">
-                                <div class="flex items-start gap-3">
-                                    <div class="w-10 h-10 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center flex-shrink-0">
-                                        <i class="bi bi-people-fill text-xl"></i>
-                                    </div>
-                                    <div class="flex-1">
-                                        <p class="text-sm font-black text-black uppercase tracking-wide">Всей команде</p>
-                                        <p class="text-[10px] text-slate-500 mt-1">Отправить всем участникам вашей компании</p>
-                                    </div>
-                                </div>
-                                <div class="mode-check absolute top-2 right-2 w-5 h-5 rounded-full border-2 border-slate-300 group-hover:border-blue-500"></div>
-                            </button>
-
-                            <button type="button" data-mode="select_team"
-                                    class="mode-btn group relative overflow-hidden rounded-2xl border-2 border-slate-200 bg-white p-5 text-left transition hover:border-emerald-500 hover:shadow-lg">
-                                <div class="flex items-start gap-3">
-                                    <div class="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center flex-shrink-0">
-                                        <i class="bi bi-person-check-fill text-xl"></i>
-                                    </div>
-                                    <div class="flex-1">
-                                        <p class="text-sm font-black text-black uppercase tracking-wide">Выбрать из команды</p>
-                                        <p class="text-[10px] text-slate-500 mt-1">Выберите конкретных людей (до 5)</p>
-                                    </div>
-                                </div>
-                                <div class="mode-check absolute top-2 right-2 w-5 h-5 rounded-full border-2 border-slate-300 group-hover:border-emerald-500"></div>
-                            </button>
-
-                            <button type="button" data-mode="other_company"
-                                    class="mode-btn group relative overflow-hidden rounded-2xl border-2 border-slate-200 bg-white p-5 text-left transition hover:border-purple-500 hover:shadow-lg">
-                                <div class="flex items-start gap-3">
-                                    <div class="w-10 h-10 rounded-xl bg-purple-100 text-purple-600 flex items-center justify-center flex-shrink-0">
-                                        <i class="bi bi-building text-xl"></i>
-                                    </div>
-                                    <div class="flex-1">
-                                        <p class="text-sm font-black text-black uppercase tracking-wide">Из другой команды</p>
-                                        <p class="text-[10px] text-slate-500 mt-1">Отправить в другую компанию</p>
-                                    </div>
-                                </div>
-                                <div class="mode-check absolute top-2 right-2 w-5 h-5 rounded-full border-2 border-slate-300 group-hover:border-purple-500"></div>
-                            </button>
-                        </div>
-
-                        {{-- Скрытое поле для режима --}}
-                        <input type="hidden" name="receiver_mode" id="receiver_mode" value="">
-
-                        {{-- БЛОК 1: ВСЕЙ КОМАНДЕ (просто инфо) --}}
-                        <div id="mode-all_team" class="hidden rounded-2xl border-2 border-blue-200 bg-blue-50 p-5">
-                            <div class="flex items-center gap-3">
-                                <i class="bi bi-info-circle-fill text-blue-600 text-xl"></i>
-                                <div>
-                                    <p class="text-sm font-bold text-blue-900">Документ будет отправлен всем участникам команды</p>
-                                    <p class="text-xs text-blue-700 mt-1">
-                                        Получателей: <strong>{{ $teamUsers->count() }}</strong> чел.
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-
-                        {{-- БЛОК 2: ВЫБОР ИЗ КОМАНДЫ --}}
-                        <div id="mode-select_team" class="hidden">
-                            <label class="label">Выберите получателей из команды (до 5 человек)</label>
-                            <input type="text" id="team-search" class="input"
-                                   placeholder="Начните вводить имя или email..."
-                                   autocomplete="off">
-
-                            <div id="team-selected" class="flex flex-wrap gap-2 mt-3 min-h-[40px] p-3 bg-slate-50 rounded-2xl border border-slate-200">
-                                <span class="text-xs text-slate-400" id="team-placeholder">Выбранные пользователи появятся здесь...</span>
-                            </div>
-
-                            <div id="team-list" class="hidden mt-2 bg-white border border-slate-200 rounded-2xl shadow-lg overflow-hidden max-h-60 overflow-y-auto"></div>
-
-                            <input type="hidden" name="team_receivers" id="team_receivers" value="">
-
-                            <p id="team-error" class="text-xs text-red-600 mt-2 font-bold hidden">Выберите хотя бы одного получателя</p>
-                        </div>
-
-                        {{-- БЛОК 3: ИЗ ДРУГОЙ КОМАНДЫ --}}
-                        <div id="mode-other_company" class="hidden">
-                            <label class="label">Выберите получателя из другой команды</label>
-                            <input type="text" id="other-search" class="input"
-                                   placeholder="Начните вводить имя или email..."
-                                   autocomplete="off">
-
-                            <div id="other-selected" class="hidden mt-3 p-3 bg-purple-50 border border-purple-200 rounded-2xl flex items-center justify-between">
-                                <div class="flex items-center gap-3">
-                                    <div class="w-9 h-9 rounded-full bg-purple-600 text-white flex items-center justify-center">
-                                        <i class="bi bi-person-fill text-sm"></i>
-                                    </div>
-                                    <div>
-                                        <p id="other-name" class="text-[12px] font-bold text-purple-900"></p>
-                                        <p id="other-email" class="text-[10px] text-purple-700"></p>
-                                        <p id="other-company" class="text-[10px] text-purple-600 mt-0.5"></p>
-                                    </div>
-                                </div>
-                                <button type="button" onclick="clearOtherReceiver()" class="text-purple-600 hover:text-purple-900">
-                                    <i class="bi bi-x-lg"></i>
-                                </button>
-                            </div>
-
-                            <div id="other-list" class="hidden mt-2 bg-white border border-slate-200 rounded-2xl shadow-lg overflow-hidden max-h-60 overflow-y-auto"></div>
-
-                            <input type="hidden" name="other_receiver_id" id="other_receiver_id" value="">
-
-                            <p id="other-error" class="text-xs text-red-600 mt-2 font-bold hidden">Выберите получателя из списка</p>
-                        </div>
-
-                        @error('receiver_mode')
-                        <p class="text-xs text-red-600 mt-2 font-bold">{{ $message }}</p>
-                        @enderror
-                    </div>
-
-                    <div class="grid md:grid-cols-2 gap-5">
-                        <div>
-                            <label class="label">Статус</label>
-                            <select name="status" class="input">
-                                <option value="draft" {{ old('status') == 'draft' ? 'selected' : '' }}>Черновик</option>
-                                <option value="active" {{ old('status') !== 'draft' ? 'selected' : '' }}>Активен</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="label">Файл (PDF, DOCX, XLSX, RTF) <span class="text-red-500">*</span></label>
-                            <input type="file" name="file_path" id="file" accept=".pdf,.doc,.docx,.xls,.xlsx,.rtf" class="hidden" required>
-                            <label for="file" class="flex items-center justify-between px-6 h-12 border border-slate-200 rounded-2xl bg-white cursor-pointer shadow-sm hover:border-black transition">
-                                <span id="file-name" class="text-[10px] font-[1000] uppercase tracking-[0.2em] text-black truncate pr-2">Выберите файл</span>
-                                <span class="text-xl">📂</span>
-                            </label>
-                            <p class="text-xs text-slate-500 mt-2">Максимальный размер: 10 МБ</p>
-                            @error('file_path')
-                            <p class="text-xs text-red-600 mt-2 font-bold">{{ $message }}</p>
-                            @enderror
-                        </div>
-                    </div>
-
-                    <div class="flex justify-center w-full pt-8">
-                        <button type="submit" id="submitBtn" class="w-80 h-14 bg-black rounded-full font-[1000] uppercase text-[14px] tracking-[0.25em] text-white hover:opacity-90 active:scale-95 transition-all flex items-center justify-center gap-3">
-                            <span>Отправить</span>
-                            <span class="text-xl">🚀</span>
+                        <button type="button" data-mode="other_company" class="mode-btn">
+                            <div class="mode-icon"><i class="bi bi-building"></i></div>
+                            <div class="mode-title" data-i18n="modeOtherCompany">Другая команда</div>
+                            <div class="mode-desc" data-i18n="modeOtherCompanyDesc">Внешний получатель</div>
+                            <div class="mode-check"></div>
                         </button>
                     </div>
-                </form>
-            </div>
+
+                    <input type="hidden" name="receiver_mode" id="receiver_mode" value="">
+
+                    {{-- Блок 1: Всей команде --}}
+                    <div id="mode-all_team" class="receiver-block hidden">
+                        <div style="display:flex;align-items:center;gap:8px;">
+                            <i class="bi bi-info-circle-fill" style="color:#4f8cff;font-size:14px;"></i>
+                            <div>
+                                <p style="font-size:11px;font-weight:600;color:#fff;" data-i18n="allTeamInfo">Отправка всем участникам</p>
+                                <p style="font-size:10px;color:#8892a6;margin-top:2px;">
+                                    <span data-i18n="receiversCount">Получателей:</span>
+                                    <strong style="color:#4f8cff;">{{ $teamUsers->count() }}</strong>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- Блок 2: Выбор из команды --}}
+                    <div id="mode-select_team" class="receiver-block hidden">
+                        <label class="field-label" data-i18n="selectReceiversLabel">Выберите получателей (до 5)</label>
+
+                        <div class="search-wrapper">
+                            <input type="text" id="team-search" class="input-field"
+                                   data-i18n-placeholder="searchPlaceholder"
+                                   placeholder="Введите 2+ буквы для поиска..." autocomplete="off">
+                            <div id="team-list" class="search-dropdown hidden"></div>
+                        </div>
+
+                        <div id="team-selected" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;min-height:28px;">
+                            <span style="font-size:10px;color:#8892a6;" id="team-placeholder" data-i18n="selectedPlaceholder">Выбранные пользователи появятся здесь...</span>
+                        </div>
+
+                        <input type="hidden" name="team_receivers" id="team_receivers" value="">
+                        <p id="team-error" style="font-size:10px;color:#ff6b6b;margin-top:6px;font-weight:600;display:none;">
+                            ⚠ <span data-i18n="selectError">Выберите хотя бы одного получателя</span>
+                        </p>
+                    </div>
+
+                    {{-- Блок 3: Другая команда --}}
+                    <div id="mode-other_company" class="receiver-block hidden">
+                        <label class="field-label" data-i18n="searchCompanyLabel">Поиск получателя из другой команды</label>
+
+                        <div class="search-wrapper">
+                            <input type="text" id="company-search" class="input-field"
+                                   data-i18n-placeholder="searchPlaceholder"
+                                   placeholder="Введите 2+ буквы для поиска..." autocomplete="off">
+                            <div id="company-list" class="search-dropdown hidden"></div>
+                        </div>
+
+                        <div id="company-selected" style="margin-top:10px;min-height:28px;"></div>
+
+                        <input type="hidden" name="other_receiver_id" id="company_receiver" value="">
+                    </div>
+                </div>
+
+                {{-- Кнопка отправки --}}
+                <div style="margin-top:20px;text-align:center;">
+                    <button type="submit" class="btn-submit">
+                        <i class="bi bi-send-fill"></i>
+                        <span data-i18n="submitButton">Создать документ</span>
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 </div>
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        const form = document.getElementById('documentForm');
-        const submitBtn = document.getElementById('submitBtn');
+        // ===== ПЕРЕВОДЫ / TRANSLATIONS / ТАРҶУМАҲО =====
+        const translations = {
+            ru: {
+                back: "Назад",
+                errorTitle: "Ошибка при создании документа",
+                pageTitle: "Новый документ",
+                pageSubtitle: "Заполните информацию о документе",
+                labelNumber: "Номер документа",
+                labelType: "Тип документа",
+                labelStatus: "Статус документа",
+                labelDeadline: "Дедлайн",
+                labelTitle: "Заголовок",
+                labelDescription: "Описание",
+                labelFile: "Прикрепить файл",
+                labelReceiverMode: "Способ отправки",
+                modeAllTeam: "Всей команде",
+                modeAllTeamDesc: "Всем участникам",
+                modeSelectTeam: "Выбрать",
+                modeSelectTeamDesc: "До 5 человек",
+                modeOtherCompany: "Другая команда",
+                modeOtherCompanyDesc: "Внешний получатель",
+                allTeamInfo: "Отправка всем участникам",
+                receiversCount: "Получателей:",
+                selectReceiversLabel: "Выберите получателей (до 5)",
+                searchPlaceholder: "Введите 2+ буквы для поиска...",
+                selectedPlaceholder: "Выбранные пользователи появятся здесь...",
+                selectError: "Выберите хотя бы одного получателя",
+                searchCompanyLabel: "Поиск получателя из другой команды",
+                submitButton: "Создать документ",
+                filePlaceholder: "Выберите файл...",
+                usersNotFound: "Пользователи не найдены",
+                maxReceivers: "Максимум 5 получателей",
+                alertSelectMode: "Выберите способ отправки документа",
+                alertSelectCompany: "Выберите получателя из другой команды",
+                numberPlaceholder: "№ 001",
+                typePlaceholder: "Договор, Акт...",
+                titlePlaceholder: "Название документа",
+                descriptionPlaceholder: "Краткое описание документа...",
+                statusSend: "Отправить на подпись",
+                statusDraft: "Сохранить как черновик"
+            },
+            tj: {
+                back: "Бозгашт",
+                errorTitle: "Хато ҳангоми эҷоди ҳуҷҷат",
+                pageTitle: "Ҳуҷҷати нав",
+                pageSubtitle: "Маълумот оид ба ҳуҷҷатро пур кунед",
+                labelNumber: "Рақами ҳуҷҷат",
+                labelType: "Намуди ҳуҷҷат",
+                labelStatus: "Ҳолати ҳуҷҷат",
+                labelDeadline: "Мӯҳлат",
+                labelTitle: "Сарлавҳа",
+                labelDescription: "Тавсиф",
+                labelFile: "Файл замима кардан",
+                labelReceiverMode: "Усули фиристодан",
+                modeAllTeam: "Ба ҳамаи даста",
+                modeAllTeamDesc: "Ба ҳамаи иштирокчиён",
+                modeSelectTeam: "Интихоб кардан",
+                modeSelectTeamDesc: "То 5 нафар",
+                modeOtherCompany: "Дигар даста",
+                modeOtherCompanyDesc: "Гирандаи берунӣ",
+                allTeamInfo: "Фиристодан ба ҳамаи иштирокчиён",
+                receiversCount: "Гирандаҳо:",
+                selectReceiversLabel: "Гирандаҳоро интихоб кунед (то 5)",
+                searchPlaceholder: "2+ ҳарфро барои ҷустуҷӯ ворид кунед...",
+                selectedPlaceholder: "Корбарони интихобшуда дар ин ҷо пайдо мешаванд...",
+                selectError: "Ҳадди ақал як гирандаро интихоб кунед",
+                searchCompanyLabel: "Ҷустуҷӯи гиранда аз дигар даста",
+                submitButton: "Эҷоди ҳуҷҷат",
+                filePlaceholder: "Файлро интихоб кунед...",
+                usersNotFound: "Корбарон ёфт нашуданд",
+                maxReceivers: "Ҳадди аксар 5 гиранда",
+                alertSelectMode: "Усули фиристодани ҳуҷҷатро интихоб кунед",
+                alertSelectCompany: "Гирандаро аз дигар даста интихоб кунед",
+                numberPlaceholder: "№ 001",
+                typePlaceholder: "Шартнома, Акт...",
+                titlePlaceholder: "Номи ҳуҷҷат",
+                descriptionPlaceholder: "Тавсифи мухтасари ҳуҷҷат...",
+                statusSend: "Барои имзо фиристодан",
+                statusDraft: "Ҳамчун пешнавис нигоҳ доштан"
+            },
+            en: {
+                back: "Back",
+                errorTitle: "Error creating document",
+                pageTitle: "New Document",
+                pageSubtitle: "Fill in the document information",
+                labelNumber: "Document Number",
+                labelType: "Document Type",
+                labelStatus: "Document Status",
+                labelDeadline: "Deadline",
+                labelTitle: "Title",
+                labelDescription: "Description",
+                labelFile: "Attach File",
+                labelReceiverMode: "Sending Method",
+                modeAllTeam: "All Team",
+                modeAllTeamDesc: "To all members",
+                modeSelectTeam: "Select",
+                modeSelectTeamDesc: "Up to 5 people",
+                modeOtherCompany: "Other Team",
+                modeOtherCompanyDesc: "External recipient",
+                allTeamInfo: "Sending to all members",
+                receiversCount: "Recipients:",
+                selectReceiversLabel: "Select recipients (up to 5)",
+                searchPlaceholder: "Enter 2+ letters to search...",
+                selectedPlaceholder: "Selected users will appear here...",
+                selectError: "Select at least one recipient",
+                searchCompanyLabel: "Search recipient from another team",
+                submitButton: "Create Document",
+                filePlaceholder: "Choose file...",
+                usersNotFound: "Users not found",
+                maxReceivers: "Maximum 5 recipients",
+                alertSelectMode: "Select document sending method",
+                alertSelectCompany: "Select recipient from another team",
+                numberPlaceholder: "No. 001",
+                typePlaceholder: "Contract, Act...",
+                titlePlaceholder: "Document name",
+                descriptionPlaceholder: "Brief document description...",
+                statusSend: "Send for signature",
+                statusDraft: "Save as draft"
+            }
+        };
+
+        // ===== Получение текущего языка =====
+        function getCurrentLang() {
+            return localStorage.getItem('docsign_lang')
+                || localStorage.getItem('app-lang')
+                || 'ru';
+        }
+
+        // ===== Применение переводов =====
+        function applyTranslations() {
+            const lang = getCurrentLang();
+            const t = translations[lang] || translations['ru'];
+
+            // Обновляем все элементы с data-i18n
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if (t[key] !== undefined) {
+                    el.textContent = t[key];
+                }
+            });
+
+            // Обновляем placeholder-ы
+            document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+                const key = el.getAttribute('data-i18n-placeholder');
+                if (t[key] !== undefined) {
+                    el.setAttribute('placeholder', t[key]);
+                }
+            });
+
+            // Обновляем title-ы
+            document.querySelectorAll('[data-i18n-title]').forEach(el => {
+                const key = el.getAttribute('data-i18n-title');
+                if (t[key] !== undefined) {
+                    el.setAttribute('title', t[key]);
+                }
+            });
+
+            return t;
+        }
+
+        let currentT = applyTranslations();
+
+        // ===== Слушатель смены языка =====
+        window.addEventListener('docsign:lang-changed', function(e) {
+            if (e.detail && e.detail.lang) {
+                localStorage.setItem('docsign_lang', e.detail.lang);
+                localStorage.setItem('app-lang', e.detail.lang);
+            }
+            currentT = applyTranslations();
+        });
+
+        // === Данные пользователей из Laravel ===
+        const teamUsers = @json($teamUsersArray ?? []);
+        const otherUsers = @json($otherUsersArray ?? []);
+
+        // === Переключение режимов отправки ===
+        const modeBtns = document.querySelectorAll('.mode-btn');
+        const modeBlocks = document.querySelectorAll('.receiver-block');
         const modeInput = document.getElementById('receiver_mode');
-        const modeButtons = document.querySelectorAll('.mode-btn');
 
-        let currentMode = null;
-        let selectedTeamUsers = [];
-
-        // Данные пользователей
-        const teamUsers = @json($teamUsersArray);
-const otherUsers = @json($otherUsersArray);
-
-
-
-        // Переключение режимов
-        modeButtons.forEach(btn => {
+        modeBtns.forEach(btn => {
             btn.addEventListener('click', function() {
+                modeBtns.forEach(b => b.classList.remove('active'));
+                modeBlocks.forEach(b => b.classList.add('hidden'));
+
+                this.classList.add('active');
                 const mode = this.dataset.mode;
-                currentMode = mode;
                 modeInput.value = mode;
 
-                // Сбрасываем стили всех кнопок
-                modeButtons.forEach(b => {
-                    b.classList.remove('border-blue-500', 'border-emerald-500', 'border-purple-500', 'bg-blue-50', 'bg-emerald-50', 'bg-purple-50');
-                    b.querySelector('.mode-check').innerHTML = '';
-                    b.querySelector('.mode-check').classList.remove('bg-blue-500', 'bg-emerald-500', 'bg-purple-500', 'border-blue-500', 'border-emerald-500', 'border-purple-500');
-                });
-
-                // Скрываем все блоки
-                document.getElementById('mode-all_team').classList.add('hidden');
-                document.getElementById('mode-select_team').classList.add('hidden');
-                document.getElementById('mode-other_company').classList.add('hidden');
-
-                // Показываем нужный блок и подсвечиваем кнопку
-                if (mode === 'all_team') {
-                    this.classList.add('border-blue-500', 'bg-blue-50');
-                    const check = this.querySelector('.mode-check');
-                    check.classList.add('bg-blue-500', 'border-blue-500');
-                    check.innerHTML = '<i class="bi bi-check text-white text-xs"></i>';
-                    document.getElementById('mode-all_team').classList.remove('hidden');
-                } else if (mode === 'select_team') {
-                    this.classList.add('border-emerald-500', 'bg-emerald-50');
-                    const check = this.querySelector('.mode-check');
-                    check.classList.add('bg-emerald-500', 'border-emerald-500');
-                    check.innerHTML = '<i class="bi bi-check text-white text-xs"></i>';
-                    document.getElementById('mode-select_team').classList.remove('hidden');
-                } else if (mode === 'other_company') {
-                    this.classList.add('border-purple-500', 'bg-purple-50');
-                    const check = this.querySelector('.mode-check');
-                    check.classList.add('bg-purple-500', 'border-purple-500');
-                    check.innerHTML = '<i class="bi bi-check text-white text-xs"></i>';
-                    document.getElementById('mode-other_company').classList.remove('hidden');
-                }
+                const block = document.getElementById('mode-' + mode);
+                if (block) block.classList.remove('hidden');
             });
         });
 
-        // Поиск по команде
+        // === Загрузка файла ===
+        const fileInput = document.getElementById('file-input');
+        const fileName = document.getElementById('file-name');
+        if (fileInput) {
+            fileInput.addEventListener('change', function() {
+                const t = translations[getCurrentLang()] || translations['ru'];
+                fileName.textContent = this.files.length > 0 ? this.files[0].name : t.filePlaceholder;
+            });
+        }
+
+        // === ПОИСК ПОЛЬЗОВАТЕЛЕЙ КОМАНДЫ ===
         const teamSearch = document.getElementById('team-search');
         const teamList = document.getElementById('team-list');
+        const teamSelected = document.getElementById('team-selected');
+        const teamReceivers = document.getElementById('team_receivers');
+        const teamError = document.getElementById('team-error');
+        let selectedTeam = [];
 
-        if (teamSearch) {
+        if (teamSearch && teamList) {
+            teamSearch.addEventListener('focus', function() {
+                const query = this.value.trim().toLowerCase();
+                if (query.length >= 2) {
+                    filterTeamUsers(query);
+                }
+            });
+
             teamSearch.addEventListener('input', function() {
-                const query = this.value.toLowerCase().trim();
-                teamList.innerHTML = '';
-
-                if (query.length < 1) {
+                const query = this.value.trim().toLowerCase();
+                if (query.length < 2) {
                     teamList.classList.add('hidden');
                     return;
                 }
+                filterTeamUsers(query);
+            });
 
-                const filtered = teamUsers.filter(u =>
-                    u.name.toLowerCase().includes(query) || u.email.toLowerCase().includes(query)
-                ).filter(u => !selectedTeamUsers.find(s => s.id === u.id));
-
-                if (filtered.length === 0) {
-                    teamList.innerHTML = '<div class="p-3 text-xs text-slate-500">Пользователь не найден</div>';
-                    teamList.classList.remove('hidden');
-                    return;
-                }
-
-                filtered.forEach(u => {
-                    const item = document.createElement('div');
-                    item.className = 'p-3 hover:bg-emerald-50 cursor-pointer border-b border-slate-100 last:border-0 flex items-center justify-between';
-                    item.innerHTML = `
-                        <div>
-                            <p class="text-[12px] font-bold text-black">${u.name}</p>
-                            <p class="text-[10px] text-slate-500">${u.email} — ${u.role || 'user'}</p>
-                        </div>
-                        <i class="bi bi-plus-circle text-emerald-600 text-lg"></i>
-                    `;
-                    item.addEventListener('click', function() {
-                        if (selectedTeamUsers.length >= 5) {
-                            alert('Можно выбрать максимум 5 человек');
-                            return;
-                        }
-                        selectedTeamUsers.push(u);
-                        renderSelectedTeam();
-                        teamSearch.value = '';
-                        teamList.classList.add('hidden');
-                    });
-                    teamList.appendChild(item);
+            function filterTeamUsers(query) {
+                const t = translations[getCurrentLang()] || translations['ru'];
+                const filtered = teamUsers.filter(user => {
+                    if (selectedTeam.find(s => s.id === user.id)) return false;
+                    const name = (user.name || '').toLowerCase();
+                    const email = (user.email || '').toLowerCase();
+                    const company = (user.company || user.company_name || '').toLowerCase();
+                    return name.includes(query) || email.includes(query) || company.includes(query);
                 });
 
+                teamList.innerHTML = '';
+
+                if (filtered.length === 0) {
+                    teamList.innerHTML = `<div class="dropdown-empty">${t.usersNotFound}</div>`;
+                } else {
+                    filtered.forEach(user => {
+                        const item = document.createElement('div');
+                        item.className = 'dropdown-item';
+                        const company = user.company || user.company_name || '';
+                        item.innerHTML = `
+                            <div>
+                                <span class="name">${user.name}</span>
+                                <div class="meta">
+                                    ${company ? `<span class="company">${company}</span>` : ''}
+                                    <span>${user.email || ''}</span>
+                                </div>
+                            </div>
+                            <i class="bi bi-plus-circle-fill add-icon"></i>
+                        `;
+                        item.addEventListener('click', function(e) {
+                            e.stopPropagation();
+                            const t2 = translations[getCurrentLang()] || translations['ru'];
+                            if (selectedTeam.length >= 5) {
+                                alert(t2.maxReceivers);
+                                return;
+                            }
+                            selectedTeam.push(user);
+                            updateTeamSelected();
+                            teamSearch.value = '';
+                            teamList.classList.add('hidden');
+                            teamSearch.focus();
+                        });
+                        teamList.appendChild(item);
+                    });
+                }
                 teamList.classList.remove('hidden');
+            }
+
+            document.addEventListener('click', function(e) {
+                if (!teamSearch.contains(e.target) && !teamList.contains(e.target)) {
+                    teamList.classList.add('hidden');
+                }
+            });
+
+            function updateTeamSelected() {
+                const t = translations[getCurrentLang()] || translations['ru'];
+                teamSelected.innerHTML = '';
+
+                if (selectedTeam.length === 0) {
+                    teamSelected.innerHTML = `<span style="font-size:10px;color:#8892a6;" data-i18n="selectedPlaceholder">${t.selectedPlaceholder}</span>`;
+                } else {
+                    selectedTeam.forEach(user => {
+                        const chip = document.createElement('span');
+                        chip.className = 'chip';
+                        chip.innerHTML = `${user.name} <button type="button" data-id="${user.id}">&times;</button>`;
+                        chip.querySelector('button').addEventListener('click', function() {
+                            selectedTeam = selectedTeam.filter(u => u.id !== user.id);
+                            updateTeamSelected();
+                        });
+                        teamSelected.appendChild(chip);
+                    });
+                }
+
+                teamReceivers.value = selectedTeam.map(u => u.id).join(',');
+                teamError.style.display = 'none';
+            }
+        }
+
+        // === ПОИСК ПОЛЬЗОВАТЕЛЕЙ ДРУГОЙ КОМАНДЫ ===
+        const companySearch = document.getElementById('company-search');
+        const companyList = document.getElementById('company-list');
+        const companySelected = document.getElementById('company-selected');
+        const companyReceiver = document.getElementById('company_receiver');
+        let selectedCompany = null;
+
+        if (companySearch && companyList) {
+            companySearch.addEventListener('focus', function() {
+                const query = this.value.trim().toLowerCase();
+                if (query.length >= 2) {
+                    filterCompanyUsers(query);
+                }
+            });
+
+            companySearch.addEventListener('input', function() {
+                const query = this.value.trim().toLowerCase();
+                if (query.length < 2) {
+                    companyList.classList.add('hidden');
+                    return;
+                }
+                filterCompanyUsers(query);
+            });
+
+            function filterCompanyUsers(query) {
+                const t = translations[getCurrentLang()] || translations['ru'];
+                const filtered = otherUsers.filter(user => {
+                    const name = (user.name || '').toLowerCase();
+                    const email = (user.email || '').toLowerCase();
+                    const company = (user.company || user.company_name || '').toLowerCase();
+                    return name.includes(query) || email.includes(query) || company.includes(query);
+                });
+
+                companyList.innerHTML = '';
+
+                if (filtered.length === 0) {
+                    companyList.innerHTML = `<div class="dropdown-empty">${t.usersNotFound}</div>`;
+                } else {
+                    filtered.forEach(user => {
+                        const item = document.createElement('div');
+                        item.className = 'dropdown-item';
+                        const company = user.company || user.company_name || '';
+                        item.innerHTML = `
+                            <div>
+                                <span class="name">${user.name}</span>
+                                <div class="meta">
+                                    ${company ? `<span class="company">${company}</span>` : ''}
+                                    <span>${user.email || ''}</span>
+                                </div>
+                            </div>
+                            <i class="bi bi-check-circle-fill add-icon"></i>
+                        `;
+                        item.addEventListener('click', function(e) {
+                            e.stopPropagation();
+                            selectedCompany = user;
+                            companyReceiver.value = user.id;
+                            companySelected.innerHTML = `
+                                <span class="chip">
+                                    ${user.name}
+                                    <button type="button" id="clear-company">&times;</button>
+                                </span>
+                            `;
+                            document.getElementById('clear-company').addEventListener('click', function() {
+                                selectedCompany = null;
+                                companyReceiver.value = '';
+                                companySelected.innerHTML = '';
+                            });
+                            companySearch.value = '';
+                            companyList.classList.add('hidden');
+                        });
+                        companyList.appendChild(item);
+                    });
+                }
+                companyList.classList.remove('hidden');
+            }
+
+            document.addEventListener('click', function(e) {
+                if (!companySearch.contains(e.target) && !companyList.contains(e.target)) {
+                    companyList.classList.add('hidden');
+                }
             });
         }
 
-        function renderSelectedTeam() {
-            const container = document.getElementById('team-selected');
-            const placeholder = document.getElementById('team-placeholder');
+        // === Валидация при отправке ===
+        const form = document.getElementById('documentForm');
+        form.addEventListener('submit', function(e) {
+            const t = translations[getCurrentLang()] || translations['ru'];
+            const mode = modeInput.value;
 
-            container.innerHTML = '';
-
-            if (selectedTeamUsers.length === 0) {
-                container.appendChild(placeholder);
-                document.getElementById('team_receivers').value = '';
+            if (!mode) {
+                e.preventDefault();
+                alert(t.alertSelectMode);
                 return;
             }
 
-            selectedTeamUsers.forEach((u, idx) => {
-                const chip = document.createElement('div');
-                chip.className = 'inline-flex items-center gap-2 bg-emerald-100 text-emerald-900 px-3 py-1.5 rounded-full text-xs font-bold';
-                chip.innerHTML = `
-                    <span>${u.name}</span>
-                    <button type="button" onclick="removeTeamUser(${idx})" class="hover:text-red-600">
-                        <i class="bi bi-x"></i>
-                    </button>
-                `;
-                container.appendChild(chip);
-            });
-
-            document.getElementById('team_receivers').value = selectedTeamUsers.map(u => u.id).join(',');
-        }
-
-        window.removeTeamUser = function(idx) {
-            selectedTeamUsers.splice(idx, 1);
-            renderSelectedTeam();
-        };
-
-        // Поиск по другой команде
-        const otherSearch = document.getElementById('other-search');
-        const otherList = document.getElementById('other-list');
-
-        if (otherSearch) {
-            otherSearch.addEventListener('input', function() {
-                const query = this.value.toLowerCase().trim();
-                otherList.innerHTML = '';
-
-                if (query.length < 1) {
-                    otherList.classList.add('hidden');
-                    return;
-                }
-
-                const filtered = otherUsers.filter(u =>
-                    u.name.toLowerCase().includes(query) || u.email.toLowerCase().includes(query)
-                );
-
-                if (filtered.length === 0) {
-                    otherList.innerHTML = '<div class="p-3 text-xs text-slate-500">Пользователь не найден</div>';
-                    otherList.classList.remove('hidden');
-                    return;
-                }
-
-                filtered.forEach(u => {
-                    const item = document.createElement('div');
-                    item.className = 'p-3 hover:bg-purple-50 cursor-pointer border-b border-slate-100 last:border-0 flex items-center justify-between';
-                    item.innerHTML = `
-                        <div>
-                            <p class="text-[12px] font-bold text-black">${u.name}</p>
-                            <p class="text-[10px] text-slate-500">${u.email} — ${u.role || 'user'}</p>
-                            <p class="text-[10px] text-purple-600 mt-0.5">🏢 ${u.company || 'Без компании'}</p>
-                        </div>
-                        <i class="bi bi-check-circle text-purple-600"></i>
-                    `;
-                    item.addEventListener('click', function() {
-                        document.getElementById('other_receiver_id').value = u.id;
-                        document.getElementById('other-name').textContent = u.name;
-                        document.getElementById('other-email').textContent = u.email;
-                        document.getElementById('other-company').textContent = '🏢 ' + (u.company || 'Без компании');
-                        document.getElementById('other-selected').classList.remove('hidden');
-                        otherList.classList.add('hidden');
-                        otherSearch.value = '';
-                        document.getElementById('other-error').classList.add('hidden');
-                    });
-                    otherList.appendChild(item);
-                });
-
-                otherList.classList.remove('hidden');
-            });
-        }
-
-        window.clearOtherReceiver = function() {
-            document.getElementById('other_receiver_id').value = '';
-            document.getElementById('other-selected').classList.add('hidden');
-        };
-
-        // Валидация формы
-        form.addEventListener('submit', function(e) {
-            if (!currentMode) {
+            if (mode === 'select_team' && selectedTeam.length === 0) {
                 e.preventDefault();
-                alert('Пожалуйста, выберите способ отправки');
-                return false;
+                teamError.style.display = 'block';
+                return;
             }
 
-            if (currentMode === 'select_team') {
-                if (selectedTeamUsers.length === 0) {
-                    e.preventDefault();
-                    document.getElementById('team-error').classList.remove('hidden');
-                    return false;
-                }
-            }
-
-            if (currentMode === 'other_company') {
-                if (!document.getElementById('other_receiver_id').value) {
-                    e.preventDefault();
-                    document.getElementById('other-error').classList.remove('hidden');
-                    return false;
-                }
-            }
-
-            submitBtn.disabled = true;
-            submitBtn.style.opacity = '0.7';
-            submitBtn.innerHTML = '<span>Отправка...</span>';
-        });
-
-        // Номер документа
-        const numInput = document.getElementById('doc_number');
-        numInput.addEventListener('input', function() {
-            if (!this.value.startsWith('№ ')) {
-                this.value = '№ ' + this.value.replace(/^№?\s?/, '');
-            }
-        });
-
-        // Файл
-        document.getElementById('file').addEventListener('change', function() {
-            if (this.files[0]) {
-                document.getElementById('file-name').textContent = this.files[0].name.toUpperCase();
-            } else {
-                document.getElementById('file-name').textContent = 'Выберите файл';
+            if (mode === 'other_company' && !selectedCompany) {
+                e.preventDefault();
+                alert(t.alertSelectCompany);
+                return;
             }
         });
     });
 </script>
 
-<style>
-    .label { font-size: 12px; font-weight: 500; letter-spacing: .18em; text-transform: uppercase; display:block; margin-bottom:7px; color:#334155; }
-    .input { width:100%; height:54px; border-radius:16px; border:1px solid #e2e8f0; padding:0 16px; font-weight:500; font-size:14px; outline:none; transition:.2s; color:#0f172a; background:#fff; }
-    .input:focus { border-color:#000; box-shadow:0 6px 0 #000; transform:translateY(-2px); }
-    textarea.input { min-height:140px; padding-top:14px; }
-</style>
 @endsection

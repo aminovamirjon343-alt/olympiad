@@ -124,71 +124,137 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', function () {
-            const translations = {
+            // ============================================================
+            // ЛОКАЛЬНЫЙ СЛОВАРЬ СТРАНИЦЫ ВЕРСИЙ
+            // ============================================================
+            const VERSIONS_TRANSLATIONS = {
                 ru: {
-                    pageTitle: "Версия документ",
-                    pageSubTitle: "История изменений файлов",
-                    btnAdd: "+ Добавить версию",
-                    thDoc: "Документ",
-                    thVer: "Версия",
-                    thFile: "Файл",
-                    thDate: "Дата",
-                    thActions: "Действия",
-                    btnDownload: "Скачать",
-                    btnShow: "Show",
-                    btnEdit: "Edit",
-                    btnDelete: "Delete",
-                    noVersions: "Нет версий",
-                    confirmDelete: "Удалить версию?"
+                    pageTitle: 'Версия документ',
+                    pageSubTitle: 'История изменений файлов',
+                    btnAdd: '+ Добавить версию',
+                    thDoc: 'Документ',
+                    thVer: 'Версия',
+                    thFile: 'Файл',
+                    thDate: 'Дата',
+                    thActions: 'Действия',
+                    btnDownload: 'Скачать',
+                    btnShow: 'Просмотр',
+                    btnEdit: 'Редактировать',
+                    btnDelete: 'Удалить',
+                    noVersions: 'Нет версий',
+                    confirmDelete: 'Удалить версию?'
                 },
                 tj: {
-                    pageTitle: "Нусхаи ҳуҷҷат",
-                    pageSubTitle: "Таърихи тағйироти файлҳо",
-                    btnAdd: "+ Иловаи нусха",
-                    thDoc: "Ҳуҷҷат",
-                    thVer: "Нусха",
-                    thFile: "Файл",
-                    thDate: "Сана",
-                    thActions: "Амалиёт",
-                    btnDownload: "Боргирӣ",
-                    btnShow: "Намоиш",
-                    btnEdit: "Таҳрир",
-                    btnDelete: "Ҳазф",
-                    noVersions: "Нусха мавҷуд нест",
-                    confirmDelete: "Нусха ҳазф карда шавад?"
+                    pageTitle: 'Нусхаи ҳуҷҷат',
+                    pageSubTitle: 'Таърихи тағйироти файлҳо',
+                    btnAdd: '+ Иловаи нусха',
+                    thDoc: 'Ҳуҷҷат',
+                    thVer: 'Нусха',
+                    thFile: 'Файл',
+                    thDate: 'Сана',
+                    thActions: 'Амалиёт',
+                    btnDownload: 'Боргирӣ',
+                    btnShow: 'Намоиш',
+                    btnEdit: 'Таҳрир',
+                    btnDelete: 'Ҳазф',
+                    noVersions: 'Нусха мавҷуд нест',
+                    confirmDelete: 'Нусха ҳазф карда шавад?'
                 },
                 en: {
-                    pageTitle: "Document Versions",
-                    pageSubTitle: "File Change History",
-                    btnAdd: "+ Add Version",
-                    thDoc: "Document",
-                    thVer: "Version",
-                    thFile: "File",
-                    thDate: "Date",
-                    thActions: "Actions",
-                    btnDownload: "Download",
-                    btnShow: "Show",
-                    btnEdit: "Edit",
-                    btnDelete: "Delete",
-                    noVersions: "No versions found",
-                    confirmDelete: "Delete version?"
+                    pageTitle: 'Document Versions',
+                    pageSubTitle: 'File Change History',
+                    btnAdd: '+ Add Version',
+                    thDoc: 'Document',
+                    thVer: 'Version',
+                    thFile: 'File',
+                    thDate: 'Date',
+                    thActions: 'Actions',
+                    btnDownload: 'Download',
+                    btnShow: 'Show',
+                    btnEdit: 'Edit',
+                    btnDelete: 'Delete',
+                    noVersions: 'No versions found',
+                    confirmDelete: 'Delete version?'
                 }
             };
 
-            const lang = localStorage.getItem('app-lang') || 'ru';
-            const t = translations[lang];
+            // ============================================================
+            // ФУНКЦИЯ ПРИМЕНЕНИЯ ПЕРЕВОДОВ
+            // ============================================================
+            function applyVersionsTranslations(lang) {
+                const dict = VERSIONS_TRANSLATIONS[lang] || VERSIONS_TRANSLATIONS.ru;
 
-            // Apply translations to text
-            document.querySelectorAll('[data-i18n]').forEach(el => {
-                const key = el.getAttribute('data-i18n');
-                if (t[key]) el.textContent = t[key];
+                // 1) Переводим все элементы с data-i18n
+                document.querySelectorAll('[data-i18n]').forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (dict[key] !== undefined) el.textContent = dict[key];
+                });
+
+                // 2) Переводим placeholder
+                document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+                    const key = el.getAttribute('data-i18n-placeholder');
+                    if (dict[key] !== undefined) el.setAttribute('placeholder', dict[key]);
+                });
+
+                // 3) Переводим title (подсказки)
+                document.querySelectorAll('[data-i18n-title]').forEach(el => {
+                    const key = el.getAttribute('data-i18n-title');
+                    if (dict[key] !== undefined) el.setAttribute('title', dict[key]);
+                });
+
+                // 4) Обрабатываем data-tooltip-key — ставим в title
+                document.querySelectorAll('[data-tooltip-key]').forEach(el => {
+                    const key = el.getAttribute('data-tooltip-key');
+                    if (dict[key] !== undefined) {
+                        el.setAttribute('title', dict[key]);
+                    }
+                });
+
+                // 5) Обновляем обработчики confirm для форм удаления
+                document.querySelectorAll('[data-confirm-i18n]').forEach(el => {
+                    const key = el.getAttribute('data-confirm-i18n');
+                    const message = dict[key] || 'Are you sure?';
+
+                    // Клонируем элемент, чтобы сбросить старые обработчики
+                    const newEl = el.cloneNode(true);
+                    el.parentNode.replaceChild(newEl, el);
+
+                    if (newEl.tagName === 'FORM') {
+                        newEl.onsubmit = (e) => {
+                            if (!confirm(message)) e.preventDefault();
+                        };
+                    } else {
+                        const form = newEl.closest('form');
+                        if (form) {
+                            form.onsubmit = (e) => {
+                                if (!confirm(message)) e.preventDefault();
+                            };
+                        }
+                    }
+                });
+            }
+
+            // ============================================================
+            // 1. Применяем сразу при загрузке
+            // ============================================================
+            const initialLang = localStorage.getItem('docsign_lang') || 'ru';
+            applyVersionsTranslations(initialLang);
+
+            // ============================================================
+            // 2. Слушаем событие смены языка от layouts/admin.blade.php
+            // ============================================================
+            window.addEventListener('docsign:lang-changed', (e) => {
+                const lang = e.detail?.lang || 'ru';
+                applyVersionsTranslations(lang);
             });
 
-            // Update confirm messages in forms
-            document.querySelectorAll('form[onsubmit]').forEach(form => {
-                form.onsubmit = function() {
-                    return confirm(t.confirmDelete);
-                };
+            // ============================================================
+            // 3. Синхронизация между вкладками браузера
+            // ============================================================
+            window.addEventListener('storage', (e) => {
+                if (e.key === 'docsign_lang' && e.newValue) {
+                    applyVersionsTranslations(e.newValue);
+                }
             });
         });
     </script>

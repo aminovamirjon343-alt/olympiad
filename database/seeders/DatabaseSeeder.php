@@ -11,7 +11,10 @@ class DatabaseSeeder extends Seeder
     use WithoutModelEvents;
 
 
-    public function run(): void{
-
+    public function run()
+    {
+        $this->call([
+            SuperAdminSeeder::class, // Добавь эту строку
+        ]);
     }
 }

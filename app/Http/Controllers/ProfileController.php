@@ -3,10 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Models\Document;
+use App\Models\Company;
+use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Support\Facades\Storage;
@@ -16,6 +17,9 @@ use Carbon\Carbon;
 
 class ProfileController extends Controller
 {
+    /**
+     * Показ профиля с активностью
+     */
     public function show(Request $request): View
     {
         $user = $request->user();
@@ -44,6 +48,98 @@ class ProfileController extends Controller
         ));
     }
 
+    /**
+     * Форма редактирования профиля
+     */
+    public function edit(Request $request): View
+    {
+        $user = $request->user();
+        return view('profile.edit', compact('user'));
+    }
+
+    /**
+     * Обновление основной информации профиля
+     */
+    public function update(Request $request): RedirectResponse
+    {
+        $user = $request->user();
+
+        $validated = $request->validate([
+            'name'          => ['required', 'string', 'max:255'],
+            'email'         => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:users,email,' . $user->id],
+            'phone'         => ['nullable', 'string', 'max:20'],
+            'company'       => ['nullable', 'string', 'max:255'],
+            'avatar'        => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
+            'remove_avatar' => ['nullable', 'string', 'in:0,1'],
+        ]);
+
+        // ===== ОБРАБОТКА АВАТАРА =====
+        if ($request->input('remove_avatar') === '1') {
+            if ($user->avatar) {
+                Storage::disk('public')->delete($user->avatar);
+            }
+            $user->avatar = null;
+        }
+
+        if ($request->hasFile('avatar')) {
+            if ($user->avatar) {
+                Storage::disk('public')->delete($user->avatar);
+            }
+            $user->avatar = $request->file('avatar')->store('avatars', 'public');
+        }
+
+        // ===== ОБНОВЛЕНИЕ ОСНОВНЫХ ДАННЫХ =====
+        $user->name = $validated['name'];
+        $user->email = $validated['email'];
+        $user->phone = $validated['phone'] ?? null;
+
+        // ===== СИНХРОНИЗАЦИЯ КОМПАНИИ =====
+        // Если админ меняет название компании - обновляем везде!
+        if ($user->isAdmin() && !empty($validated['company'])) {
+            $newCompanyName = $validated['company'];
+
+            // Если название изменилось
+            if ($user->company !== $newCompanyName) {
+                // 1. Обновляем в таблице companies (если есть company_id)
+                if ($user->company_id) {
+                    $company = Company::find($user->company_id);
+                    if ($company) {
+                        $company->update(['name' => $newCompanyName]);
+                    }
+                } else {
+                    // Если company_id нет - создаём компанию
+                    $company = Company::create([
+                        'name' => $newCompanyName,
+                        'owner_id' => $user->id,
+                    ]);
+                    $user->company_id = $company->id;
+                }
+
+                // 2. Обновляем название компании у ВСЕХ пользователей этой компании
+                User::where('company_id', $user->company_id)
+                    ->update(['company' => $newCompanyName]);
+
+                // 3. Обновляем у самого админа
+                $user->company = $newCompanyName;
+            }
+        } elseif (!$user->isAdmin() && !empty($validated['company'])) {
+            // Обычный пользователь (не админ) - просто обновляем поле company
+            $user->company = $validated['company'];
+        }
+
+        // Сброс верификации email если он изменился
+        if ($user->isDirty('email')) {
+            $user->email_verified_at = null;
+        }
+
+        $user->save();
+
+        return Redirect::route('profile.edit')->with('status', 'profile-updated');
+    }
+
+    /**
+     * Обновление настроек уведомлений
+     */
     public function updateGeneral(Request $request)
     {
         $user = auth()->user();
@@ -51,7 +147,7 @@ class ProfileController extends Controller
         $data = $request->validate([
             'email_notifications' => 'nullable|string',
             'tg_notifications'    => 'nullable|string',
-            'language'            => 'required|string|in:ru,tg',
+            'language'            => 'required|string|in:ru,tg,en',
         ]);
 
         $user->update([
@@ -63,63 +159,9 @@ class ProfileController extends Controller
         return back()->with('success', 'Настройки успешно обновлены!');
     }
 
-    public function edit(Request $request): View
-    {
-        return view('profile.edit', [
-            'users' => $request->user(),
-        ]);
-    }
-
-    public function update(Request $request): RedirectResponse
-    {
-        $user = $request->user();
-
-        $validated = $request->validate([
-            'name'          => ['required', 'string', 'max:255'],
-            'company'       => ['nullable', 'string', 'max:255'],
-            'email'         => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:users,email,' . $user->id],
-            'phone'         => ['nullable', 'string', 'max:20'],
-            'avatar'        => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
-            'remove_avatar' => ['nullable', 'string', 'in:0,1'],
-        ]);
-
-        // ===== ОБРАБОТКА УДАЛЕНИЯ АВАТАРА =====
-        if ($request->input('remove_avatar') === '1') {
-            // Удаляем старый файл с диска
-            if ($user->avatar) {
-                Storage::disk('public')->delete($user->avatar);
-            }
-            // Обнуляем поле в БД
-            $user->avatar = null;
-        }
-
-        // ===== ОБРАБОТКА ЗАГРУЗКИ НОВОГО АВАТАРА =====
-        if ($request->hasFile('avatar')) {
-            // Удаляем старый аватар если есть
-            if ($user->avatar) {
-                Storage::disk('public')->delete($user->avatar);
-            }
-
-            // Сохраняем новый
-            $path = $request->file('avatar')->store('avatars', 'public');
-            $user->avatar = $path;
-        }
-
-        // Обновляем остальные поля
-        $user->name = $validated['name'];
-        $user->email = $validated['email'];
-        $user->company = $validated['company'] ?? null;
-        $user->phone = $validated['phone'] ?? null;
-
-        if ($user->isDirty('email')) {
-            $user->email_verified_at = null;
-        }
-
-        $user->save();
-
-        return Redirect::route('profile.edit')->with('status', 'profile-updated');
-    }
-
+    /**
+     * Обновление пароля
+     */
     public function updatePassword(Request $request): RedirectResponse
     {
         $validated = $request->validateWithBag('updatePassword', [
@@ -134,6 +176,9 @@ class ProfileController extends Controller
         return back()->with('status', 'password-updated');
     }
 
+    /**
+     * Удаление аккаунта
+     */
     public function destroy(Request $request): RedirectResponse
     {
         $request->validateWithBag('userDeletion', [

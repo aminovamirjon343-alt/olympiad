@@ -119,6 +119,7 @@
 
 
 use App\Http\Controllers\Admin\AvatarController;
+use App\Http\Controllers\SuperAdmin\UserController as SuperAdminUserController;
 use App\Http\Controllers\CompanyController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DocumentCommentController;
@@ -234,10 +235,11 @@ Route::middleware(['auth', 'superadmin', 'last.seen'])
     ->prefix('super-admin')
     ->name('superadmin.')
     ->group(function () {
+
         // Дашборд
         Route::get('/', [SuperAdminController::class, 'index'])->name('dashboard');
 
-        // Пользователи
+        // ===== ПОЛЬЗОВАТЕЛИ =====
         Route::get('/users', [SuperAdminController::class, 'usersIndex'])->name('users.index');
         Route::get('/users/create', [SuperAdminController::class, 'create'])->name('users.create');
         Route::post('/users', [SuperAdminController::class, 'store'])->name('users.store');
@@ -245,20 +247,26 @@ Route::middleware(['auth', 'superadmin', 'last.seen'])
         Route::put('/users/{user}', [SuperAdminController::class, 'update'])->name('users.update');
         Route::delete('/users/{user}', [SuperAdminController::class, 'destroy'])->name('users.destroy');
 
-        // Компании - ВАЖНО: порядок маршрутов!
+        // ===== КОМПАНИИ =====
+        // ВАЖНО: порядок маршрутов! Специфичные ДО общих
         Route::get('/companies', [SuperAdminController::class, 'companiesIndex'])->name('companies.index');
         Route::get('/companies/create', [SuperAdminController::class, 'createCompany'])->name('companies.create');
         Route::post('/companies', [SuperAdminController::class, 'storeCompany'])->name('companies.store');
-        Route::get('/companies/{company}', [SuperAdminController::class, 'showCompany'])->name('companies.show'); // ← РАСКОММЕНТИРОВАНО!
+        Route::get('/companies/{company}', [SuperAdminController::class, 'showCompany'])->name('companies.show');
         Route::get('/companies/{company}/edit', [SuperAdminController::class, 'editCompany'])->name('companies.edit');
         Route::put('/companies/{company}', [SuperAdminController::class, 'updateCompany'])->name('companies.update');
         Route::delete('/companies/{company}', [SuperAdminController::class, 'destroyCompany'])->name('companies.destroy');
 
-        // Профиль
+        // ===== ПРОФИЛЬ СУПЕР-АДМИНА =====
         Route::get('/profile', [SuperAdminController::class, 'profile'])->name('profile');
         Route::put('/profile', [SuperAdminController::class, 'updateProfile'])->name('profile.update');
 
-        // Активность
+        // ===== АКТИВНОСТЬ =====
         Route::get('/activity', [SuperAdminController::class, 'activityIndex'])->name('activity.index');
         Route::get('/user/{user}/activity', [SuperAdminController::class, 'userActivity'])->name('user.activity');
     });
+Route::get('/dashboard/chart-data', [DashboardController::class, 'getChartData'])->name('dashboard.chart-data');
+
+Route::get('/notifications/check', [NotificationController::class, 'checkNew'])->name('notifications.check');
+
+

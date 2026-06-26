@@ -8,268 +8,1153 @@
 $hasOverdue = $signatures->contains(fn($s) => !$s->signed_at && $s->expires_at && $s->expires_at->isPast());
 $allSigned = $signatures->isNotEmpty() && $signatures->every(fn($s) => $s->signed_at);
 
-$statusOverlay = '';
-if ($hasOverdue) {
-$statusOverlay = 'bg-red-500/5';
-} elseif ($allSigned) {
-$statusOverlay = 'bg-blue-500/5';
-}
+// Статистика
+$totalSignatures = $signatures->total();
+$signedCount = $signatures->filter(fn($s) => $s->signed_at)->count();
+$pendingCount = $totalSignatures - $signedCount;
+$overdueCount = $signatures->filter(fn($s) => !$s->signed_at && $s->expires_at && $s->expires_at->isPast())->count();
 @endphp
 
-<div class="p-6 max-w-7xl mx-auto min-h-screen transition-colors duration-700 {{ $statusOverlay }}">
-    <style>
-        .sig-page {
-            --primary-color: #6366f1;
-            font-family: 'Inter', sans-serif !important;
-        }
-        .navbar-style-text, h1, h3, label, span, p, a, button, div {
-            font-family: 'Inter', sans-serif !important;
-        }
-        .card-sig {
-            background: rgba(255, 255, 255, 1) !important;
-            backdrop-filter: blur(8px);
-            border: 1.5px solid rgba(0, 0, 0, 0.12);
-            border-radius: 2rem;
-            overflow: hidden;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.5), 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-        }
-        .dark .card-sig { background: rgba(30, 41, 59, 1) !important; border-color: rgba(255, 255, 255, 0.2); }
+<style>
+    .sig-page {
+        min-height: 100vh;
+        padding: 32px 24px;
+        color: var(--text);
+    }
 
-        .card-sig:hover { transform: translateY(-6px); border-color: var(--primary-color); box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); }
-        .card-overdue { border: 2px solid #f43f5e !important; }
+    /* Заголовок страницы */
+    .sig-header {
+        max-width: 1400px;
+        margin: 0 auto 28px;
+    }
 
-        .sig-area {
-            min-height: 140px;
-            background: rgba(0, 0, 0, 0.02) !important;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-top: 1px solid rgba(0, 0, 0, 0.06);
-            border-bottom: 1px solid rgba(0, 0, 0, 0.06);
-            position: relative;
-        }
-        .dark .sig-area { background: rgba(255, 255, 255, 0.02) !important; }
+    .sig-title {
+        font-size: 26px;
+        font-weight: 700;
+        color: var(--text);
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        letter-spacing: -0.5px;
+        margin: 0 0 6px;
+    }
 
-        .btn-primary-custom {
-            background-color: var(--primary-color);
-            color: #fff !important;
-            border-radius: 1rem;
-            font-weight: 900;
-            letter-spacing: 0.02em;
-            text-transform: uppercase;
-            transition: all 0.2s;
-        }
-        .user-avatar {
-            width: 38px; height: 38px; border-radius: 12px;
-            background: rgba(99, 102, 241, 0.1);
-            display: flex; align-items: center; justify-content: center;
-            font-weight: 900; color: var(--primary-color);
-        }
-        .action-link { font-weight: 800; text-transform: uppercase; font-size: 10px; letter-spacing: 0.1em; }
-        .label-micro { font-size: 8px !important; font-weight: 900 !important; text-transform: uppercase !important; letter-spacing: 0.15em !important; opacity: 0.4; }
+    .sig-title::before {
+        content: "";
+        width: 4px;
+        height: 28px;
+        background: linear-gradient(180deg, rgba(var(--glow), 1), rgba(var(--glow), 0.3));
+        border-radius: 2px;
+        box-shadow: 0 0 10px rgba(var(--glow), 0.6);
+    }
 
-        .format-badge {
-            position: absolute;
-            top: 8px;
-            right: 8px;
-            padding: 2px 6px;
-            border-radius: 6px;
-            font-size: 8px;
-            font-weight: 900;
-            color: white;
-            text-transform: uppercase;
-            z-index: 10;
-        }
-    </style>
+    .sig-subtitle {
+        font-size: 13px;
+        color: var(--muted);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin: 0;
+    }
 
-    <div class="sig-page">
-        <header class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-10 gap-4">
-            <div>
-                <h1 class="text-3xl font-black tracking-tighter text-slate-900 dark:text-white" data-i18n="pageTitle">Реестр подписей</h1>
-                <div class="flex items-center gap-2 mt-1">
-                    <span class="w-2 h-2 rounded-full {{ $hasOverdue ? 'bg-rose-500 animate-pulse' : ($allSigned ? 'bg-emerald-500' : 'bg-slate-400') }}"></span>
-                    <p class="text-sm font-bold tracking-tight text-slate-700 dark:text-slate-300" data-i18n="{{ $hasOverdue ? 'sysUrgent' : ($allSigned ? 'sysComplete' : 'sysActive') }}">
-                        {{ $hasOverdue ? 'Требуется срочное внимание' : ($allSigned ? 'Все документы оформлены' : 'Система мониторинга активна') }}
-                    </p>
-                </div>
+    .status-indicator {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        box-shadow: 0 0 8px currentColor;
+    }
+
+    .status-indicator.urgent {
+        background: #ff6363;
+        color: #ff6363;
+        animation: pulse 1.5s infinite;
+    }
+
+    .status-indicator.complete {
+        background: #4cd982;
+        color: #4cd982;
+    }
+
+    .status-indicator.active {
+        background: var(--muted);
+        color: var(--muted);
+    }
+
+    @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.4; }
+    }
+
+    /* Статистика */
+    .stats-grid {
+        max-width: 1400px;
+        margin: 0 auto 24px;
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 16px;
+    }
+
+    @media (min-width: 768px) {
+        .stats-grid {
+            grid-template-columns: repeat(4, 1fr);
+        }
+    }
+
+    .stat-card {
+        position: relative;
+        background: linear-gradient(180deg, rgba(255,255,255,0.035), rgba(255,255,255,0.01));
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        padding: 18px;
+        overflow: hidden;
+        transition: all 0.3s ease;
+    }
+
+    .stat-card::before {
+        content: "";
+        position: absolute;
+        inset: -1px;
+        border-radius: var(--radius);
+        padding: 1px;
+        background: linear-gradient(135deg, rgba(var(--glow),0.4), transparent 40%, transparent 60%, rgba(var(--glow),0.2));
+        -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+        -webkit-mask-composite: xor;
+        mask-composite: exclude;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+        pointer-events: none;
+    }
+
+    .stat-card:hover::before {
+        opacity: 1;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 20px 40px -20px rgba(var(--glow), 0.3);
+    }
+
+    .stat-icon {
+        width: 42px;
+        height: 42px;
+        border-radius: 10px;
+        display: grid;
+        place-items: center;
+        font-size: 20px;
+        border: 1px solid;
+        transition: all 0.6s ease;
+    }
+
+    .stat-icon.total {
+        background: rgba(var(--glow), 0.12);
+        border-color: rgba(var(--glow), 0.25);
+        color: rgba(var(--glow), 1);
+        box-shadow: inset 0 0 10px rgba(var(--glow), 0.15);
+    }
+
+    .stat-icon.signed {
+        background: rgba(76, 217, 130, 0.12);
+        border-color: rgba(76, 217, 130, 0.25);
+        color: #4cd982;
+        box-shadow: inset 0 0 10px rgba(76, 217, 130, 0.15);
+    }
+
+    .stat-icon.pending {
+        background: rgba(255, 181, 71, 0.12);
+        border-color: rgba(255, 181, 71, 0.25);
+        color: #ffb547;
+        box-shadow: inset 0 0 10px rgba(255, 181, 71, 0.15);
+    }
+
+    .stat-icon.overdue {
+        background: rgba(255, 99, 99, 0.12);
+        border-color: rgba(255, 99, 99, 0.25);
+        color: #ff6363;
+        box-shadow: inset 0 0 10px rgba(255, 99, 99, 0.15);
+    }
+
+    .stat-value {
+        font-size: 26px;
+        font-weight: 700;
+        margin-top: 12px;
+        letter-spacing: -0.5px;
+    }
+
+    .stat-value.total { color: var(--text); }
+    .stat-value.signed { color: #4cd982; }
+    .stat-value.pending { color: #ffb547; }
+    .stat-value.overdue { color: #ff6363; }
+
+    .stat-label {
+        font-size: 10px;
+        font-family: 'JetBrains Mono', monospace;
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        font-weight: 500;
+        margin-top: 4px;
+    }
+
+    /* Фильтры */
+    .filters-bar {
+        max-width: 1400px;
+        margin: 0 auto 24px;
+        display: flex;
+        gap: 6px;
+        background: rgba(255,255,255,0.03);
+        padding: 4px;
+        border-radius: 12px;
+        border: 1px solid var(--line);
+        flex-wrap: wrap;
+    }
+
+    .filter-btn {
+        appearance: none;
+        border: 0;
+        background: transparent;
+        color: var(--muted);
+        font: 600 12px 'Inter', sans-serif;
+        padding: 8px 16px;
+        border-radius: 9px;
+        cursor: pointer;
+        transition: all 0.25s ease;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .filter-btn:hover {
+        color: var(--text);
+        background: rgba(255,255,255,0.04);
+    }
+
+    .filter-btn.active {
+        color: #fff;
+        background: linear-gradient(180deg, rgba(var(--glow), 0.25), rgba(var(--glow), 0.08));
+        box-shadow: inset 0 0 0 1px rgba(var(--glow), 0.35), 0 0 18px rgba(var(--glow), 0.25);
+    }
+
+    /* Сетка карточек */
+    .signatures-grid {
+        max-width: 1400px;
+        margin: 0 auto;
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 20px;
+    }
+
+    @media (min-width: 768px) {
+        .signatures-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+
+    @media (min-width: 1200px) {
+        .signatures-grid {
+            grid-template-columns: repeat(3, 1fr);
+        }
+    }
+
+    /* Карточка подписи */
+    .sig-card {
+        position: relative;
+        background: linear-gradient(180deg, rgba(255,255,255,0.035), rgba(255,255,255,0.01));
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        overflow: hidden;
+        transition: all 0.3s ease;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .sig-card::before {
+        content: "";
+        position: absolute;
+        inset: -1px;
+        border-radius: var(--radius);
+        padding: 1px;
+        background: linear-gradient(135deg, rgba(var(--glow),0.4), transparent 40%, transparent 60%, rgba(var(--glow),0.2));
+        -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+        -webkit-mask-composite: xor;
+        mask-composite: exclude;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+        pointer-events: none;
+    }
+
+    .sig-card:hover::before {
+        opacity: 1;
+    }
+
+    .sig-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 20px 40px -20px rgba(var(--glow), 0.3);
+    }
+
+    .sig-card.overdue {
+        border-color: rgba(255, 99, 99, 0.4);
+    }
+
+    .sig-card.overdue::before {
+        opacity: 1;
+        background: linear-gradient(135deg, rgba(255, 99, 99, 0.5), transparent 40%, transparent 60%, rgba(255, 99, 99, 0.3));
+    }
+
+    .sig-card.signed {
+        border-color: rgba(76, 217, 130, 0.3);
+    }
+
+    .sig-card.signed::before {
+        opacity: 1;
+        background: linear-gradient(135deg, rgba(76, 217, 130, 0.4), transparent 40%, transparent 60%, rgba(76, 217, 130, 0.2));
+    }
+
+    /* Header карточки */
+    .sig-card-header {
+        padding: 16px 18px 12px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 1px solid var(--line);
+    }
+
+    .sig-card-label {
+        font-size: 10px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: var(--muted);
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .sig-card-label.overdue {
+        color: #ff6363;
+    }
+
+    .sig-card-id {
+        font-size: 10px;
+        font-family: 'JetBrains Mono', monospace;
+        color: var(--muted);
+        background: rgba(255,255,255,0.04);
+        padding: 3px 8px;
+        border-radius: 6px;
+        border: 1px solid var(--line);
+    }
+
+    /* Title */
+    .sig-card-title {
+        padding: 14px 18px 10px;
+    }
+
+    .sig-card-title h3 {
+        font-size: 16px;
+        font-weight: 700;
+        color: var(--text);
+        margin: 0;
+        letter-spacing: -0.3px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .doc-icon {
+        width: 28px;
+        height: 32px;
+        border-radius: 6px;
+        display: grid;
+        place-items: center;
+        font-size: 14px;
+        flex-shrink: 0;
+    }
+
+    .doc-icon.pdf {
+        background: rgba(255, 99, 99, 0.15);
+        color: #ff6363;
+        border: 1px solid rgba(255, 99, 99, 0.3);
+    }
+
+    .doc-icon.word {
+        background: rgba(79, 140, 255, 0.15);
+        color: rgba(79, 140, 255, 1);
+        border: 1px solid rgba(79, 140, 255, 0.3);
+    }
+
+    .doc-icon.excel {
+        background: rgba(76, 217, 130, 0.15);
+        color: #4cd982;
+        border: 1px solid rgba(76, 217, 130, 0.3);
+    }
+
+    /* Signature Area */
+    .sig-area {
+        min-height: 130px;
+        background: rgba(255,255,255,0.02);
+        border-top: 1px solid var(--line);
+        border-bottom: 1px solid var(--line);
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 16px;
+        transition: all 0.2s ease;
+    }
+
+    .sig-area.clickable {
+        cursor: pointer;
+        text-decoration: none;
+    }
+
+    .sig-area.clickable:hover {
+        background: rgba(var(--glow), 0.05);
+    }
+
+    .sig-area.clickable:hover .sig-placeholder-icon {
+        color: rgba(var(--glow), 1);
+        transform: scale(1.15);
+    }
+
+    .sig-area.clickable:hover .sig-placeholder-text {
+        color: rgba(var(--glow), 1);
+        opacity: 1;
+    }
+
+    .sig-placeholder-icon {
+        font-size: 32px;
+        color: rgba(255,255,255,0.15);
+        transition: all 0.3s ease;
+    }
+
+    .sig-placeholder-text {
+        font-size: 9px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: var(--muted);
+        opacity: 0.5;
+        transition: all 0.3s ease;
+        margin-top: 8px;
+    }
+
+    .sig-qr-wrapper {
+        background: #ffffff;
+        padding: 10px;
+        border-radius: 12px;
+        box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+    }
+
+    .sig-qr-wrapper img {
+        width: 80px;
+        height: 80px;
+        object-fit: contain;
+        display: block;
+    }
+
+    .format-badge {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        padding: 3px 8px;
+        border-radius: 6px;
+        font-size: 9px;
+        font-weight: 700;
+        color: white;
+        text-transform: uppercase;
+        font-family: 'JetBrains Mono', monospace;
+        letter-spacing: 0.5px;
+        z-index: 10;
+    }
+
+    .format-badge.pdf { background: #ff6363; }
+    .format-badge.word { background: rgba(79, 140, 255, 1); }
+    .format-badge.excel { background: #4cd982; }
+
+    .signed-badge {
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        background: rgba(76, 217, 130, 0.15);
+        color: #4cd982;
+        padding: 4px 10px;
+        border-radius: 8px;
+        font-size: 9px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+        border: 1px solid rgba(76, 217, 130, 0.3);
+        z-index: 10;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+
+    .signed-badge::before {
+        content: "✓";
+        font-weight: 900;
+    }
+
+    /* Executor & Deadline */
+    .sig-card-meta {
+        padding: 14px 18px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex: 1;
+    }
+
+    .executor-info {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .executor-avatar {
+        width: 36px;
+        height: 36px;
+        border-radius: 10px;
+        background: linear-gradient(135deg, rgba(var(--glow), 0.5), rgba(var(--glow), 0.15));
+        border: 1px solid rgba(var(--glow), 0.3);
+        display: grid;
+        place-items: center;
+        font-weight: 700;
+        font-size: 12px;
+        color: #fff;
+        flex-shrink: 0;
+    }
+
+    .executor-label {
+        font-size: 9px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+        color: var(--muted);
+        margin-bottom: 3px;
+    }
+
+    .executor-name {
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--text);
+        letter-spacing: -0.2px;
+    }
+
+    .deadline-info {
+        text-align: right;
+    }
+
+    .deadline-label {
+        font-size: 9px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+        color: var(--muted);
+        margin-bottom: 3px;
+    }
+
+    .deadline-value {
+        font-size: 13px;
+        font-weight: 700;
+        color: var(--text);
+        font-family: 'JetBrains Mono', monospace;
+    }
+
+    .deadline-value.overdue {
+        color: #ff6363;
+    }
+
+    /* Progress Bar */
+    .sig-progress {
+        padding: 0 18px 14px;
+    }
+
+    .progress-bar {
+        height: 4px;
+        background: rgba(255,255,255,0.06);
+        border-radius: 2px;
+        overflow: hidden;
+    }
+
+    .progress-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #4cd982, #059669);
+        border-radius: 2px;
+        box-shadow: 0 0 8px rgba(76, 217, 130, 0.5);
+    }
+
+    .progress-info {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 6px;
+        font-size: 10px;
+        font-weight: 600;
+    }
+
+    .progress-info .complete {
+        color: #4cd982;
+    }
+
+    .progress-info .date {
+        color: var(--muted);
+        font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* Actions */
+    .sig-card-actions {
+        padding: 12px 18px;
+        border-top: 1px solid var(--line);
+        background: rgba(255,255,255,0.02);
+        display: flex;
+        justify-content: center;
+        gap: 20px;
+    }
+
+    .action-link {
+        font-size: 10px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        text-decoration: none;
+        transition: all 0.2s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+    }
+
+    .action-link.open {
+        color: rgba(var(--glow), 1);
+    }
+
+    .action-link.open:hover {
+        color: rgba(var(--glow), 0.8);
+        text-shadow: 0 0 8px rgba(var(--glow), 0.5);
+    }
+
+    .action-link.delete {
+        color: #ff6363;
+    }
+
+    .action-link.delete:hover {
+        color: #ff4444;
+        text-shadow: 0 0 8px rgba(255, 99, 99, 0.5);
+    }
+
+    .action-link button {
+        background: none;
+        border: none;
+        color: inherit;
+        font: inherit;
+        cursor: pointer;
+        padding: 0;
+    }
+
+    /* Empty State */
+    .empty-state {
+        grid-column: 1 / -1;
+        padding: 60px 20px;
+        text-align: center;
+        background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+        border: 2px dashed var(--line);
+        border-radius: var(--radius);
+    }
+
+    .empty-state-icon {
+        font-size: 56px;
+        color: rgba(255,255,255,0.15);
+        margin-bottom: 16px;
+    }
+
+    .empty-state-text {
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--muted);
+        margin: 0;
+    }
+
+    /* Pagination */
+    .pagination-wrapper {
+        max-width: 1400px;
+        margin: 32px auto 0;
+    }
+
+    .pagination-wrapper nav {
+        display: flex;
+        justify-content: center;
+        gap: 4px;
+        flex-wrap: wrap;
+    }
+
+    .pagination-wrapper a,
+    .pagination-wrapper span {
+        padding: 8px 14px;
+        border-radius: 8px;
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--muted);
+        background: rgba(255,255,255,0.03);
+        border: 1px solid var(--line);
+        text-decoration: none;
+        transition: all 0.2s ease;
+    }
+
+    .pagination-wrapper a:hover {
+        color: var(--text);
+        border-color: rgba(var(--glow), 0.4);
+        background: rgba(var(--glow), 0.08);
+    }
+
+    .pagination-wrapper span[aria-current="page"] {
+        color: #fff;
+        background: linear-gradient(180deg, rgba(var(--glow), 0.25), rgba(var(--glow), 0.08));
+        border-color: rgba(var(--glow), 0.4);
+        box-shadow: 0 0 12px rgba(var(--glow), 0.25);
+    }
+
+    .pagination-wrapper .relative {
+        display: contents;
+    }
+
+    .pagination-wrapper .flex {
+        display: contents;
+    }
+
+    .pagination-wrapper .items-center {
+        display: contents;
+    }
+
+    .pagination-wrapper .rounded-md {
+        border-radius: 8px;
+    }
+
+    .pagination-wrapper .border {
+        border: 1px solid var(--line);
+    }
+
+    .pagination-wrapper .bg-white {
+        background: rgba(255,255,255,0.03);
+    }
+
+    .pagination-wrapper .text-gray-500 {
+        color: var(--muted);
+    }
+
+    .pagination-wrapper .text-gray-700 {
+        color: var(--text);
+    }
+
+    .pagination-wrapper .hover\:bg-gray-50:hover {
+        background: rgba(var(--glow), 0.08);
+    }
+
+    .pagination-wrapper .hover\:text-gray-700:hover {
+        color: var(--text);
+    }
+
+    .pagination-wrapper .active a {
+        color: #fff;
+        background: linear-gradient(180deg, rgba(var(--glow), 0.25), rgba(var(--glow), 0.08));
+        border-color: rgba(var(--glow), 0.4);
+    }
+
+    .pagination-wrapper .disabled span {
+        opacity: 0.4;
+        cursor: not-allowed;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+        .sig-page { padding: 20px 16px; }
+        .sig-title { font-size: 22px; }
+    }
+</style>
+
+<div class="sig-page">
+    {{-- HEADER --}}
+    <div class="sig-header">
+        <h1 class="sig-title" data-i18n="pageTitle">Реестр подписей</h1>
+        <p class="sig-subtitle">
+            <span class="status-indicator {{ $hasOverdue ? 'urgent' : ($allSigned ? 'complete' : 'active') }}"></span>
+            <span data-i18n="{{ $hasOverdue ? 'sysUrgent' : ($allSigned ? 'sysComplete' : 'sysActive') }}">
+                {{ $hasOverdue ? 'Требуется срочное внимание' : ($allSigned ? 'Все документы оформлены' : 'Система мониторинга активна') }}
+            </span>
+        </p>
+    </div>
+
+    {{-- STATISTICS --}}
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-icon total">
+                <i class="bi bi-file-earmark-text"></i>
             </div>
-        </header>
+            <div class="stat-value total">{{ $totalSignatures }}</div>
+            <div class="stat-label" data-i18n="statTotal">Всего</div>
+        </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            @forelse($signatures as $index => $s)
-            @php
-            $isPast = !$s->signed_at && $s->expires_at && $s->expires_at->isPast();
-            $extension = $s->document && $s->document->file_path ? strtolower(pathinfo($s->document->file_path, PATHINFO_EXTENSION)) : null;
-            $isWord = in_array($extension, ['doc', 'docx']);
-            $docId = $s->document->id ?? null;
-            @endphp
+        <div class="stat-card">
+            <div class="stat-icon signed">
+                <i class="bi bi-check-circle-fill"></i>
+            </div>
+            <div class="stat-value signed">{{ $signedCount }}</div>
+            <div class="stat-label" data-i18n="statSigned">Подписано</div>
+        </div>
 
-            <div class="card-sig {{ $isPast ? 'card-overdue' : '' }}">
-                <div class="px-6 pt-5 pb-2 flex justify-between items-center text-black">
-                            <span class="text-xs uppercase tracking-wider font-black !opacity-100">
-                                @if($isPast)
-                                    <span data-i18n="overdueLabel" class="text-rose-600">❗ СРОК ИСТЕК</span>
-                                @else
-                                    <span data-i18n="docLabel">Документ</span> #{{ ($signatures->currentPage() - 1) * $signatures->perPage() + $index + 1 }}
-                                @endif
-                            </span>
-                    <span class="text-xs uppercase tracking-wider font-black !opacity-100">ID-{{ $s->id }}</span>
-                </div>
+        <div class="stat-card">
+            <div class="stat-icon pending">
+                <i class="bi bi-clock-fill"></i>
+            </div>
+            <div class="stat-value pending">{{ $pendingCount }}</div>
+            <div class="stat-label" data-i18n="statPending">Ожидает</div>
+        </div>
 
-                <div class="px-6 pb-5 pt-1">
-                    <div class="flex items-center gap-2">
-                        @if($isWord)
-                        <i class="bi bi-file-earmark-word-fill text-blue-500 text-base"></i>
-                        @elseif($extension == 'pdf')
-                        <i class="bi bi-file-earmark-pdf-fill text-red-500 text-base"></i>
+        <div class="stat-card">
+            <div class="stat-icon overdue">
+                <i class="bi bi-exclamation-triangle-fill"></i>
+            </div>
+            <div class="stat-value overdue">{{ $overdueCount }}</div>
+            <div class="stat-label" data-i18n="statOverdue">Просрочено</div>
+        </div>
+    </div>
+
+    {{-- FILTERS --}}
+    <div class="filters-bar">
+        <button class="filter-btn active" data-filter="all" data-i18n="filterAll">Все</button>
+        <button class="filter-btn" data-filter="signed" data-i18n="filterSigned">Подписанные</button>
+        <button class="filter-btn" data-filter="pending" data-i18n="filterPending">Ожидающие</button>
+        <button class="filter-btn" data-filter="overdue" data-i18n="filterOverdue">Просроченные</button>
+    </div>
+
+    {{-- SIGNATURES GRID --}}
+    <div class="signatures-grid" id="signaturesGrid">
+        @forelse($signatures as $index => $s)
+        @php
+        $isPast = !$s->signed_at && $s->expires_at && $s->expires_at->isPast();
+        $isSigned = (bool) $s->signed_at;
+        $extension = $s->document && $s->document->file_path ? strtolower(pathinfo($s->document->file_path, PATHINFO_EXTENSION)) : null;
+        $isWord = in_array($extension, ['doc', 'docx']);
+        $isExcel = in_array($extension, ['xls', 'xlsx']);
+        $isPdf = $extension === 'pdf';
+        $docId = $s->document->id ?? null;
+        $docDeadline = $s->document->deadline ?? null;
+        $isPastDate = !$s->signed_at && $docDeadline && \Carbon\Carbon::parse($docDeadline)->isPast();
+        @endphp
+
+        <div class="sig-card {{ $isPast ? 'overdue' : ($isSigned ? 'signed' : '') }}"
+             data-status="{{ $isSigned ? 'signed' : ($isPast ? 'overdue' : 'pending') }}">
+
+            {{-- Header --}}
+            <div class="sig-card-header">
+                    <span class="sig-card-label {{ $isPast ? 'overdue' : '' }}">
+                        @if($isPast)
+                            <i class="bi bi-exclamation-circle-fill"></i>
+                            <span data-i18n="overdueLabel">СРОК ИСТЕК</span>
+                        @else
+                            <span data-i18n="docLabel">Документ</span> #{{ ($signatures->currentPage() - 1) * $signatures->perPage() + $index + 1 }}
                         @endif
-                        <h3 class="text-2xl font-black leading-tight truncate text-slate-900 dark:text-slate-100 tracking-tight">
-                            {{ $s->document->title ?? 'Без названия' }}
-                        </h3>
-                    </div>
-                </div>
+                    </span>
+                <span class="sig-card-id">ID-{{ $s->id }}</span>
+            </div>
 
-                {{-- Кликабельная зона, если документ ожидает подписи --}}
-                @if($s->signature)
-                <div class="sig-area">
-                    @if($extension)
-                    <div class="format-badge {{ $isWord ? 'bg-blue-600' : 'bg-red-600' }}">
-                        {{ $extension }}
-                    </div>
+            {{-- Title --}}
+            <div class="sig-card-title">
+                <h3>
+                    @if($isWord)
+                    <i class="bi bi-file-earmark-word-fill doc-icon word"></i>
+                    @elseif($isPdf)
+                    <i class="bi bi-file-earmark-pdf-fill doc-icon pdf"></i>
+                    @elseif($isExcel)
+                    <i class="bi bi-file-earmark-excel-fill doc-icon excel"></i>
+                    @else
+                    <i class="bi bi-file-earmark doc-icon"></i>
                     @endif
-                    <div class="bg-white p-2 rounded-xl shadow-sm border border-slate-100 flex items-center justify-center">
-                        <img src="{{ asset('storage/' . $s->signature) }}" class="h-20 w-20 object-contain block" alt="QR Code Signature">
-                    </div>
+                    <span title="{{ $s->document->title ?? 'Без названия' }}">
+                            {{ $s->document->title ?? 'Без названия' }}
+                        </span>
+                </h3>
+            </div>
+
+            {{-- Signature Area --}}
+            @if($s->signature)
+            <div class="sig-area">
+                <div class="signed-badge" data-i18n="badgeSigned">ПОДПИСАНО</div>
+
+                @if($extension)
+                <div class="format-badge {{ $isWord ? 'word' : ($isPdf ? 'pdf' : 'excel') }}">
+                    {{ $extension }}
                 </div>
-                @else
-                <a href="{{ route('signatures.create', ['document_id' => $docId]) }}" class="sig-area hover:bg-indigo-50/30 dark:hover:bg-indigo-950/10 transition-colors group">
-                    @if($extension)
-                    <div class="format-badge {{ $isWord ? 'bg-blue-600' : 'bg-red-600' }}">
-                        {{ $extension }}
-                    </div>
-                    @endif
-                    <div class="text-center py-4 flex flex-col items-center justify-center">
-                        <i class="bi bi-qr-code text-2xl text-slate-300 dark:text-slate-600 mb-1 block group-hover:text-indigo-500 group-hover:scale-110 transition-all"></i>
-                        <span class="label-micro !opacity-30 italic group-hover:text-indigo-500 group-hover:!opacity-100 transition-opacity" data-i18n="waitingSig">Ожидает подписи</span>
-                    </div>
-                </a>
                 @endif
 
-                <div class="px-6 py-5 flex justify-between items-center">
-                    <div class="flex items-center gap-3">
-                        <div class="user-avatar text-[10px] shadow-sm">
-                            {{ mb_strtoupper(mb_substr($s->user->name ?? '?', 0, 1)) }}
-                        </div>
-                        <div>
-                            <div class="label-micro dark:text-white" data-i18n="labelExecutor">Исполнитель</div>
-                            <div class="text-[14px] font-bold leading-none text-slate-800 dark:text-slate-200 tracking-tight">{{ Str::limit($s->user->name ?? 'Неизвестен', 12) }}</div>
-                        </div>
+                <div class="sig-qr-wrapper">
+                    <img src="{{ asset('storage/' . $s->signature) }}" alt="QR Code Signature">
+                </div>
+            </div>
+            @else
+            <a href="{{ route('signatures.create', ['document_id' => $docId]) }}" class="sig-area clickable">
+                @if($extension)
+                <div class="format-badge {{ $isWord ? 'word' : ($isPdf ? 'pdf' : 'excel') }}">
+                    {{ $extension }}
+                </div>
+                @endif
+                <div style="text-align: center;">
+                    <i class="bi bi-qr-code sig-placeholder-icon"></i>
+                    <div class="sig-placeholder-text" data-i18n="waitingSig">Ожидает подписи</div>
+                </div>
+            </a>
+            @endif
+
+            {{-- Executor & Deadline --}}
+            <div class="sig-card-meta">
+                <div class="executor-info">
+                    <div class="executor-avatar">
+                        {{ mb_strtoupper(mb_substr($s->user->name ?? '?', 0, 1)) }}
                     </div>
-
-                    @php
-                    $docDeadline = $s->document->deadline ?? null;
-                    $isPastDate = !$s->signed_at && $docDeadline && \Carbon\Carbon::parse($docDeadline)->isPast();
-                    @endphp
-
-                    <div class="text-right">
-                        <div class="label-micro dark:text-white" data-i18n="{{ $s->signed_at ? 'labelDone' : 'labelDeadline' }}">
-                            {{ $s->signed_at ? 'Завершено' : 'Дедлайн' }}
-                        </div>
-                        <div class="text-[14px] font-bold leading-none {{ $isPastDate ? 'text-rose-600' : 'text-slate-800 dark:text-slate-200' }}">
-                            {{ $docDeadline ? \Carbon\Carbon::parse($docDeadline)->format('d.m.Y') : '--' }}
-                        </div>
+                    <div>
+                        <div class="executor-label" data-i18n="labelExecutor">Исполнитель</div>
+                        <div class="executor-name">{{ Str::limit($s->user->name ?? 'Неизвестен', 14) }}</div>
                     </div>
                 </div>
 
-                <div class="px-6 py-4 border-t border-black/5 dark:border-white/5 flex justify-center gap-6 bg-black/[0.02] dark:bg-white/[0.02]">
-                    <a href="{{ route('signatures.show', $s->id) }}" class="text-indigo-500 hover:text-indigo-700 action-link" data-i18n="linkOpen">Открыть</a>
-                    @if(auth()->user()->is_admin || auth()->id() === $s->user_id)
-                    {{--                                <a href="{{ route('signatures.edit', $s->id) }}" class="text-amber-500 hover:text-amber-600 action-link" data-i18n="linkEdit">Правка</a>--}}
-                    <form action="{{ route('signatures.destroy', $s->id) }}" method="POST" class="inline">
-                        @csrf @method('DELETE')
-                        <button type="submit" class="text-rose-500 hover:text-rose-700 action-link" data-i18n="linkDelete" onclick="return confirm('Удалить?')">Удалить</button>
-                    </form>
-                    @endif
+                <div class="deadline-info">
+                    <div class="deadline-label" data-i18n="{{ $s->signed_at ? 'labelDone' : 'labelDeadline' }}">
+                        {{ $s->signed_at ? 'Завершено' : 'Дедлайн' }}
+                    </div>
+                    <div class="deadline-value {{ $isPastDate ? 'overdue' : '' }}">
+                        {{ $docDeadline ? \Carbon\Carbon::parse($docDeadline)->format('d.m.Y') : '--' }}
+                    </div>
                 </div>
             </div>
-            @empty
-            <div class="col-span-full py-20 text-center border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-[2rem]">
-                <p class="text-sm font-bold text-slate-400 label-micro" data-i18n="emptyRegistry">В реестре пока нет записей</p>
-            </div>
-            @endforelse
-        </div>
 
-        @if($signatures->hasPages())
-        <div class="mt-12">
-            {{ $signatures->links() }}
+            {{-- Progress Bar --}}
+            @if($isSigned)
+            <div class="sig-progress">
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: 100%"></div>
+                </div>
+                <div class="progress-info">
+                    <span class="complete" data-i18n="progressComplete">Подписано</span>
+                    <span class="date">
+                                {{ $s->signed_at ? \Carbon\Carbon::parse($s->signed_at)->format('d.m.Y H:i') : '--' }}
+                            </span>
+                </div>
+            </div>
+            @endif
+
+            {{-- Actions --}}
+            <div class="sig-card-actions">
+                <a href="{{ route('signatures.show', $s->id) }}" class="action-link open">
+                    <i class="bi bi-eye"></i>
+                    <span data-i18n="linkOpen">Открыть</span>
+                </a>
+                @if(auth()->user()->is_admin || auth()->id() === $s->user_id)
+                <form action="{{ route('signatures.destroy', $s->id) }}" method="POST" style="display: inline;">
+                    @csrf @method('DELETE')
+                    <button type="submit" class="action-link delete" data-i18n="linkDelete" onclick="return confirm('Удалить?')">
+                        <i class="bi bi-trash"></i>
+                        <span>Удалить</span>
+                    </button>
+                </form>
+                @endif
+            </div>
         </div>
-        @endif
+        @empty
+        <div class="empty-state">
+            <i class="bi bi-inbox empty-state-icon"></i>
+            <p class="empty-state-text" data-i18n="emptyRegistry">В реестре пока нет записей</p>
+        </div>
+        @endforelse
     </div>
+
+    {{-- Pagination --}}
+    @if($signatures->hasPages())
+    <div class="pagination-wrapper">
+        {{ $signatures->links() }}
+    </div>
+    @endif
 </div>
 
 <script>
-    document.addEventListener('DOMContentLoaded', () => {
-        const translations = {
+    document.addEventListener('DOMContentLoaded', function () {
+        // ============================================================
+        // ЛОКАЛЬНЫЙ СЛОВАРЬ СТРАНИЦЫ РЕЕСТРА ПОДПИСЕЙ
+        // ============================================================
+        const SIGN_REGISTRY_TRANSLATIONS = {
             ru: {
-                pageTitle: "Реестр подписей",
-                sysUrgent: "Требуется срочное внимание",
-                sysComplete: "Все документы оформлены",
-                sysActive: "Система мониторинга активна",
-                btnNew: "Новая запись",
-                overdueLabel: "❗ СРОК ИСТЕК",
-                docLabel: "Документ",
-                waitingSig: "Ожидает подписи",
-                labelExecutor: "Исполнитель",
-                labelDone: "Завершено",
-                labelDeadline: "Дедлайн",
-                linkOpen: "Открыть",
-                linkEdit: "Правка",
-                linkDelete: "Удалить",
-                emptyRegistry: "В реестре пока нет записей"
+                pageTitle: 'Реестр подписей',
+                sysUrgent: 'Требуется срочное внимание',
+                sysComplete: 'Все документы оформлены',
+                sysActive: 'Система мониторинга активна',
+                statTotal: 'Всего',
+                statSigned: 'Подписано',
+                statPending: 'Ожидает',
+                statOverdue: 'Просрочено',
+                filterAll: 'Все',
+                filterSigned: 'Подписанные',
+                filterPending: 'Ожидающие',
+                filterOverdue: 'Просроченные',
+                overdueLabel: 'СРОК ИСТЕК',
+                docLabel: 'Документ',
+                waitingSig: 'Ожидает подписи',
+                badgeSigned: 'ПОДПИСАНО',
+                labelExecutor: 'Исполнитель',
+                labelDone: 'Завершено',
+                labelDeadline: 'Дедлайн',
+                progressComplete: 'Подписано',
+                linkOpen: 'Открыть',
+                linkDelete: 'Удалить',
+                emptyRegistry: 'В реестре пока нет записей',
+                confirmDelete: 'Удалить запись?'
             },
             tj: {
-                pageTitle: "Феҳристи имзоҳо",
-                sysUrgent: "Таваҷҷӯҳи фаврӣ лозим аст",
-                sysComplete: "Ҳамаи ҳуҷҷатҳо ба расмият дароварда шудаанд",
-                sysActive: "Системаи мониторинг фаъол аст",
-                btnNew: "Сабти нав",
-                overdueLabel: "❗ МУҲЛАТ ГУЗАШТ",
-                docLabel: "Ҳуҷҷат",
-                waitingSig: "Мунтазири имзо",
-                labelExecutor: "Иҷрокунанда",
-                labelDone: "Анҷом ёфт",
-                labelDeadline: "Муҳлат",
-                linkOpen: "Кушодан",
-                linkEdit: "Таҳрир",
-                linkDelete: "Нест кардан",
-                emptyRegistry: "Дар феҳрист ҳоло ягон сабт нест"
+                pageTitle: 'Феҳристи имзоҳо',
+                sysUrgent: 'Таваҷҷӯҳи фаврӣ лозим аст',
+                sysComplete: 'Ҳамаи ҳуҷҷатҳо ба расмият дароварда шудаанд',
+                sysActive: 'Системаи мониторинг фаъол аст',
+                statTotal: 'Ҳамагӣ',
+                statSigned: 'Имзо шудааст',
+                statPending: 'Интизорӣ',
+                statOverdue: 'Муҳлат гузашт',
+                filterAll: 'Ҳама',
+                filterSigned: 'Имзошуда',
+                filterPending: 'Интизорӣ',
+                filterOverdue: 'Муҳлаташ гузашта',
+                overdueLabel: 'МУҲЛАТ ГУЗАШТ',
+                docLabel: 'Ҳуҷҷат',
+                waitingSig: 'Мунтазири имзо',
+                badgeSigned: 'ИМЗО ШУДААСТ',
+                labelExecutor: 'Иҷрокунанда',
+                labelDone: 'Анҷом ёфт',
+                labelDeadline: 'Муҳлат',
+                progressComplete: 'Имзо шудааст',
+                linkOpen: 'Кушодан',
+                linkDelete: 'Нест кардан',
+                emptyRegistry: 'Дар феҳрист ҳоло ягон сабт нест',
+                confirmDelete: 'Сабтро нест мекунед?'
             },
             en: {
-                pageTitle: "Signature Registry",
-                sysUrgent: "Urgent attention required",
-                sysComplete: "All documents processed",
-                sysActive: "Monitoring system active",
-                btnNew: "New Entry",
-                overdueLabel: "❗ OVERDUE",
-                docLabel: "Document",
-                waitingSig: "Awaiting signature",
-                labelExecutor: "Executor",
-                labelDone: "Completed",
-                labelDeadline: "Deadline",
-                linkOpen: "Open",
-                linkEdit: "Edit",
-                linkDelete: "Delete",
-                emptyRegistry: "No entries in the registry yet"
+                pageTitle: 'Signature Registry',
+                sysUrgent: 'Urgent attention required',
+                sysComplete: 'All documents processed',
+                sysActive: 'Monitoring system active',
+                statTotal: 'Total',
+                statSigned: 'Signed',
+                statPending: 'Pending',
+                statOverdue: 'Overdue',
+                filterAll: 'All',
+                filterSigned: 'Signed',
+                filterPending: 'Pending',
+                filterOverdue: 'Overdue',
+                overdueLabel: 'OVERDUE',
+                docLabel: 'Document',
+                waitingSig: 'Awaiting signature',
+                badgeSigned: 'SIGNED',
+                labelExecutor: 'Executor',
+                labelDone: 'Completed',
+                labelDeadline: 'Deadline',
+                progressComplete: 'Signed',
+                linkOpen: 'Open',
+                linkDelete: 'Delete',
+                emptyRegistry: 'No entries in the registry yet',
+                confirmDelete: 'Delete this record?'
             }
         };
 
-        const lang = localStorage.getItem('app-lang') || 'ru';
-        const t = translations[lang];
+        // ============================================================
+        // ФУНКЦИЯ ПРИМЕНЕНИЯ ПЕРЕВОДОВ
+        // ============================================================
+        function applySignRegistryTranslations(lang) {
+            const dict = SIGN_REGISTRY_TRANSLATIONS[lang] || SIGN_REGISTRY_TRANSLATIONS.ru;
 
-        document.querySelectorAll('[data-i18n]').forEach(el => {
-            const key = el.getAttribute('data-i18n');
-            if (t[key]) el.textContent = t[key];
+            // 1) Переводим все элементы с data-i18n
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if (dict[key] !== undefined) el.textContent = dict[key];
+            });
+
+            // 2) Переводим placeholder
+            document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+                const key = el.getAttribute('data-i18n-placeholder');
+                if (dict[key] !== undefined) el.setAttribute('placeholder', dict[key]);
+            });
+
+            // 3) Переводим title (подсказки)
+            document.querySelectorAll('[data-i18n-title]').forEach(el => {
+                const key = el.getAttribute('data-i18n-title');
+                if (dict[key] !== undefined) el.setAttribute('title', dict[key]);
+            });
+
+            // 4) Обновляем обработчики confirm для кнопок удаления
+            document.querySelectorAll('[data-confirm-i18n]').forEach(el => {
+                const key = el.getAttribute('data-confirm-i18n');
+                const message = dict[key] || 'Are you sure?';
+
+                // Клонируем элемент, чтобы сбросить старые обработчики
+                const newEl = el.cloneNode(true);
+                el.parentNode.replaceChild(newEl, el);
+
+                // Вешаем новый обработчик с актуальным переводом
+                newEl.addEventListener('click', function (e) {
+                    if (!confirm(message)) {
+                        e.preventDefault();
+                    }
+                });
+            });
+        }
+
+        // ============================================================
+        // ФИЛЬТРЫ
+        // ============================================================
+        const filterBtns = document.querySelectorAll('.filter-btn');
+        const cards = document.querySelectorAll('.sig-card');
+
+        filterBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                filterBtns.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+
+                const filter = btn.getAttribute('data-filter');
+
+                cards.forEach(card => {
+                    const status = card.getAttribute('data-status');
+
+                    if (filter === 'all' || status === filter) {
+                        card.style.display = '';
+                        setTimeout(() => {
+                            card.style.opacity = '1';
+                            card.style.transform = 'translateY(0)';
+                        }, 10);
+                    } else {
+                        card.style.opacity = '0';
+                        card.style.transform = 'translateY(-20px)';
+                        setTimeout(() => {
+                            card.style.display = 'none';
+                        }, 300);
+                    }
+                });
+            });
+        });
+
+        // ============================================================
+        // 1. Применяем сразу при загрузке
+        // ============================================================
+        const initialLang = localStorage.getItem('docsign_lang') || 'ru';
+        applySignRegistryTranslations(initialLang);
+
+        // ============================================================
+        // 2. Слушаем событие смены языка от layouts/admin.blade.php
+        // ============================================================
+        window.addEventListener('docsign:lang-changed', (e) => {
+            const lang = e.detail?.lang || 'ru';
+            applySignRegistryTranslations(lang);
+        });
+
+        // ============================================================
+        // 3. Синхронизация между вкладками браузера
+        // ============================================================
+        window.addEventListener('storage', (e) => {
+            if (e.key === 'docsign_lang' && e.newValue) {
+                applySignRegistryTranslations(e.newValue);
+            }
         });
     });
 </script>

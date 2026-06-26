@@ -8,43 +8,41 @@ return new class extends Migration
 {
     public function up(): void
     {
-        // 1. СНАЧАЛА создаём users БЕЗ внешнего ключа на companies
         Schema::create('users', function (Blueprint $table) {
             $table->id();
             $table->string('name');
             $table->string('email')->unique();
             $table->string('password');
             $table->boolean('is_admin')->default(false);
+            $table->boolean('is_super_admin')->default(false);
             $table->string('avatar')->nullable();
             $table->string('phone')->nullable();
             $table->string('role')->default('employee');
             $table->string('company')->nullable();
             $table->unsignedBigInteger('company_id')->nullable();
             $table->unsignedBigInteger('created_by')->nullable();
-            $table->integer('level')->default(1);
+            $table->integer('level')->default(2);
+            $table->timestamp('last_seen_at')->nullable();
             $table->timestamp('email_verified_at')->nullable();
             $table->rememberToken();
             $table->timestamps();
             $table->softDeletes();
         });
 
-        // 2. Создаём companies с ВСЕМИ полями (добавил address, phone, email)
         Schema::create('companies', function (Blueprint $table) {
             $table->id();
             $table->string('name');
-            $table->string('address')->nullable();  // <-- Добавил
-            $table->string('phone')->nullable();    // <-- Добавил
-            $table->string('email')->nullable();    // <-- Добавил
+            $table->string('address')->nullable();
+            $table->string('phone')->nullable();
+            $table->string('email')->nullable();
             $table->foreignId('owner_id')->nullable()->constrained('users')->nullOnDelete();
             $table->timestamps();
         });
 
-        // 3. ТЕПЕРЬ добавляем внешний ключ от users к companies
         Schema::table('users', function (Blueprint $table) {
             $table->foreign('company_id')->references('id')->on('companies')->nullOnDelete();
         });
 
-        // 4. Остальные таблицы
         Schema::create('password_reset_tokens', function (Blueprint $table) {
             $table->string('email')->primary();
             $table->string('token');

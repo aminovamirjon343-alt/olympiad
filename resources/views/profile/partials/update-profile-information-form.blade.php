@@ -173,26 +173,126 @@
 </section>
 
 <script>
-    // ===== ПРЕВЬЮ АВТАРА =====
+    // ============================================================
+    // ЛОКАЛЬНЫЙ СЛОВАРЬ ФОРМЫ ПРОФИЛЯ
+    // ============================================================
+    const PROFILE_INFO_TRANSLATIONS = {
+        ru: {
+            profileDataTitle: 'Данные профиля',
+            profileDataDesc: 'Обновите информацию вашего аккаунта и адрес электронной почты.',
+            profilePhotoTitle: 'Фотография профиля',
+            profilePhotoDesc: 'JPG, PNG или WEBP. Максимум 2MB.',
+            changePhoto: 'Изменить',
+            btnUpload: 'Загрузить фото',
+            btnRemovePhoto: 'Удалить',
+            labelName: 'Имя',
+            labelCompany: 'Название компании',
+            labelEmail: 'Email',
+            labelPhone: 'Телефон',
+            emailUnverified: 'Ваш адрес электронной почты не подтвержден.',
+            btnResendVerify: 'Нажмите здесь, чтобы отправить письмо снова.',
+            verifyLinkSent: 'Новая ссылка отправлена на ваш email.',
+            btnSaveProfile: 'Сохранить профиль',
+            statusSaved: 'Сохранено',
+            alertFileTooLarge: 'Файл слишком большой. Максимум 2MB',
+            alertRemovePhoto: 'Удалить фотографию профиля?',
+            alertPhoneInvalid: 'Пожалуйста, введите номер телефона полностью (9 цифр после +992)'
+        },
+        tj: {
+            profileDataTitle: 'Маълумоти профил',
+            profileDataDesc: 'Маълумоти аккаунт ва суроғаи почтаи электронии худро навсозӣ кунед.',
+            profilePhotoTitle: 'Расми профил',
+            profilePhotoDesc: 'JPG, PNG ё WEBP. Ҳадди аксар 2MB.',
+            changePhoto: 'Тағйир додан',
+            btnUpload: 'Боргузории расм',
+            btnRemovePhoto: 'Нест кардан',
+            labelName: 'Ном',
+            labelCompany: 'Номи ширкат',
+            labelEmail: 'Email',
+            labelPhone: 'Телефон',
+            emailUnverified: 'Суроғаи почтаи электронии шумо тасдиқ нашудааст.',
+            btnResendVerify: 'Барои дубора фиристодани мактуб инҷоро пахш кунед.',
+            verifyLinkSent: 'Пайванди нав ба почтаи электронии шумо фиристода шуд.',
+            btnSaveProfile: 'Захираи профил',
+            statusSaved: 'Захира шуд',
+            alertFileTooLarge: 'Файл хеле калон аст. Ҳадди аксар 2MB',
+            alertRemovePhoto: 'Расми профилро нест мекунед?',
+            alertPhoneInvalid: 'Лутфан, рақами телефонро пурра ворид кунед (9 рақам пас аз +992)'
+        },
+        en: {
+            profileDataTitle: 'Profile Information',
+            profileDataDesc: "Update your account's profile information and email address.",
+            profilePhotoTitle: 'Profile Photo',
+            profilePhotoDesc: 'JPG, PNG or WEBP. Maximum 2MB.',
+            changePhoto: 'Change',
+            btnUpload: 'Upload Photo',
+            btnRemovePhoto: 'Remove',
+            labelName: 'Name',
+            labelCompany: 'Company Name',
+            labelEmail: 'Email',
+            labelPhone: 'Phone',
+            emailUnverified: 'Your email address is unverified.',
+            btnResendVerify: 'Click here to re-send the verification email.',
+            verifyLinkSent: 'A new verification link has been sent to your email address.',
+            btnSaveProfile: 'Save Profile',
+            statusSaved: 'Saved',
+            alertFileTooLarge: 'File too large. Maximum 2MB',
+            alertRemovePhoto: 'Remove profile photo?',
+            alertPhoneInvalid: 'Please enter the full phone number (9 digits after +992)'
+        }
+    };
+
+    // ============================================================
+    // ФУНКЦИЯ ПРИМЕНЕНИЯ ПЕРЕВОДОВ
+    // ============================================================
+    function applyProfileInfoTranslations(lang) {
+        const dict = PROFILE_INFO_TRANSLATIONS[lang] || PROFILE_INFO_TRANSLATIONS.ru;
+
+        // 1) Переводим все элементы с data-i18n
+        document.querySelectorAll('[data-i18n]').forEach(el => {
+            const key = el.getAttribute('data-i18n');
+            if (dict[key] !== undefined) el.textContent = dict[key];
+        });
+
+        // 2) Переводим placeholder
+        document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+            const key = el.getAttribute('data-i18n-placeholder');
+            if (dict[key] !== undefined) el.setAttribute('placeholder', dict[key]);
+        });
+
+        // 3) Переводим title
+        document.querySelectorAll('[data-i18n-title]').forEach(el => {
+            const key = el.getAttribute('data-i18n-title');
+            if (dict[key] !== undefined) el.setAttribute('title', dict[key]);
+        });
+    }
+
+    // ============================================================
+    // ФУНКЦИЯ ПОЛУЧЕНИЯ АКТУАЛЬНОГО СЛОВАРЯ
+    // (используется в alert/confirm, чтобы брать перевод в момент вызова)
+    // ============================================================
+    function getCurrentDict() {
+        const lang = localStorage.getItem('docsign_lang') || 'ru';
+        return PROFILE_INFO_TRANSLATIONS[lang] || PROFILE_INFO_TRANSLATIONS.ru;
+    }
+
+    // ============================================================
+    // ПРЕВЬЮ АВТАРА
+    // ============================================================
     function previewAvatar(input) {
         if (input.files && input.files[0]) {
             const file = input.files[0];
 
-            // Проверка размера (2MB)
+            // Проверка размера (2MB) — берём АКТУАЛЬНЫЙ язык в момент вызова
             if (file.size > 2 * 1024 * 1024) {
-                const lang = localStorage.getItem('app-lang') || 'ru';
-                const alerts = {
-                    ru: "Файл слишком большой. Максимум 2MB",
-                    tj: "Файл хеле калон аст. Ҳадди аксар 2MB",
-                    en: "File too large. Maximum 2MB"
-                };
-                alert(alerts[lang]);
+                const dict = getCurrentDict();
+                alert(dict.alertFileTooLarge);
                 input.value = '';
                 return;
             }
 
             const reader = new FileReader();
-            reader.onload = function(e) {
+            reader.onload = function (e) {
                 const preview = document.getElementById('avatarPreview');
                 const letter = document.getElementById('avatarLetter');
                 const removeFlag = document.getElementById('removeAvatarFlag');
@@ -205,7 +305,7 @@
                     preview.classList.remove('hidden');
                 }
 
-                // Скрываем все остальные элементы аватара
+                // Скрываем букву
                 if (letter) letter.classList.add('hidden');
 
                 // Скрываем текущий аватар (img внутри avatarWrapper, кроме preview)
@@ -222,20 +322,19 @@
                 if (fileNameDisplay) {
                     fileNameDisplay.textContent = '📎 ' + file.name;
                 }
-            }
+            };
             reader.readAsDataURL(file);
         }
     }
 
+    // ============================================================
+    // УДАЛЕНИЕ АВТАРА
+    // ============================================================
     function removeAvatar() {
-        const lang = localStorage.getItem('app-lang') || 'ru';
-        const confirms = {
-            ru: "Удалить фотографию профиля?",
-            tj: "Расми профилро нест мекунед?",
-            en: "Remove profile photo?"
-        };
+        // Берём АКТУАЛЬНЫЙ язык в момент вызова
+        const dict = getCurrentDict();
 
-        if (confirm(confirms[lang])) {
+        if (confirm(dict.alertRemovePhoto)) {
             const preview = document.getElementById('avatarPreview');
             const letter = document.getElementById('avatarLetter');
             const input = document.getElementById('avatarInput');
@@ -252,7 +351,7 @@
             // Показываем букву
             if (letter) letter.classList.remove('hidden');
 
-            // Скрываем текущий аватар (img внутри avatarWrapper)
+            // Скрываем текущий аватар
             const currentAvatar = document.querySelector('#avatarWrapper > img:not(#avatarPreview)');
             if (currentAvatar) currentAvatar.classList.add('hidden');
 
@@ -270,88 +369,40 @@
         }
     }
 
-    // ===== ОСНОВНОЙ СКРИПТ =====
+    // ============================================================
+    // ОСНОВНОЙ СКРИПТ
+    // ============================================================
     document.addEventListener('DOMContentLoaded', function () {
         const phoneInput = document.getElementById('phone');
         const form = document.getElementById('profileForm');
         const prefix = '+992 ';
 
-        const lang = localStorage.getItem('app-lang') || 'ru';
-        const alerts = {
-            ru: "Пожалуйста, введите номер телефона полностью (9 цифр после +992)",
-            tj: "Лутфан, рақами телефонро пурра ворид кунед (9 рақам пас аз +992)",
-            en: "Please enter the full phone number (9 digits after +992)"
-        };
+        // ============================================================
+        // 1. Применяем переводы сразу при загрузке
+        // ============================================================
+        const initialLang = localStorage.getItem('docsign_lang') || 'ru';
+        applyProfileInfoTranslations(initialLang);
 
-        // Переводы
-        const profileTranslations = {
-            ru: {
-                profileDataTitle: "Данные профиля",
-                profileDataDesc: "Обновите информацию вашего аккаунта и адрес электронной почты.",
-                profilePhotoTitle: "Фотография профиля",
-                profilePhotoDesc: "JPG, PNG или WEBP. Максимум 2MB.",
-                changePhoto: "Изменить",
-                btnUpload: "Загрузить фото",
-                btnRemovePhoto: "Удалить",
-                labelName: "Имя",
-                labelCompany: "Название компании",
-                labelEmail: "Email",
-                labelPhone: "Телефон",
-                emailUnverified: "Ваш адрес электронной почты не подтвержден.",
-                btnResendVerify: "Нажмите здесь, чтобы отправить письмо снова.",
-                verifyLinkSent: "Новая ссылка отправлена на ваш email.",
-                btnSaveProfile: "Сохранить профиль",
-                statusSaved: "Сохранено"
-            },
-            tj: {
-                profileDataTitle: "Маълумоти профил",
-                profileDataDesc: "Маълумоти аккаунт ва суроғаи почтаи электронии худро навсозӣ кунед.",
-                profilePhotoTitle: "Расми профил",
-                profilePhotoDesc: "JPG, PNG ё WEBP. Ҳадди аксар 2MB.",
-                changePhoto: "Тағйир додан",
-                btnUpload: "Боргузории расм",
-                btnRemovePhoto: "Нест кардан",
-                labelName: "Ном",
-                labelCompany: "Номи ширкат",
-                labelEmail: "Email",
-                labelPhone: "Телефон",
-                emailUnverified: "Суроғаи почтаи электронии шумо тасдиқ нашудааст.",
-                btnResendVerify: "Барои дубора фиристодани мактуб инҷоро пахш кунед.",
-                verifyLinkSent: "Пайванди нав ба почтаи электронии шумо фиристода шуд.",
-                btnSaveProfile: "Захираи профил",
-                statusSaved: "Захира шуд"
-            },
-            en: {
-                profileDataTitle: "Profile Information",
-                profileDataDesc: "Update your account's profile information and email address.",
-                profilePhotoTitle: "Profile Photo",
-                profilePhotoDesc: "JPG, PNG or WEBP. Maximum 2MB.",
-                changePhoto: "Change",
-                btnUpload: "Upload Photo",
-                btnRemovePhoto: "Remove",
-                labelName: "Name",
-                labelCompany: "Company Name",
-                labelEmail: "Email",
-                labelPhone: "Phone",
-                emailUnverified: "Your email address is unverified.",
-                btnResendVerify: "Click here to re-send the verification email.",
-                verifyLinkSent: "A new verification link has been sent to your email address.",
-                btnSaveProfile: "Save Profile",
-                statusSaved: "Saved"
+        // ============================================================
+        // 2. Слушаем событие смены языка от layouts/admin.blade.php
+        // ============================================================
+        window.addEventListener('docsign:lang-changed', (e) => {
+            const lang = e.detail?.lang || 'ru';
+            applyProfileInfoTranslations(lang);
+        });
+
+        // ============================================================
+        // 3. Синхронизация между вкладками браузера
+        // ============================================================
+        window.addEventListener('storage', (e) => {
+            if (e.key === 'docsign_lang' && e.newValue) {
+                applyProfileInfoTranslations(e.newValue);
             }
-        };
+        });
 
-        const t = profileTranslations[lang];
-
-        // Применяем переводы
-        if (t) {
-            document.querySelectorAll('[data-i18n]').forEach(el => {
-                const key = el.getAttribute('data-i18n');
-                if (t[key]) el.textContent = t[key];
-            });
-        }
-
+        // ============================================================
         // Форматирование телефона
+        // ============================================================
         if (phoneInput) {
             phoneInput.addEventListener('input', function (e) {
                 if (!e.target.value.startsWith(prefix)) e.target.value = prefix;
@@ -365,6 +416,9 @@
             });
         }
 
+        // ============================================================
+        // Валидация телефона при отправке
+        // ============================================================
         if (form && phoneInput) {
             form.addEventListener('submit', function (e) {
                 let digitsOnly = phoneInput.value.substring(prefix.length).replace(/\D/g, '');
@@ -372,7 +426,9 @@
                     e.preventDefault();
                     phoneInput.style.border = '2px solid #ef4444';
                     phoneInput.focus();
-                    alert(alerts[lang]);
+                    // Берём АКТУАЛЬНЫЙ язык в момент отправки
+                    const dict = getCurrentDict();
+                    alert(dict.alertPhoneInvalid);
                 }
             });
         }

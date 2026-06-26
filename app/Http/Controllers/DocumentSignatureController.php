@@ -34,14 +34,31 @@ class DocumentSignatureController extends Controller
     public function index()
     {
         $user = Auth::user();
-        $query = DocumentSignature::with(['document', 'users']);
+
+        // ✅ ПРОСРОЧЕННЫЕ ДОКУМЕНТЫ
+        // Логика: статус pending И (deadline прошёл ИЛИ создано >7 дней назад)
+        $overdueQuery = Document::where('status', 'pending')
+            ->where(function($q) {
+                $q->where('deadline', '<', now())                    // Дедлайн прошёл
+                ->orWhere('created_at', '<', now()->subDays(7));   // Или старше 7 дней
+            });
+
+        if (!$user->is_admin) {
+            $overdueQuery->where('created_by', $user->id); // ✅ created_by, не user_id!
+        }
+
+        $overdueCount = $overdueQuery->count();
+
+        // ✅ ОСНОВНОЙ ЗАПРОС
+        $query = DocumentSignature::with(['document', 'user']);
 
         if (!$user->is_admin) {
             $query->where('user_id', $user->id);
         }
 
         $signatures = $query->latest()->paginate(12);
-        return view('signatures.index', compact('signatures'));
+
+        return view('signatures.index', compact('signatures', 'overdueCount'));
     }
 
     public function create(Request $request)
@@ -89,87 +106,57 @@ class DocumentSignatureController extends Controller
         $redirectType = 'other';
         $qrSize = 100;
 
-        \Log::info("Store: Авто-размещение QR на последней странице, Ext={$extension}");
-
         try {
             DB::transaction(function () use ($document, $signer, $currentWorkflow, $qrData, $extension, $qrSize, &$redirectType, $signerName, $signedDate) {
 
                 if ($extension === 'docx' || $extension === 'doc') {
                     $result = $this->processDocxSigning($document, $qrData, $qrSize, $signerName, $signedDate);
-
-                    DocumentSignature::updateOrCreate(
-                        ['document_id' => $document->id, 'user_id' => $signer->id],
-                        ['signature' => $result['qr_path'], 'signed_at' => now()]
-                    );
-
+                    $this->saveSignature($document, $signer, $result['qr_path']);
                     $this->processWorkflow($document, $currentWorkflow, $signer);
-
                     $document->update([
                         'file_path' => $result['docx_path'],
                         'status'    => ($this->isLastStep($document)) ? 'completed' : 'processing'
                     ]);
-
-                    $this->logAction($document->id, 'signed', "QR внедрен в DOCX (последняя страница): {$signer->name}");
+                    $this->logAction($document->id, 'signed', "QR внедрен в DOCX: {$signer->name}");
                     $redirectType = 'docx';
                     return;
                 }
 
                 if ($extension === 'pdf') {
                     $result = $this->processPdfSigning($document, $qrData, $qrSize, $signerName, $signedDate);
-
-                    DocumentSignature::updateOrCreate(
-                        ['document_id' => $document->id, 'user_id' => $signer->id],
-                        ['signature' => $result['qr_path'], 'signed_at' => now()]
-                    );
-
+                    $this->saveSignature($document, $signer, $result['qr_path']);
                     $this->processWorkflow($document, $currentWorkflow, $signer);
-
                     $document->update([
                         'file_path' => $result['pdf_path'],
                         'status'    => ($this->isLastStep($document)) ? 'completed' : 'processing'
                     ]);
-
-                    $this->logAction($document->id, 'signed', "QR внедрен в PDF (последняя страница): {$signer->name}");
+                    $this->logAction($document->id, 'signed', "QR внедрен в PDF: {$signer->name}");
                     $redirectType = 'pdf';
                     return;
                 }
 
                 if ($extension === 'xlsx' || $extension === 'xls') {
                     $result = $this->processXlsxSigning($document, $qrData, $qrSize, $signerName, $signedDate);
-
-                    DocumentSignature::updateOrCreate(
-                        ['document_id' => $document->id, 'user_id' => $signer->id],
-                        ['signature' => $result['qr_path'], 'signed_at' => now()]
-                    );
-
+                    $this->saveSignature($document, $signer, $result['qr_path']);
                     $this->processWorkflow($document, $currentWorkflow, $signer);
-
                     $document->update([
                         'file_path' => $result['xlsx_path'],
                         'status'    => ($this->isLastStep($document)) ? 'completed' : 'processing'
                     ]);
-
-                    $this->logAction($document->id, 'signed', "QR внедрен в XLSX (последний лист): {$signer->name}");
+                    $this->logAction($document->id, 'signed', "QR внедрен в XLSX: {$signer->name}");
                     $redirectType = 'xlsx';
                     return;
                 }
 
                 if ($extension === 'rtf') {
                     $result = $this->processRtfSigning($document, $qrData, $qrSize, $signerName, $signedDate);
-
-                    DocumentSignature::updateOrCreate(
-                        ['document_id' => $document->id, 'user_id' => $signer->id],
-                        ['signature' => $result['qr_path'], 'signed_at' => now()]
-                    );
-
+                    $this->saveSignature($document, $signer, $result['qr_path']);
                     $this->processWorkflow($document, $currentWorkflow, $signer);
-
                     $document->update([
                         'file_path' => $result['docx_path'],
                         'status'    => ($this->isLastStep($document)) ? 'completed' : 'processing'
                     ]);
-
-                    $this->logAction($document->id, 'signed', "RTF→DOCX с QR (последняя страница): {$signer->name}");
+                    $this->logAction($document->id, 'signed', "RTF→DOCX с QR: {$signer->name}");
                     $redirectType = 'docx';
                     return;
                 }
@@ -185,22 +172,18 @@ class DocumentSignatureController extends Controller
 
                 File::move($stampPath, storage_path('app/public/' . $permanentQrName));
 
-                DocumentSignature::updateOrCreate(
-                    ['document_id' => $document->id, 'user_id' => $signer->id],
-                    ['signature' => $permanentQrName, 'signed_at' => now()]
-                );
-
+                $this->saveSignature($document, $signer, $permanentQrName);
                 $this->processWorkflow($document, $currentWorkflow, $signer);
                 $document->update(['status' => ($this->isLastStep($document)) ? 'completed' : 'processing']);
-                $this->logAction($document->id, 'signed', "Документ {$extension} подписан (QR отдельно): {$signer->name}");
+                $this->logAction($document->id, 'signed', "Документ {$extension} подписан: {$signer->name}");
             });
 
             if ($redirectType === 'docx') {
-                return redirect()->route('signatures.index')->with('success', '✅ Документ Word успешно подписан! QR на последней странице.');
+                return redirect()->route('signatures.index')->with('success', '✅ Документ Word успешно подписан!');
             } elseif ($redirectType === 'pdf') {
-                return redirect()->route('signatures.index')->with('success', '✅ Документ PDF успешно подписан! QR на последней странице.');
+                return redirect()->route('signatures.index')->with('success', '✅ Документ PDF успешно подписан!');
             } elseif ($redirectType === 'xlsx') {
-                return redirect()->route('signatures.index')->with('success', '✅ Документ Excel успешно подписан! QR на последнем листе.');
+                return redirect()->route('signatures.index')->with('success', '✅ Документ Excel успешно подписан!');
             }
 
             return redirect()->route('signatures.index')->with('success', '✅ Документ успешно подписан!');
@@ -208,6 +191,35 @@ class DocumentSignatureController extends Controller
         } catch (Exception $e) {
             \Log::error("Ошибка подписи: " . $e->getMessage() . "\n" . $e->getTraceAsString());
             return back()->with('error', '❌ Ошибка: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * ✅ НОВЫЙ МЕТОД: Сохраняет или обновляет подпись
+     */
+    private function saveSignature($document, $signer, $qrPath)
+    {
+        // Ищем существующую запись
+        $signature = DocumentSignature::where('document_id', $document->id)
+            ->where('user_id', $signer->id)
+            ->first();
+
+        if ($signature) {
+            // Обновляем существующую
+            $signature->update([
+                'signature' => $qrPath,
+                'signed_at' => now(),
+            ]);
+            \Log::info("✅ Подпись ОБНОВЛЕНА: doc_id={$document->id}, user_id={$signer->id}, signed_at=" . now());
+        } else {
+            // Создаём новую
+            DocumentSignature::create([
+                'document_id' => $document->id,
+                'user_id'     => $signer->id,
+                'signature'   => $qrPath,
+                'signed_at'   => now(),
+            ]);
+            \Log::info("✅ Подпись СОЗДАНА: doc_id={$document->id}, user_id={$signer->id}, signed_at=" . now());
         }
     }
 
