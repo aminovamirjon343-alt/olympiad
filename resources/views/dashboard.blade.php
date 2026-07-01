@@ -119,124 +119,7 @@
         </div>
 
         <!-- Main Content Grid -->
-        <div class="chart-container">
-            @php
-            // Защита от ошибки, если $chartData не передана
-            if (!isset($chartData) || empty($chartData['values'])) {
-            $chartData = [
-            'labels' => ['Янв', 'Фев', 'Мар', 'Апр', 'Май', 'Июн', 'Июл', 'Авг', 'Сен', 'Окт', 'Ноя', 'Дек'],
-            'values' => [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-            ];
-            }
 
-            $values = $chartData['values'];
-            $max = max($values) ?: 1;
-            $min = min($values);
-            $range = $max - $min ?: 1;
-
-            $height = 260;
-            $width = 600;
-            $padding = 40;
-            $chartHeight = $height - $padding * 2;
-            $count = count($values);
-            $step = $count > 1 ? ($width - $padding) / ($count - 1) : 0;
-
-            $points = [];
-            foreach ($values as $i => $value) {
-            $x = $padding + ($i * $step);
-            $y = $height - $padding - (($value - $min) / $range) * $chartHeight;
-            $points[] = [
-            'x' => round($x, 1),
-            'y' => round($y, 1),
-            'value' => $value,
-            'label' => $chartData['labels'][$i] ?? ''
-            ];
-            }
-
-            $pathParts = [];
-            foreach ($points as $p) {
-            $pathParts[] = $p['x'] . ',' . $p['y'];
-            }
-            $pathLine = 'M' . implode(' L', $pathParts);
-
-            $lastPoint = $points[count($points) - 1];
-            $pathFill = $pathLine
-            . " L" . $lastPoint['x'] . "," . ($height - $padding)
-            . " L" . $padding . "," . ($height - $padding)
-            . " Z";
-
-            $yLabels = [];
-            for ($i = 0; $i <= 4; $i++) {
-            $val = round($min + ($range * $i / 4));
-            $yLabels[] = [
-            'value' => $val,
-            'y' => $height - $padding - ($chartHeight * $i / 4)
-            ];
-            }
-            @endphp
-
-            <svg viewBox="0 0 {{ $width }} {{ $height }}" preserveAspectRatio="none">
-                <defs>
-                    <linearGradient id="areaGrad" x1="0" x2="0" y1="0" y2="1">
-                        <stop offset="0" stop-color="rgba(139, 92, 246, 0.5)"/>
-                        <stop offset="1" stop-color="rgba(139, 92, 246, 0)"/>
-                    </linearGradient>
-                    <filter id="glow">
-                        <feGaussianBlur stdDeviation="3"/>
-                    </filter>
-                </defs>
-
-                <!-- Сетка -->
-                <g stroke="rgba(255,255,255,0.05)" stroke-width="1">
-                    @foreach($yLabels as $label)
-                    <line x1="{{ $padding }}" y1="{{ $label['y'] }}" x2="{{ $width }}" y2="{{ $label['y'] }}"/>
-                    @endforeach
-                </g>
-
-                <!-- Метки Y -->
-                <g fill="rgba(255,255,255,0.3)" font-size="10" font-family="monospace">
-                    @foreach($yLabels as $label)
-                    <text x="6" y="{{ $label['y'] + 4 }}">{{ $label['value'] }}</text>
-                    @endforeach
-                </g>
-
-                <!-- Область под графиком -->
-                <path d="{{ $pathFill }}" fill="url(#areaGrad)"/>
-
-                <!-- Линия с glow -->
-                <path d="{{ $pathLine }}" fill="none" stroke="rgba(139, 92, 246, 0.4)" stroke-width="6" filter="url(#glow)"/>
-
-                <!-- Основная линия -->
-                <path d="{{ $pathLine }}" fill="none" stroke="rgba(139, 92, 246, 1)" stroke-width="2"/>
-
-                <!-- Точки данных -->
-                <g fill="rgba(139, 92, 246, 1)" stroke="#0a0d14" stroke-width="2">
-                    @foreach($points as $point)
-                    @if($point['value'] > 0)
-                    <circle cx="{{ $point['x'] }}" cy="{{ $point['y'] }}" r="4">
-                        <title>{{ $point['label'] }}: {{ $point['value'] }} <span data-i18n="docs_word">документов</span></title>
-                    </circle>
-                    @endif
-                    @endforeach
-                </g>
-
-                <!-- Метки X (месяцы) -->
-                <g fill="rgba(255,255,255,0.4)" font-size="10" font-family="sans-serif">
-                    @foreach($points as $i => $point)
-                    @if($i % 2 == 0)
-                    <text x="{{ $point['x'] }}" y="{{ $height - 10 }}" text-anchor="middle">{{ $point['label'] }}</text>
-                    @endif
-                    @endforeach
-                </g>
-            </svg>
-
-            @if(isset($stats['total']) && $stats['total'] == 0)
-            <div class="empty-chart-message">
-                <p data-i18n="no_data_chart">Нет данных для отображения</p>
-                <small data-i18n="create_docs_hint">Создайте документы, чтобы увидеть статистику</small>
-            </div>
-            @endif
-        </div>
         <!-- Documents Table -->
         <div class="panel table-panel">
             <div class="panel-head">
@@ -277,158 +160,6 @@
                                 </div>
                             </div>
                         </td>
-                        <style>
-                            /* Контейнер кнопок */
-.action-btns {
-    display: flex;
-    gap: 8px;
-    align-items: center;
-    justify-content: flex-end;
-}
-
-/* Базовые стили кнопок */
-.action-btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 36px;
-    height: 36px;
-    border-radius: 8px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    background: rgba(255, 255, 255, 0.05);
-    cursor: pointer;
-    transition: all 0.2s ease;
-    text-decoration: none;
-}
-
-.action-btn i {
-    font-size: 16px;
-    color: #fff;
-}
-
-/* Кнопка редактирования */
-.action-btn-edit {
-    background: rgba(79, 140, 255, 0.15);
-    border-color: rgba(79, 140, 255, 0.3);
-}
-
-.action-btn-edit:hover {
-    background: rgba(79, 140, 255, 0.3);
-    border-color: #4f8cff;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(79, 140, 255, 0.3);
-}
-
-.action-btn-edit i {
-    color: #4f8cff;
-}
-
-/* Кнопка удаления */
-.action-btn-delete {
-    background: rgba(255, 107, 107, 0.15);
-    border-color: rgba(255, 107, 107, 0.3);
-}
-
-.action-btn-delete:hover {
-    background: rgba(255, 107, 107, 0.3);
-    border-color: #ff6b6b;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(255, 107, 107, 0.3);
-}
-
-.action-btn-delete i {
-    color: #ff6b6b;
-}
-
-/* Модальное окно */
-.modal-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.7);
-    backdrop-filter: blur(4px);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 1000;
-}
-
-.modal-box {
-    background: #1a1f2e;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 16px;
-    padding: 24px;
-    max-width: 400px;
-    width: 90%;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
-}
-
-.modal-title {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    font-size: 18px;
-    font-weight: 600;
-    color: #fff;
-    margin: 0 0 12px 0;
-}
-
-.modal-title i {
-    color: #ff6b6b;
-    font-size: 24px;
-}
-
-.modal-desc {
-    font-size: 14px;
-    color: #8892a6;
-    margin: 0 0 24px 0;
-    line-height: 1.5;
-}
-
-.modal-actions {
-    display: flex;
-    gap: 12px;
-    justify-content: flex-end;
-}
-
-.modal-btn {
-    padding: 10px 20px;
-    border-radius: 8px;
-    border: none;
-    font-size: 14px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s ease;
-}
-
-.modal-btn-cancel {
-    background: rgba(255, 255, 255, 0.1);
-    color: #fff;
-}
-
-.modal-btn-cancel:hover {
-    background: rgba(255, 255, 255, 0.2);
-}
-
-.modal-btn-delete {
-    background: #ff6b6b;
-    color: #fff;
-}
-
-.modal-btn-delete:hover {
-    background: #ff5252;
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(255, 107, 107, 0.4);
-}
-
-/* Alpine.js x-cloak */
-[x-cloak] {
-    display: none !important;
-}
-                        </style>
-                        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
                         <td class="counterparty-cell">{{ $doc->counterparty ?? 'Внутренний' }}</td>
                         <td class="type-cell">{{ $doc->type ?? 'Документ' }}</td>
                         <td>
@@ -542,16 +273,16 @@
 
     <style>
         :root {
-            --glow: 139, 92, 246;
+            /* Глобальная переменная подсветки из layout админки */
             --bg-dark: #0a0d14;
             --bg-card: rgba(20, 23, 35, 0.8);
             --bg-panel: rgba(15, 18, 28, 0.9);
-            --border-color: rgba(139, 92, 246, 0.15);
+            --border-color: rgba(var(--glow), 0.15);
             --text-primary: #f1f5f9;
             --text-secondary: #94a3b8;
             --text-muted: #64748b;
-            --purple: #8b5cf6;
-            --purple-light: #a78bfa;
+            --accent: rgb(var(--glow));
+            --accent-light: rgba(var(--glow), 0.8);
             --success: #10b981;
             --warning: #f59e0b;
             --danger: #ef4444;
@@ -620,19 +351,19 @@
         }
 
         .btn-outline-custom:hover {
-            border-color: var(--purple);
-            background: rgba(139, 92, 246, 0.1);
+            border-color: var(--accent);
+            background: rgba(var(--glow), 0.1);
         }
 
         .btn-primary-custom {
-            background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+            background: linear-gradient(135deg, rgb(var(--glow)) 0%, rgba(var(--glow), 0.8) 100%);
             border: none;
             color: white;
             padding: 0.75rem 1.5rem;
             border-radius: 12px;
             font-weight: 600;
             transition: all 0.3s ease;
-            box-shadow: 0 4px 15px rgba(139, 92, 246, 0.4);
+            box-shadow: 0 4px 15px rgba(var(--glow), 0.4);
             cursor: pointer;
         }
 
@@ -645,7 +376,7 @@
 
         .btn-primary-custom:hover {
             transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(139, 92, 246, 0.6);
+            box-shadow: 0 6px 20px rgba(var(--glow), 0.6);
         }
 
         .btn-glow {
@@ -693,15 +424,15 @@
             left: 0;
             right: 0;
             height: 2px;
-            background: linear-gradient(90deg, transparent, var(--purple), transparent);
+            background: linear-gradient(90deg, transparent, rgb(var(--glow)), transparent);
             opacity: 0;
             transition: opacity 0.3s ease;
         }
 
         .stat-card:hover {
             transform: translateY(-4px);
-            border-color: rgba(139, 92, 246, 0.3);
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3), 0 0 40px rgba(139, 92, 246, 0.15);
+            border-color: rgba(var(--glow), 0.3);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3), 0 0 40px rgba(var(--glow), 0.15);
         }
 
         .stat-card:hover::before {
@@ -725,11 +456,11 @@
             width: 40px;
             height: 40px;
             border-radius: 10px;
-            background: rgba(139, 92, 246, 0.15);
+            background: rgba(var(--glow), 0.15);
             display: flex;
             align-items: center;
             justify-content: center;
-            color: var(--purple-light);
+            color: rgb(var(--glow));
         }
 
         .stat-icon svg {
@@ -829,9 +560,9 @@
         }
 
         .tab-btn.active {
-            background: var(--purple);
+            background: rgb(var(--glow));
             color: white;
-            box-shadow: 0 0 15px rgba(139, 92, 246, 0.4);
+            box-shadow: 0 0 15px rgba(var(--glow), 0.4);
         }
 
         .tab-btn:hover:not(.active) {
@@ -872,14 +603,14 @@
         }
 
         .signer-item:hover {
-            background: rgba(139, 92, 246, 0.05);
+            background: rgba(var(--glow), 0.05);
         }
 
         .signer-avatar {
             width: 40px;
             height: 40px;
             border-radius: 50%;
-            background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+            background: linear-gradient(135deg, rgb(var(--glow)) 0%, rgba(var(--glow), 0.8) 100%);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -953,8 +684,8 @@
         }
 
         .table-row-hover:hover {
-            background: rgba(139, 92, 246, 0.05);
-            box-shadow: inset 3px 0 0 var(--purple);
+            background: rgba(var(--glow), 0.05);
+            box-shadow: inset 3px 0 0 rgb(var(--glow));
         }
 
         .table-modern td {
@@ -973,11 +704,11 @@
             width: 40px;
             height: 40px;
             border-radius: 8px;
-            background: rgba(139, 92, 246, 0.15);
+            background: rgba(var(--glow), 0.15);
             display: flex;
             align-items: center;
             justify-content: center;
-            color: var(--purple-light);
+            color: rgb(var(--glow));
             font-size: 0.75rem;
             font-weight: 600;
             flex-shrink: 0;
@@ -1451,16 +1182,16 @@
         }
 
         .pagination-wrapper .page-link:hover {
-            background: rgba(139, 92, 246, 0.15);
+            background: rgba(var(--glow), 0.15);
             color: var(--text-primary);
-            border-color: var(--purple);
+            border-color: rgb(var(--glow));
         }
 
         .pagination-wrapper .page-item.active .page-link {
-            background: var(--purple);
-            border-color: var(--purple);
+            background: rgb(var(--glow));
+            border-color: rgb(var(--glow));
             color: white;
-            box-shadow: 0 0 15px rgba(139, 92, 246, 0.4);
+            box-shadow: 0 0 15px rgba(var(--glow), 0.4);
         }
 
         /* Scrollbar */
@@ -1479,7 +1210,7 @@
         }
 
         ::-webkit-scrollbar-thumb:hover {
-            background: var(--purple);
+            background: rgb(var(--glow));
         }
 
         /* Responsive */

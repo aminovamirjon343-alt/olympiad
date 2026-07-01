@@ -1,59 +1,4 @@
 <?php
-//
-//namespace App\Http\Controllers\Auth;
-//
-//use App\Http\Controllers\Controller;
-//use App\Models\User;
-//use Illuminate\Auth\Events\Registered;
-//use Illuminate\Http\RedirectResponse;
-//use Illuminate\Http\Request;
-//use Illuminate\Support\Facades\Auth;
-//use Illuminate\Support\Facades\Hash;
-//use Illuminate\Validation\Rules;
-//use Illuminate\Validation\ValidationException;
-//use Illuminate\View\View;
-//
-//class RegisteredUserController extends Controller
-//{
-//    /**
-//     * Display the registration view.
-//     */
-//    public function create(): View
-//    {
-//        return view('auth.register');
-//    }
-//
-//    /**
-//     * Handle an incoming registration request.
-//     *
-//     * @throws ValidationException
-//     */
-//    public function store(Request $request): RedirectResponse
-//    {
-//        // 1. Добавляем валидацию для поля 'role'
-//        $request->validate([
-//            'name' => ['required', 'string', 'max:255'],
-//            'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class],
-//            'password' => ['required', 'confirmed', Rules\Password::defaults()],
-//            'role' => ['required', 'string', 'in:admin,employee,director,users'], // Проверяем, что пришло значение из твоего enum
-//        ]);
-//
-//        // 2. Сохраняем роль в базу данных
-//        $users = User::create([
-//            'name' => $request->name,
-//            'email' => $request->email,
-//            'password' => Hash::make($request->password),
-//            'role' => $request->role, // <- ВОТ ЭТОГО НЕ ХВАТАЛО!
-//        ]);
-//
-//        event(new Registered($users));
-//
-//        Auth::login($users);
-//
-//        return redirect(route('dashboard', absolute: false));
-//    }
-//}
-
 
 namespace App\Http\Controllers\Auth;
 
@@ -90,10 +35,34 @@ class RegisteredUserController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:' . User::class],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
-            'role' => ['required', 'string', 'in:admin,employee,director,users'],
+            // role теперь НЕ обязательное поле
+            'role' => ['nullable', 'string', 'in:admin,employee,director,users'],
         ]);
 
-        // Создаём компанию для нового пользователя
+        // Если роль не передана - устанавливаем 'users' по умолчанию (простой пользователь без компании)
+        $role = $request->role ?? 'users';
+
+        // Если это простой пользователь (без компании)
+        if ($role === 'users') {
+            $user = User::create([
+                'name' => $request->name,
+                'email' => $request->email,
+                'password' => Hash::make($request->password),
+                'role' => 'users',
+                'level' => 0, // простой пользователь
+                'company_id' => null,
+                'company' => null,
+                'created_by' => null,
+            ]);
+
+            event(new Registered($user));
+            Auth::login($user);
+
+            // Редирект на страницу для пользователей без компании
+            return redirect()->route('users_no.companies');
+        }
+
+        // Для остальных ролей (admin, employee, director) - создаём компанию
         $companyName = $request->name . "'s Team";
 
         $company = Company::create([
@@ -101,12 +70,11 @@ class RegisteredUserController extends Controller
             'owner_id' => null,
         ]);
 
-        // Создаём пользователя как админа своей компании (level=1)
         $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
             'password' => Hash::make($request->password),
-            'role' => $request->role,
+            'role' => $role,
             'level' => 1,
             'company_id' => $company->id,
             'company' => $companyName,

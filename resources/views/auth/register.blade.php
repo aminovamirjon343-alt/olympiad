@@ -852,7 +852,8 @@
             medium: 'Средний',
             strong: 'Сильный',
             veryStrong: 'Очень сильный',
-            passwordMismatch: 'Пароли не совпадают'
+            passwordMismatch: 'Пароли не совпадают',
+            registering: 'Регистрация...'
         },
         tj: {
             subtitle: 'Ҳисоб эҷод кунед',
@@ -874,7 +875,8 @@
             medium: 'Миёна',
             strong: 'Қавӣ',
             veryStrong: 'Хеле қавӣ',
-            passwordMismatch: 'Рамзҳо мувофиқ нестанд'
+            passwordMismatch: 'Рамзҳо мувофиқ нестанд',
+            registering: 'Бақайдгирӣ...'
         },
         en: {
             subtitle: 'Create an Account',
@@ -896,7 +898,8 @@
             medium: 'Medium',
             strong: 'Strong',
             veryStrong: 'Very Strong',
-            passwordMismatch: 'Passwords do not match'
+            passwordMismatch: 'Passwords do not match',
+            registering: 'Registering...'
         }
     };
 
@@ -904,9 +907,6 @@
 
     function switchLang(lang) {
         currentLang = lang;
-        document.querySelectorAll('.lang-btn').forEach(function(btn) {
-            btn.classList.toggle('active', btn.dataset.lang === lang);
-        });
         document.documentElement.lang = lang;
 
         var t = translations[lang];
@@ -1001,32 +1001,62 @@
         }, 3000);
     }
 
-    // Handle register
+    // Handle register - ИСПРАВЛЕННАЯ ВЕРСИЯ
     function handleRegister(e) {
         var password = document.getElementById('password');
         var confirm = document.getElementById('password_confirmation');
         var t = translations[currentLang];
 
+        // Убираем предыдущие ошибки
         password.classList.remove('error');
         confirm.classList.remove('error');
 
+        // Проверка совпадения паролей
         if (password.value !== confirm.value) {
             confirm.classList.add('error');
             showNotification(t.passwordMismatch, 'error');
+            return false; // Блокируем отправку формы
+        }
+
+        // Проверяем минимальную длину пароля
+        if (password.value.length < 8) {
+            password.classList.add('error');
+            showNotification(currentLang === 'ru' ? 'Пароль должен быть не менее 8 символов' :
+                           (currentLang === 'tj' ? 'Рамз бояд камаш 8 аломат дошта бошад' :
+                           'Password must be at least 8 characters'), 'error');
             return false;
         }
 
+        // Добавляем индикатор загрузки, но НЕ блокируем форму
         var btn = document.getElementById('submitBtn');
         btn.classList.add('loading');
-        btn.disabled = true;
-        return true;
+
+        // ВАЖНО: НЕ делаем btn.disabled = true, это блокирует отправку!
+
+        return true; // Разрешаем отправку формы
     }
 
     // Clear errors on input
     document.querySelectorAll('.form-input').forEach(function(input) {
         input.addEventListener('input', function() {
             this.classList.remove('error');
+            // Убираем индикатор загрузки при изменении
+            var btn = document.getElementById('submitBtn');
+            btn.classList.remove('loading');
         });
+    });
+
+    // Обработка ошибок валидации Laravel (если есть)
+    document.addEventListener('DOMContentLoaded', function() {
+        // Проверяем, есть ли ошибки валидации от Laravel
+        var errorMessages = document.querySelectorAll('.error-message');
+        if (errorMessages.length > 0) {
+            // Показываем первую ошибку как уведомление
+            var firstError = errorMessages[0].textContent;
+            if (firstError) {
+                showNotification(firstError, 'error');
+            }
+        }
     });
 </script>
 </body>
