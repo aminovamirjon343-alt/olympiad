@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Jobs\GenerateDocumentJob;
 use App\Models\Document;
 use App\Models\DocumentComment;
 use App\Models\DocumentLog;
@@ -846,5 +847,105 @@ class DocumentController extends Controller
         $document->delete();
 
         return redirect()->route('documents.index')->with('success', 'Документ удален!');
+    }
+    public function generateWithAI(Request $request)
+    {
+        $validated = $request->validate([
+            'type'      => 'required|in:contract,invoice,act,nda',
+            'recipient' => 'required|string|max:255',
+            'format'    => 'required|in:pdf,docx',
+            'details'   => 'nullable|array',
+        ]);
+
+        // Создаём документ-заготовку
+        $document = Document::create([
+            'user_id'    => auth()->id(),
+            'created_by' => auth()->id(),
+            'type'       => $validated['type'],
+            'title'      => 'Генерируется...',
+            'status'     => 'processing',
+            'receiver_id'=> null,
+        ]);
+
+        // Запускаем фоновую генерацию через Job
+        GenerateDocumentJob::dispatch(
+            $document,
+            $validated['type'],
+            $validated['recipient'],
+            $validated['details'] ?? [],
+            $validated['format']
+        );
+
+        return response()->json([
+            'message'     => 'Документ генерируется с помощью ИИ',
+            'document_id' => $document->id,
+        ]);
+    }
+    public function reject(Request $request, $id)
+    {
+        $document = Document::findOrFail($id);
+        $user = Auth::user();
+
+        // Проверяем права: только получатель или админ может отклонить
+        if ((int)$document->receiver_id !== (int)$user->id && !$user->isAdmin()) {
+            return back()->with('error', 'У вас нет прав на отклонение этого документа');
+        }
+
+        if ($document->status === 'rejected') {
+            return back()->with('error', 'Документ уже отклонён');
+        }
+
+        if (in_array($document->status, ['completed', 'approved'])) {
+            return back()->with('error', 'Нельзя отклонить уже подписанный документ');
+        }
+
+        // Валидация причины
+        $request->validate([
+            'reject_reason' => 'required|string|min:5|max:1000'
+        ], [
+            'reject_reason.required' => 'Необходимо указать причину отказа',
+            'reject_reason.min' => 'Причина должна содержать минимум 5 символов',
+            'reject_reason.max' => 'Причина не должна превышать 1000 символов'
+        ]);
+
+        // Меняем статус на rejected
+        $document->update(['status' => 'rejected']);
+
+        // Логируем действие с причиной
+        DocumentLog::create([
+            'document_id' => $document->id,
+            'user_id'     => $user->id,
+            'action'      => 'отказ',
+            'description' => "Документ отклонён пользователем {$user->name}. Причина: " . $request->input('reject_reason')
+        ]);
+
+        // Создаём комментарий с причиной отказа
+        DocumentComment::create([
+            'document_id' => $document->id,
+            'user_id'     => $user->id,
+            'comment'     => '❌ ОТКАЗ: ' . $request->input('reject_reason')
+        ]);
+
+        // Уведомляем отправителя
+        if ($document->created_by) {
+            Notification::create([
+                'user_id'         => $document->created_by,
+                'type'            => 'rejected',
+                'messages'        => 'Ваш документ отклонён: ' . $document->title,
+                'notifiable_type' => User::class,
+                'notifiable_id'   => $document->created_by,
+                'is_read'         => false,
+                'data'            => [
+                    'document_id'    => $document->id,
+                    'type'           => 'rejected',
+                    'user_name'      => $user->name,
+                    'user_email'     => $user->email,
+                    'document_title' => $document->title,
+                    'message'        => 'Получатель отклонил документ: ' . $document->title . '. Причина: ' . $request->input('reject_reason'),
+                ],
+            ]);
+        }
+
+        return redirect()->route('documents.show', $id)->with('success', 'Документ успешно отклонён');
     }
 }

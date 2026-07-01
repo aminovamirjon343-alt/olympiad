@@ -11,8 +11,14 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
+        // Глобальные middleware
+        $middleware->web(append: [
+            \App\Http\Middleware\UpdateUserOnlineStatus::class,
+        ]);
+
+        // ✅ РЕГИСТРИРУЕМ АЛИАС 'superadmin'
         $middleware->alias([
-            'superadmin' => \App\Http\Middleware\IsSuperAdmin::class,
+            'superadmin' => \App\Http\Middleware\CheckSuperAdmin::class,
             'last.seen' => \App\Http\Middleware\UpdateUserOnlineStatus::class,
         ]);
     })

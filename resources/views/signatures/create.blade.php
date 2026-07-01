@@ -192,171 +192,6 @@
         background: rgba(255,255,255,0.05);
     }
 
-    /* === DEADLINE SECTION === */
-    .deadline-section {
-        margin-bottom: 18px;
-        padding: 14px;
-        background: rgba(255,255,255,0.02);
-        border: 1px solid var(--line);
-        border-radius: 12px;
-        transition: all 0.25s ease;
-    }
-
-    .deadline-section:hover {
-        border-color: rgba(var(--glow), 0.3);
-        background: rgba(var(--glow), 0.03);
-    }
-
-    .deadline-section.error {
-        border-color: rgba(255, 99, 99, 0.5);
-        background: rgba(255, 99, 99, 0.05);
-    }
-
-    .deadline-section.warning {
-        border-color: rgba(255, 181, 71, 0.5);
-        background: rgba(255, 181, 71, 0.05);
-    }
-
-    .deadline-header {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        margin-bottom: 10px;
-    }
-
-    .deadline-label {
-        font-size: 10px;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-        color: var(--muted);
-        display: flex;
-        align-items: center;
-        gap: 6px;
-    }
-
-    .deadline-label .required {
-        color: #ff6363;
-    }
-
-    .deadline-label i {
-        font-size: 12px;
-        color: rgba(var(--glow), 1);
-    }
-
-    .deadline-input-wrapper {
-        position: relative;
-    }
-
-    .deadline-input {
-        width: 100%;
-        background: rgba(255,255,255,0.04);
-        border: 1px solid var(--line);
-        border-radius: 8px;
-        padding: 10px 12px;
-        color: var(--text);
-        font-size: 13px;
-        font-weight: 600;
-        font-family: 'JetBrains Mono', monospace;
-        outline: none;
-        transition: all 0.2s ease;
-    }
-
-    .deadline-input:focus {
-        border-color: rgba(var(--glow), 0.6);
-        box-shadow: 0 0 0 3px rgba(var(--glow), 0.15);
-        background: rgba(255,255,255,0.06);
-    }
-
-    .deadline-input::-webkit-calendar-picker-indicator {
-        filter: invert(0.8);
-        cursor: pointer;
-    }
-
-    .deadline-status {
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        margin-top: 8px;
-        font-size: 11px;
-        font-weight: 600;
-        padding: 6px 10px;
-        border-radius: 6px;
-    }
-
-    .deadline-status.hidden {
-        display: none;
-    }
-
-    .deadline-status.ok {
-        background: rgba(76, 217, 130, 0.1);
-        color: #4cd982;
-        border: 1px solid rgba(76, 217, 130, 0.25);
-    }
-
-    .deadline-status.warning {
-        background: rgba(255, 181, 71, 0.1);
-        color: #ffb547;
-        border: 1px solid rgba(255, 181, 71, 0.25);
-    }
-
-    .deadline-status.error {
-        background: rgba(255, 99, 99, 0.1);
-        color: #ff6363;
-        border: 1px solid rgba(255, 99, 99, 0.25);
-    }
-
-    .deadline-status i {
-        font-size: 13px;
-    }
-
-    .deadline-error-text {
-        font-size: 10px;
-        color: #ff6363;
-        margin-top: 6px;
-        font-weight: 600;
-        display: none;
-    }
-
-    .deadline-error-text.show {
-        display: block;
-    }
-
-    /* Quick deadline buttons */
-    .deadline-quick {
-        display: flex;
-        gap: 6px;
-        margin-top: 8px;
-        flex-wrap: wrap;
-    }
-
-    .deadline-quick-btn {
-        flex: 1;
-        min-width: 60px;
-        padding: 6px 8px;
-        background: rgba(255,255,255,0.03);
-        border: 1px solid var(--line);
-        border-radius: 6px;
-        color: var(--muted);
-        font-size: 10px;
-        font-weight: 700;
-        cursor: pointer;
-        transition: all 0.2s ease;
-        text-align: center;
-    }
-
-    .deadline-quick-btn:hover {
-        border-color: rgba(var(--glow), 0.4);
-        color: var(--text);
-        background: rgba(var(--glow), 0.08);
-    }
-
-    .deadline-quick-btn.active {
-        border-color: rgba(var(--glow), 0.6);
-        color: rgba(var(--glow), 1);
-        background: rgba(var(--glow), 0.15);
-    }
-
     /* QR Preview */
     .qr-section {
         display: flex;
@@ -779,46 +614,11 @@
                         data-ext="{{ $ext }}"
                         data-qr="{{ $qrUrl }}"
                         data-qr-text="{{ $qrText }}"
-                        data-signer="{{ $signerName }}"
-                        data-deadline="{{ $doc->deadline ?? '' }}">
+                        data-signer="{{ $signerName }}">
                         [{{ strtoupper($ext) }}] #{{ $doc->id }} — {{ $doc->title }}
                         </option>
                         @endforeach
                     </select>
-                </div>
-
-                {{-- DEADLINE SECTION --}}
-                <div class="deadline-section" id="deadlineSection">
-                    <div class="deadline-header">
-                        <label class="deadline-label" for="deadline">
-                            <i class="bi bi-calendar-event-fill"></i>
-                            <span data-i18n="deadlineLabel">Срок подписания</span>
-                            <span class="required">*</span>
-                        </label>
-                    </div>
-
-                    <div class="deadline-input-wrapper">
-                        <input type="date" name="deadline" id="deadline" class="deadline-input" required>
-                    </div>
-
-                    {{-- Quick buttons --}}
-                    <div class="deadline-quick">
-                        <button type="button" class="deadline-quick-btn" data-days="1" data-i18n="deadline1d">1 день</button>
-                        <button type="button" class="deadline-quick-btn" data-days="3" data-i18n="deadline3d">3 дня</button>
-                        <button type="button" class="deadline-quick-btn active" data-days="7" data-i18n="deadline7d">7 дней</button>
-                        <button type="button" class="deadline-quick-btn" data-days="14" data-i18n="deadline14d">14 дней</button>
-                        <button type="button" class="deadline-quick-btn" data-days="30" data-i18n="deadline30d">30 дней</button>
-                    </div>
-
-                    {{-- Status indicator --}}
-                    <div class="deadline-status hidden" id="deadlineStatus">
-                        <i class="bi bi-info-circle-fill"></i>
-                        <span id="deadlineStatusText"></span>
-                    </div>
-
-                    <div class="deadline-error-text" id="deadlineError" data-i18n="deadlineError">
-                        Срок должен быть в будущем
-                    </div>
                 </div>
 
                 <div class="qr-section">
@@ -908,18 +708,7 @@
                 selectAlert: 'Выберите документ!',
                 selectDocPreview: 'Выберите документ для предпросмотра',
                 excelPreview: 'Excel Preview',
-                officePreviewLocal: 'Office preview недоступен на localhost',
-                deadlineLabel: 'Срок подписания',
-                deadline1d: '1 день',
-                deadline3d: '3 дня',
-                deadline7d: '7 дней',
-                deadline14d: '14 дней',
-                deadline30d: '30 дней',
-                deadlineError: 'Срок должен быть в будущем',
-                deadlineOk: 'Осталось {days} дн.',
-                deadlineWarning: 'Осталось {days} дн. — скоро истекает',
-                deadlineOverdue: 'Срок истёк',
-                deadlineToday: 'Сегодня — последний день'
+                officePreviewLocal: 'Office preview недоступен на localhost'
             },
             tj: {
                 title: 'Имзои ҳуҷҷат',
@@ -937,18 +726,7 @@
                 selectAlert: 'Ҳуҷҷатро интихоб кунед!',
                 selectDocPreview: 'Барои пешнамоиш ҳуҷҷатро интихоб кунед',
                 excelPreview: 'Пешнамоиши Excel',
-                officePreviewLocal: 'Пешнамоиши Office дар localhost дастрас нест',
-                deadlineLabel: 'Муҳлати имзо',
-                deadline1d: '1 рӯз',
-                deadline3d: '3 рӯз',
-                deadline7d: '7 рӯз',
-                deadline14d: '14 рӯз',
-                deadline30d: '30 рӯз',
-                deadlineError: 'Муҳлат бояд дар оянда бошад',
-                deadlineOk: '{days} рӯз монд',
-                deadlineWarning: '{days} рӯз монд — наздик аст',
-                deadlineOverdue: 'Муҳлат гузашт',
-                deadlineToday: 'Имрӯз — рӯзи охирин'
+                officePreviewLocal: 'Пешнамоиши Office дар localhost дастрас нест'
             },
             en: {
                 title: 'Document Signing',
@@ -966,18 +744,7 @@
                 selectAlert: 'Please select a document!',
                 selectDocPreview: 'Select a document to preview',
                 excelPreview: 'Excel Preview',
-                officePreviewLocal: 'Office preview is not available on localhost',
-                deadlineLabel: 'Signing Deadline',
-                deadline1d: '1 day',
-                deadline3d: '3 days',
-                deadline7d: '7 days',
-                deadline14d: '14 days',
-                deadline30d: '30 days',
-                deadlineError: 'Deadline must be in the future',
-                deadlineOk: '{days} days remaining',
-                deadlineWarning: '{days} days left — expiring soon',
-                deadlineOverdue: 'Deadline passed',
-                deadlineToday: 'Today is the last day'
+                officePreviewLocal: 'Office preview is not available on localhost'
             }
         };
 
@@ -995,26 +762,20 @@
         function applySignTranslations(lang) {
             const dict = SIGN_TRANSLATIONS[lang] || SIGN_TRANSLATIONS.ru;
 
-            // 1) Переводим все элементы с data-i18n
             document.querySelectorAll('[data-i18n]').forEach(el => {
                 const key = el.getAttribute('data-i18n');
                 if (dict[key] !== undefined) el.textContent = dict[key];
             });
 
-            // 2) Переводим placeholder
             document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
                 const key = el.getAttribute('data-i18n-placeholder');
                 if (dict[key] !== undefined) el.setAttribute('placeholder', dict[key]);
             });
 
-            // 3) Переводим title
             document.querySelectorAll('[data-i18n-title]').forEach(el => {
                 const key = el.getAttribute('data-i18n-title');
                 if (dict[key] !== undefined) el.setAttribute('title', dict[key]);
             });
-
-            // 4) Обновляем deadline status (если он видимый)
-            updateDeadlineStatus();
         }
 
         // ============================================================
@@ -1022,12 +783,6 @@
         // ============================================================
         const form = document.getElementById('signatureForm');
         const select = document.getElementById('documentSelect');
-        const deadlineInput = document.getElementById('deadline');
-        const deadlineSection = document.getElementById('deadlineSection');
-        const deadlineStatus = document.getElementById('deadlineStatus');
-        const deadlineStatusText = document.getElementById('deadlineStatusText');
-        const deadlineError = document.getElementById('deadlineError');
-        const quickBtns = document.querySelectorAll('.deadline-quick-btn');
 
         const renderTarget = document.getElementById('renderTarget');
         const previewViewport = document.getElementById('previewViewport');
@@ -1041,104 +796,6 @@
         const submitBtn = document.getElementById('submitBtn');
 
         const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-
-        // ============================================================
-        // DEADLINE LOGIC
-        // ============================================================
-        function updateDeadlineStatus() {
-            const value = deadlineInput.value;
-            const dict = getCurrentDict(); // ← БЕРЁМ АКТУАЛЬНЫЙ СЛОВАРЬ
-
-            if (!value) {
-                deadlineStatus.classList.add('hidden');
-                deadlineError.classList.remove('show');
-                deadlineSection.classList.remove('error', 'warning');
-                return;
-            }
-
-            const selected = new Date(value);
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
-            selected.setHours(0, 0, 0, 0);
-
-            const diffTime = selected - today;
-            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-            deadlineSection.classList.remove('error', 'warning');
-            deadlineError.classList.remove('show');
-
-            if (diffDays < 0) {
-                deadlineSection.classList.add('error');
-                deadlineStatus.classList.remove('hidden', 'ok', 'warning');
-                deadlineStatus.classList.add('error');
-                deadlineStatus.querySelector('i').className = 'bi bi-x-circle-fill';
-                deadlineStatusText.textContent = dict.deadlineOverdue;
-                deadlineError.classList.add('show');
-            } else if (diffDays === 0) {
-                deadlineSection.classList.add('warning');
-                deadlineStatus.classList.remove('hidden', 'ok', 'warning', 'error');
-                deadlineStatus.classList.add('warning');
-                deadlineStatus.querySelector('i').className = 'bi bi-exclamation-triangle-fill';
-                deadlineStatusText.textContent = dict.deadlineToday;
-            } else if (diffDays <= 3) {
-                deadlineSection.classList.add('warning');
-                deadlineStatus.classList.remove('hidden', 'ok', 'warning', 'error');
-                deadlineStatus.classList.add('warning');
-                deadlineStatus.querySelector('i').className = 'bi bi-exclamation-triangle-fill';
-                deadlineStatusText.textContent = dict.deadlineWarning.replace('{days}', diffDays);
-            } else {
-                deadlineStatus.classList.remove('hidden', 'ok', 'warning', 'error');
-                deadlineStatus.classList.add('ok');
-                deadlineStatus.querySelector('i').className = 'bi bi-check-circle-fill';
-                deadlineStatusText.textContent = dict.deadlineOk.replace('{days}', diffDays);
-            }
-        }
-
-        function setQuickDeadline(days) {
-            const date = new Date();
-            date.setDate(date.getDate() + days);
-            const yyyy = date.getFullYear();
-            const mm = String(date.getMonth() + 1).padStart(2, '0');
-            const dd = String(date.getDate()).padStart(2, '0');
-            deadlineInput.value = `${yyyy}-${mm}-${dd}`;
-            updateDeadlineStatus();
-
-            quickBtns.forEach(btn => btn.classList.remove('active'));
-            const activeBtn = document.querySelector(`.deadline-quick-btn[data-days="${days}"]`);
-            if (activeBtn) activeBtn.classList.add('active');
-        }
-
-        // Quick buttons
-        quickBtns.forEach(btn => {
-            btn.addEventListener('click', () => {
-                const days = parseInt(btn.dataset.days);
-                setQuickDeadline(days);
-            });
-        });
-
-        // Input change
-        if (deadlineInput) {
-            deadlineInput.addEventListener('change', updateDeadlineStatus);
-
-            // Set min date to today
-            const today = new Date();
-            const yyyy = today.getFullYear();
-            const mm = String(today.getMonth() + 1).padStart(2, '0');
-            const dd = String(today.getDate()).padStart(2, '0');
-            deadlineInput.setAttribute('min', `${yyyy}-${mm}-${dd}`);
-
-            // Set default to 7 days
-            setQuickDeadline(7);
-        }
-
-        // Load deadline from document if available
-        function loadDocumentDeadline() {
-            const selectedOption = select ? select.options[select.selectedIndex] : null;
-            if (selectedOption && selectedOption.dataset.deadline) {
-                deadlineInput.value = selectedOption.dataset.deadline;
-                updateDeadlineStatus();
-            }
-        }
 
         // ============================================================
         // DOCUMENT RENDER LOGIC
@@ -1287,7 +944,6 @@
                 const qrUrl = selectedOption.getAttribute('data-qr');
 
                 if (qrPreview) qrPreview.src = qrUrl;
-                loadDocumentDeadline();
                 renderDocument(fileUrl, type, ext);
             } else {
                 if (renderTarget) renderTarget.innerHTML = '<div class="viewer-empty"><i class="bi bi-file-earmark-text"></i><p>' + dict.selectDocPreview + '</p></div>';
@@ -1313,7 +969,7 @@
         // ============================================================
         if (form) {
             form.addEventListener('submit', function (e) {
-                const dict = getCurrentDict(); // ← БЕРЁМ АКТУАЛЬНЫЙ СЛОВАРЬ
+                const dict = getCurrentDict();
 
                 if (!select.value) {
                     e.preventDefault();
@@ -1321,24 +977,6 @@
                     return false;
                 }
 
-                // Validate deadline
-                if (deadlineInput && deadlineInput.value) {
-                    const selected = new Date(deadlineInput.value);
-                    const today = new Date();
-                    today.setHours(0, 0, 0, 0);
-                    selected.setHours(0, 0, 0, 0);
-
-                    if (selected < today) {
-                        e.preventDefault();
-                        deadlineSection.classList.add('error');
-                        deadlineError.classList.add('show');
-                        deadlineInput.focus();
-                        deadlineInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                        return false;
-                    }
-                }
-
-                // Block button
                 submitBtn.disabled = true;
                 submitBtn.style.opacity = '0.7';
                 submitBtn.innerHTML = '<i class="bi bi-hourglass-split" style="font-size: 18px;"></i><span>' + dict.applyingStamp + '</span>';

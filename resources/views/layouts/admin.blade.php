@@ -24,6 +24,7 @@
             } catch(e) {}
         })();
     </script>
+    @push('styles')
     <style>
         :root{
           --bg-0:#06070b;
@@ -919,7 +920,8 @@
           .amb-btn .amb-label{display:none}
           .amb-btn{padding:8px 10px}
         }
-    </style>
+    </style>@endpush
+    @stack('styles')
 </head>
 <body>
 
@@ -935,15 +937,18 @@
         </div>
         <div>
             DocSign
-            <small data-i18n="brand_sub">ЭДО · v2.4</small>
+            <small data-i18n="brand_sub">ЭДО</small>
         </div>
     </div>
 
     <nav class="nav" id="nav">
+        <a href="/dashboard" class="button-link" style="text-decoration: none; color: inherit; display: inline-flex; align-items: center;">
+
         <button class="active" data-tab="dashboard">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>
-            <span data-i18n="dashboard">Обзор</span>
+                <span data-i18n="dashboard">Обзор</span>
         </button>
+        </a>
         <button data-tab="docs" onclick="window.location.href='/documents'">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
@@ -1422,22 +1427,12 @@
 <div class="layout">
     <aside class="sidebar">
         <div class="side-title" data-i18n="workspace">Рабочее пространство</div>
-        <a href="/dashboard" style="text-decoration: none; color: inherit; display: block;">
-            <div class="side-item active">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <rect x="3" y="3" width="7" height="7"/>
-                    <rect x="14" y="3" width="7" height="7"/>
-                    <rect x="14" y="14" width="7" height="7"/>
-                    <rect x="3" y="14" width="7" height="7"/>
-                </svg>
-                <span data-i18n="control_panel">Панель управления</span>
-            </div>
-        </a>
-        <a href="{{ route('documents.index', ['type' => 'outgoing']) }}" class="side-item" style="text-decoration: none; color: inherit;">
+
+        <a href="{{ route('documents.index', ['type' => 'incoming']) }}" class="side-item" style="text-decoration: none; color: inherit;">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
             <span data-i18n="incoming">Входящие</span>
         </a>
-        <a href="{{ route('documents.index', ['type' => 'incoming']) }}"  class="side-item" style="text-decoration: none; color: inherit;">
+        <a href="{{ route('documents.index', ['type' => 'outgoing']) }}" class="side-item" style="text-decoration: none; color: inherit;">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
             <span data-i18n="outgoing">Исходящие</span>
         </a>
@@ -2008,6 +2003,46 @@
     });
 </script>
 @endverbatim
+@stack('scripts')
+
+{{-- ✅ ВСТАВЬ ЭТОТ КОД СЮДА (перед </body>) --}}
+@if(auth()->check())
+<script>
+    (function() {
+        function heartbeat() {
+            fetch('{{ url("/heartbeat") }}', {
+                method: 'GET',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || ''
+                },
+                credentials: 'same-origin'
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('💚 Heartbeat:', data);
+            })
+            .catch(error => {
+                console.warn('❌ Heartbeat failed:', error);
+            });
+        }
+
+        // Запускаем сразу + каждые 60 секунд
+        heartbeat();
+        setInterval(heartbeat, 60000);
+
+        // При уходе со страницы — помечаем как оффлайн (опционально)
+        window.addEventListener('beforeunload', function() {
+            fetch('{{ url("/heartbeat") }}?offline=1', {
+                method: 'GET',
+                keepalive: true,
+                credentials: 'same-origin'
+            }).catch(() => {});
+        });
+    })();
+</script>
+@endif
 </body>
 </html>
 

@@ -179,6 +179,19 @@
         color: #fff;
     }
 
+    /* Кнопка ОТКАЗА */
+    .action-btn-reject {
+        background: rgba(255, 107, 107, 0.1);
+        border-color: rgba(255, 107, 107, 0.3);
+        color: #ff6b6b;
+    }
+    .action-btn-reject:hover {
+        background: rgba(255, 107, 107, 0.2);
+        border-color: rgba(255, 107, 107, 0.6);
+        box-shadow: 0 0 12px rgba(255, 107, 107, 0.3);
+        color: #fff;
+    }
+
     /* Модалка удаления */
     .modal-overlay {
         position: fixed;
@@ -253,6 +266,59 @@
         background: rgba(255, 99, 99, 0.25);
         border-color: rgba(255, 99, 99, 0.8);
         box-shadow: 0 0 12px rgba(255, 99, 99, 0.3);
+        color: #fff;
+    }
+
+    /* Модалка отказа */
+    .modal-reject {
+        max-width: 450px;
+    }
+    .modal-reject .modal-title i {
+        color: #ff6b6b;
+    }
+    .reject-textarea {
+        width: 100%;
+        background: rgba(255,255,255,0.03);
+        border: 1px solid rgba(255,255,255,0.15);
+        border-radius: 10px;
+        padding: 12px 14px;
+        color: #fff;
+        font: 500 12px 'Inter', sans-serif;
+        outline: none;
+        resize: vertical;
+        min-height: 100px;
+        transition: all 0.2s ease;
+        margin-bottom: 16px;
+    }
+    .reject-textarea::placeholder {
+        color: rgba(255,255,255,0.3);
+    }
+    .reject-textarea:focus {
+        border-color: rgba(255, 107, 107, 0.6);
+        box-shadow: 0 0 0 2px rgba(255, 107, 107, 0.15), 0 0 12px rgba(255, 107, 107, 0.1);
+        background: rgba(255,255,255,0.05);
+    }
+    .reject-hint {
+        font-size: 10px;
+        color: #8892a6;
+        margin-bottom: 12px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+    .reject-hint i {
+        color: #f59e0b;
+        font-size: 12px;
+    }
+    .modal-btn-reject {
+        background: rgba(255, 107, 107, 0.15);
+        border-color: rgba(255, 107, 107, 0.5);
+        color: #ff6b6b;
+    }
+    .modal-btn-reject:hover {
+        background: rgba(255, 107, 107, 0.25);
+        border-color: rgba(255, 107, 107, 0.8);
+        box-shadow: 0 0 12px rgba(255, 107, 107, 0.3);
         color: #fff;
     }
 
@@ -716,6 +782,11 @@
         border: 1px solid rgba(34, 197, 94, 0.3);
         color: #22c55e;
     }
+    .status-rejected {
+        background: rgba(255, 107, 107, 0.12);
+        border: 1px solid rgba(255, 107, 107, 0.3);
+        color: #ff6b6b;
+    }
 
     /* Live Document индикатор */
     .live-indicator {
@@ -804,8 +875,246 @@
                 </a>
                 <span class="back-label" data-i18n="back">Назад</span>
             </div>
+            <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+            <style>
+                /* Контейнер кнопок */
+.action-btns {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    justify-content: flex-end;
+}
 
+/* Базовые стили кнопок */
+.action-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.05);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-decoration: none;
+}
+
+.action-btn i {
+    font-size: 16px;
+    color: #fff;
+}
+
+/* Кнопка редактирования */
+.action-btn-edit {
+    background: rgba(79, 140, 255, 0.15);
+    border-color: rgba(79, 140, 255, 0.3);
+}
+
+.action-btn-edit:hover {
+    background: rgba(79, 140, 255, 0.3);
+    border-color: #4f8cff;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(79, 140, 255, 0.3);
+}
+
+.action-btn-edit i {
+    color: #4f8cff;
+}
+
+/* Кнопка удаления */
+.action-btn-delete {
+    background: rgba(255, 107, 107, 0.15);
+    border-color: rgba(255, 107, 107, 0.3);
+}
+
+.action-btn-delete:hover {
+    background: rgba(255, 107, 107, 0.3);
+    border-color: #ff6b6b;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(255, 107, 107, 0.3);
+}
+
+.action-btn-delete i {
+    color: #ff6b6b;
+}
+
+/* Кнопка отказа */
+.action-btn-reject {
+    background: rgba(255, 107, 107, 0.15);
+    border-color: rgba(255, 107, 107, 0.3);
+}
+
+.action-btn-reject:hover {
+    background: rgba(255, 107, 107, 0.3);
+    border-color: #ff6b6b;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(255, 107, 107, 0.3);
+}
+
+.action-btn-reject i {
+    color: #ff6b6b;
+}
+
+/* Модальное окно */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.modal-box {
+    background: #1a1f2e;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+    padding: 24px;
+    max-width: 400px;
+    width: 90%;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+}
+
+.modal-title {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 18px;
+    font-weight: 600;
+    color: #fff;
+    margin: 0 0 12px 0;
+}
+
+.modal-title i {
+    color: #ff6b6b;
+    font-size: 24px;
+}
+
+.modal-desc {
+    font-size: 14px;
+    color: #8892a6;
+    margin: 0 0 24px 0;
+    line-height: 1.5;
+}
+
+.modal-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+}
+
+.modal-btn {
+    padding: 10px 20px;
+    border-radius: 8px;
+    border: none;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.modal-btn-cancel {
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+}
+
+.modal-btn-cancel:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.modal-btn-delete {
+    background: #ff6b6b;
+    color: #fff;
+}
+
+.modal-btn-delete:hover {
+    background: #ff5252;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(255, 107, 107, 0.4);
+}
+
+/* Alpine.js x-cloak */
+[x-cloak] {
+    display: none !important;
+}
+            </style>
             <div class="action-btns">
+                {{-- Кнопка ОТКАЗА (видна только получателю, если документ не отклонён и не завершён) --}}
+                @php
+                $canReject = (
+                ((int)auth()->id() === (int)$document->receiver_id || auth()->user()->isAdmin())
+                && !in_array(strtolower($document->status), ['rejected', 'completed', 'approved'])
+                );
+                @endphp
+
+                @if($canReject)
+                <div x-data="{ openReject: false }" style="position:relative;display:inline-block;">
+                    <button @click="openReject = true" type="button" class="action-btn action-btn-reject" title="Отказ">
+                        <i class="bi bi-x-circle"></i>
+                    </button>
+
+                    <div x-show="openReject"
+                         class="modal-overlay"
+                         x-transition:enter="transition ease-out duration-200"
+                         x-transition:enter-start="opacity-0"
+                         x-transition:leave="transition ease-in duration-150"
+                         x-transition:leave-end="opacity-0"
+                         x-cloak>
+
+                        <div @click.away="openReject = false"
+                             class="modal-box modal-reject"
+                             x-transition:enter="transition ease-out duration-300 transform"
+                             x-transition:enter-start="opacity-0 scale-95"
+                             x-transition:leave="transition ease-in duration-200 transform"
+                             x-transition:leave-end="opacity-0 scale-95">
+
+                            <h3 class="modal-title">
+                                <i class="bi bi-x-circle-fill"></i>
+                                <span data-i18n="reject_confirm_title">Отклонить документ?</span>
+                            </h3>
+
+                            <p class="modal-desc" data-i18n="reject_confirm_desc">
+                                Укажите причину отказа. Это действие нельзя будет отменить.
+                            </p>
+
+                            <form action="{{ route('documents.reject', $document->id) }}" method="POST" id="reject-form">
+                                @csrf
+
+                                <div class="reject-hint">
+                                    <i class="bi bi-info-circle-fill"></i>
+                                    <span data-i18n="reject_hint">Обязательно укажите причину отказа</span>
+                                </div>
+
+                                <textarea
+                                        name="reject_reason"
+                                        class="reject-textarea"
+                                        required
+                                        minlength="5"
+                                        maxlength="1000"
+                                        data-i18n-placeholder="reject_reason_placeholder"
+                                        placeholder="Опишите причину отказа..."
+                                ></textarea>
+
+                                <div class="modal-actions">
+                                    <button @click="openReject = false" type="button" class="modal-btn modal-btn-cancel" data-i18n="cancel">
+                                        Отмена
+                                    </button>
+                                    <button type="submit" class="modal-btn modal-btn-reject" data-i18n="reject_btn">
+                                        Отклонить
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                @endif
+
                 {{-- Кнопка удаления --}}
                 <div x-data="{ open: false }" style="position:relative;display:inline-block;">
                     <button @click="open = true" type="button" class="action-btn action-btn-delete" title="Delete">
@@ -1027,6 +1336,7 @@
                         'draft' => 'status-draft',
                         'active' => 'status-active',
                         'completed', 'approved' => 'status-completed',
+                        'rejected' => 'status-rejected',
                         default => 'status-draft',
                         };
                         @endphp
@@ -1103,12 +1413,18 @@
                 active: 'Активен',
                 approved: 'Утвержден',
                 completed: 'Завершен',
+                rejected: 'Отклонён',
                 delete_confirm_title: 'Удалить?',
                 delete_confirm_desc: 'Вы уверены, что хотите удалить этот документ? Это действие невозможно будет отменить.',
                 cancel: 'Отмена',
                 delete_btn: 'Удалить',
                 general: 'Общий',
-                noNumber: 'Б/Н'
+                noNumber: 'Б/Н',
+                reject_confirm_title: 'Отклонить документ?',
+                reject_confirm_desc: 'Укажите причину отказа. Это действие нельзя будет отменить.',
+                reject_hint: 'Обязательно укажите причину отказа',
+                reject_reason_placeholder: 'Опишите причину отказа...',
+                reject_btn: 'Отклонить'
             },
             tj: {
                 errorTitle: 'Хатои дастрасӣ',
@@ -1136,12 +1452,18 @@
                 active: 'Фаъол',
                 approved: 'Тасдиқшуда',
                 completed: 'Иҷрошуда',
+                rejected: 'Рад шуд',
                 delete_confirm_title: 'Нест кардан?',
                 delete_confirm_desc: 'Шумо мутмаин ҳастед, ки ин ҳуҷҷатро нест кардан мехоҳед? Ин амалро бекор кардан ғайриимкон аст.',
                 cancel: 'Лағв',
                 delete_btn: 'Нест кардан',
                 general: 'Умумӣ',
-                noNumber: 'Б/Р'
+                noNumber: 'Б/Р',
+                reject_confirm_title: 'Ҳуҷҷатро рад кардан?',
+                reject_confirm_desc: 'Сабаби радшавиро нишон диҳед. Ин амалро бекор кардан ғайриимкон аст.',
+                reject_hint: 'Ҳатман сабаби радшавиро нишон диҳед',
+                reject_reason_placeholder: 'Сабаби радшавиро тавсиф диҳед...',
+                reject_btn: 'Рад кардан'
             },
             en: {
                 errorTitle: 'Access Error',
@@ -1169,12 +1491,18 @@
                 active: 'Active',
                 approved: 'Approved',
                 completed: 'Completed',
+                rejected: 'Rejected',
                 delete_confirm_title: 'Delete?',
                 delete_confirm_desc: 'Are you sure you want to delete this document? This action cannot be undone.',
                 cancel: 'Cancel',
                 delete_btn: 'Delete',
                 general: 'General',
-                noNumber: 'W/N'
+                noNumber: 'W/N',
+                reject_confirm_title: 'Reject document?',
+                reject_confirm_desc: 'Specify the reason for rejection. This action cannot be undone.',
+                reject_hint: 'You must specify a reason for rejection',
+                reject_reason_placeholder: 'Describe the reason for rejection...',
+                reject_btn: 'Reject'
             }
         };
 

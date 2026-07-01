@@ -1022,5 +1022,46 @@ $isOwner = ($currentUserId === $ownerId);
         }
     });
 </script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+<style>
+    .mode-icon {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(79, 140, 255, 0.1);
+    border-radius: 8px;
+    margin-bottom: 8px;
+}
 
+.mode-icon i {
+    font-size: 20px;
+    color: #4f8cff;
+}
+
+.mode-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 16px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.mode-btn:hover {
+    background: rgba(79, 140, 255, 0.1);
+    border-color: #4f8cff;
+    transform: translateY(-2px);
+}
+
+.mode-btn.active {
+    background: rgba(79, 140, 255, 0.15);
+    border-color: #4f8cff;
+    box-shadow: 0 0 20px rgba(79, 140, 255, 0.3);
+}
+</style>
 @endsection

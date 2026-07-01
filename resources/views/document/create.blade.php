@@ -1,6 +1,49 @@
 @extends('layouts.admin')
 
 @section('content')
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+<style>
+    .mode-icon {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(79, 140, 255, 0.1);
+    border-radius: 8px;
+    margin-bottom: 8px;
+}
+
+.mode-icon i {
+    font-size: 20px;
+    color: #4f8cff;
+}
+
+.mode-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 16px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.mode-btn:hover {
+    background: rgba(79, 140, 255, 0.1);
+    border-color: #4f8cff;
+    transform: translateY(-2px);
+}
+
+.mode-btn.active {
+    background: rgba(79, 140, 255, 0.15);
+    border-color: #4f8cff;
+    box-shadow: 0 0 20px rgba(79, 140, 255, 0.3);
+}
+</style>
+
 <style>
     /* === КОМПАКТНАЯ СТРАНИЦА СОЗДАНИЯ ДОКУМЕНТА === */
     .doc-create-page {
@@ -439,6 +482,340 @@
             padding: 20px;
         }
     }
+
+    /* === ИИ ГЕНЕРАТОР === */
+    .ai-generator-card {
+        background: linear-gradient(135deg, rgba(79,140,255,0.08), rgba(79,140,255,0.02));
+        border: 1px solid rgba(79,140,255,0.3);
+        border-radius: 16px;
+        padding: 20px;
+        position: relative;
+        overflow: hidden;
+        margin-bottom: 24px;
+    }
+
+    .ai-generator-card::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 2px;
+        background: linear-gradient(90deg, transparent, #4f8cff, transparent);
+        animation: shimmer 3s infinite;
+    }
+
+    @keyframes shimmer {
+        0% { transform: translateX(-100%); }
+        100% { transform: translateX(100%); }
+    }
+
+    .ai-header {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        margin-bottom: 16px;
+    }
+
+    .ai-icon {
+        width: 44px;
+        height: 44px;
+        background: linear-gradient(135deg, #4f8cff, #6366f1);
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #fff;
+        font-size: 20px;
+        box-shadow: 0 4px 16px rgba(79,140,255,0.4);
+    }
+
+    .ai-title {
+        font-size: 16px;
+        font-weight: 700;
+        color: #fff;
+        margin-bottom: 2px;
+    }
+
+    .ai-subtitle {
+        font-size: 11px;
+        color: #8892a6;
+    }
+
+    .ai-input-group {
+        margin-bottom: 14px;
+    }
+
+    .ai-textarea {
+        min-height: 90px;
+        resize: vertical;
+        font-size: 13px;
+        line-height: 1.5;
+        width: 100%;
+        background: rgba(255,255,255,0.03);
+        border: 1px solid rgba(255,255,255,0.1);
+        border-radius: 8px;
+        padding: 10px 12px;
+        color: #fff;
+        font: 500 13px 'Inter', sans-serif;
+        outline: none;
+        transition: all 0.2s ease;
+    }
+
+    .ai-textarea::placeholder {
+        color: rgba(255,255,255,0.3);
+    }
+
+    .ai-textarea:focus {
+        border-color: rgba(79,140,255, 0.7);
+        box-shadow: 0 0 0 2px rgba(79,140,255, 0.15), 0 0 12px rgba(79,140,255, 0.1);
+        background: rgba(255,255,255,0.05);
+    }
+
+    .ai-format-selector {
+        display: flex;
+        gap: 10px;
+        margin-top: 10px;
+    }
+
+    .format-option {
+        flex: 1;
+        cursor: pointer;
+    }
+
+    .format-option input[type="radio"] {
+        display: none;
+    }
+
+    .format-label {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        padding: 10px;
+        background: rgba(255,255,255,0.03);
+        border: 1px solid rgba(255,255,255,0.1);
+        border-radius: 8px;
+        color: #8892a6;
+        font-size: 12px;
+        font-weight: 600;
+        transition: all 0.2s ease;
+    }
+
+    .format-option input[type="radio"]:checked + .format-label {
+        background: rgba(79,140,255,0.15);
+        border-color: rgba(79,140,255,0.5);
+        color: #4f8cff;
+        box-shadow: 0 0 12px rgba(79,140,255,0.2);
+    }
+
+    .format-label i {
+        font-size: 16px;
+    }
+
+    .ai-generate-btn {
+        width: 100%;
+        padding: 12px;
+        background: linear-gradient(135deg, #4f8cff, #6366f1);
+        border: none;
+        border-radius: 10px;
+        color: #fff;
+        font: 700 13px 'Inter', sans-serif;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        box-shadow: 0 4px 16px rgba(79,140,255,0.4);
+        transition: all 0.3s ease;
+    }
+
+    .ai-generate-btn:hover:not(:disabled) {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(79,140,255,0.5);
+    }
+
+    .ai-generate-btn:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+    }
+
+    .ai-generate-btn i {
+        font-size: 16px;
+    }
+
+    .ai-status {
+        margin-top: 14px;
+        padding: 14px;
+        background: rgba(79,140,255,0.08);
+        border: 1px solid rgba(79,140,255,0.3);
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .ai-status.hidden {
+        display: none;
+    }
+
+    .ai-status-icon {
+        width: 32px;
+        height: 32px;
+        background: rgba(79,140,255,0.2);
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #4f8cff;
+        font-size: 16px;
+        animation: pulse 1.5s infinite;
+    }
+
+    @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.5; }
+    }
+
+    .ai-status-text {
+        font-size: 12px;
+        color: #fff;
+        font-weight: 600;
+    }
+
+    .ai-questions {
+        margin-top: 14px;
+        padding: 14px;
+        background: rgba(255,255,255,0.03);
+        border: 1px solid rgba(255,255,255,0.1);
+        border-radius: 10px;
+    }
+
+    .ai-questions.hidden {
+        display: none;
+    }
+
+    .questions-title {
+        font-size: 12px;
+        font-weight: 700;
+        color: #4f8cff;
+        margin-bottom: 10px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .question-item {
+        margin-bottom: 10px;
+    }
+
+    .question-text {
+        font-size: 11px;
+        color: #fff;
+        margin-bottom: 6px;
+        font-weight: 600;
+    }
+
+    .question-input {
+        width: 100%;
+        height: 36px;
+        background: rgba(255,255,255,0.03);
+        border: 1px solid rgba(255,255,255,0.1);
+        border-radius: 6px;
+        padding: 0 10px;
+        color: #fff;
+        font-size: 12px;
+        outline: none;
+    }
+
+    .question-input:focus {
+        border-color: rgba(79,140,255,0.5);
+        background: rgba(255,255,255,0.05);
+    }
+
+    .ai-submit-btn {
+        width: 100%;
+        padding: 10px;
+        background: rgba(79,140,255,0.15);
+        border: 1px solid rgba(79,140,255,0.4);
+        border-radius: 8px;
+        color: #4f8cff;
+        font: 600 12px 'Inter', sans-serif;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        margin-top: 10px;
+        transition: all 0.2s ease;
+    }
+
+    .ai-submit-btn:hover {
+        background: rgba(79,140,255,0.25);
+        border-color: rgba(79,140,255,0.6);
+    }
+
+    .ai-result {
+        margin-top: 14px;
+        padding: 14px;
+        background: rgba(34,197,94,0.08);
+        border: 1px solid rgba(34,197,94,0.3);
+        border-radius: 10px;
+    }
+
+    .ai-result.hidden {
+        display: none;
+    }
+
+    .result-header {
+        font-size: 13px;
+        font-weight: 700;
+        color: #22c55e;
+        margin-bottom: 10px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .result-actions {
+        display: flex;
+        gap: 10px;
+    }
+
+    .download-btn {
+        flex: 1;
+        padding: 10px;
+        background: rgba(34,197,94,0.15);
+        border: 1px solid rgba(34,197,94,0.4);
+        border-radius: 8px;
+        color: #22c55e;
+        font: 600 12px 'Inter', sans-serif;
+        text-decoration: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        transition: all 0.2s ease;
+    }
+
+    .download-btn:hover {
+        background: rgba(34,197,94,0.25);
+        border-color: rgba(34,197,94,0.6);
+    }
+
+    .ai-error {
+        margin-top: 14px;
+        padding: 12px;
+        background: rgba(255,99,99,0.08);
+        border: 1px solid rgba(255,99,99,0.3);
+        border-radius: 8px;
+        color: #ff9999;
+        font-size: 12px;
+    }
+
+    .ai-error.hidden {
+        display: none;
+    }
 </style>
 
 <div class="doc-create-page">
@@ -460,6 +837,82 @@
         </div>
         @endif
 
+        {{-- === ИИ ГЕНЕРАТОР ДОКУМЕНТОВ === --}}
+        <div class="ai-generator-card">
+            <div class="ai-header">
+                <div class="ai-icon">
+                    <i class="bi bi-stars"></i>
+                </div>
+                <div>
+                    <div class="ai-title">ИИ Генератор Документов</div>
+                    <div class="ai-subtitle">Опиши документ — ИИ заполнит все поля автоматически</div>
+                </div>
+            </div>
+
+            <div class="ai-input-group">
+                <textarea
+                        id="aiPrompt"
+                        class="ai-textarea"
+                        placeholder="Например: Создай договор аренды квартиры на 11 месяцев между Иванов Иван Иванович и Петров Петр Петрович, сумма 50000 руб/мес..."
+                        rows="3"
+                ></textarea>
+
+                <div class="ai-format-selector">
+                    <label class="format-option">
+                        <input type="radio" name="ai_format" value="pdf" checked>
+                        <span class="format-label">
+                            <i class="bi bi-file-earmark-pdf"></i> PDF
+                        </span>
+                    </label>
+                    <label class="format-option">
+                        <input type="radio" name="ai_format" value="word">
+                        <span class="format-label">
+                            <i class="bi bi-file-earmark-word"></i> Word
+                        </span>
+                    </label>
+                </div>
+            </div>
+
+            <button type="button" id="generateBtn" class="ai-generate-btn">
+                <i class="bi bi-magic"></i>
+                <span>Сгенерировать с ИИ</span>
+            </button>
+
+            <div id="aiStatus" class="ai-status hidden">
+                <div class="ai-status-icon">
+                    <i class="bi bi-hourglass-split"></i>
+                </div>
+                <div class="ai-status-text">ИИ генерирует документ...</div>
+            </div>
+
+            <div id="aiQuestions" class="ai-questions hidden">
+                <div class="questions-title">
+                    <i class="bi bi-question-circle"></i>
+                    ИИ задаёт уточняющие вопросы:
+                </div>
+                <div id="questionsList"></div>
+                <button type="button" id="submitAnswers" class="ai-submit-btn">
+                    <i class="bi bi-check-circle"></i>
+                    Отправить ответы
+                </button>
+            </div>
+
+            <div id="aiResult" class="ai-result hidden">
+                <div class="result-header">
+                    <i class="bi bi-check-circle-fill"></i>
+                    Документ успешно сгенерирован!
+                </div>
+                <div class="result-actions">
+                    <a id="downloadLink" href="#" class="download-btn" download>
+                        <i class="bi bi-download"></i>
+                        Скачать документ
+                    </a>
+                </div>
+            </div>
+
+            <div id="aiError" class="ai-error hidden"></div>
+        </div>
+
         <div class="form-card">
             <h1 class="page-title" data-i18n="pageTitle">Новый документ</h1>
             <p class="page-subtitle" data-i18n="pageSubtitle">Заполните информацию о документе</p>
@@ -474,7 +927,7 @@
                             <span data-i18n="labelNumber">Номер документа</span>
                             <span class="required">*</span>
                         </label>
-                        <input type="text" name="number" class="input-field"
+                        <input type="text" name="number" id="field-number" class="input-field"
                                value="{{ old('number', '№ ') }}"
                                data-i18n-placeholder="numberPlaceholder"
                                placeholder="№ 001" required>
@@ -484,7 +937,7 @@
                             <span data-i18n="labelType">Тип документа</span>
                             <span class="required">*</span>
                         </label>
-                        <input type="text" name="type" class="input-field"
+                        <input type="text" name="type" id="field-type" class="input-field"
                                data-i18n-placeholder="typePlaceholder"
                                placeholder="Договор, Акт..." value="{{ old('type') }}" required>
                     </div>
@@ -497,14 +950,14 @@
                             <span data-i18n="labelStatus">Статус документа</span>
                             <span class="required">*</span>
                         </label>
-                        <select name="status" class="input-field" required>
+                        <select name="status" id="field-status" class="input-field" required>
                             <option value="active" {{ old('status') == 'active' ? 'selected' : '' }} data-i18n="statusSend">Отправить на подпись</option>
                             <option value="draft" {{ old('status') == 'draft' ? 'selected' : '' }} data-i18n="statusDraft">Сохранить как черновик</option>
                         </select>
                     </div>
                     <div class="field-group">
                         <label class="field-label" data-i18n="labelDeadline">Дедлайн</label>
-                        <input type="date" name="deadline" class="input-field" value="{{ old('deadline') }}">
+                        <input type="date" name="deadline" id="field-deadline" class="input-field" value="{{ old('deadline') }}">
                     </div>
                 </div>
 
@@ -515,7 +968,7 @@
                             <span data-i18n="labelTitle">Заголовок</span>
                             <span class="required">*</span>
                         </label>
-                        <input type="text" name="title" class="input-field"
+                        <input type="text" name="title" id="field-title" class="input-field"
                                data-i18n-placeholder="titlePlaceholder"
                                placeholder="Название документа" value="{{ old('title') }}" required>
                     </div>
@@ -525,7 +978,7 @@
                 <div class="field-row single">
                     <div class="field-group">
                         <label class="field-label" data-i18n="labelDescription">Описание</label>
-                        <textarea name="content" rows="3" class="input-field"
+                        <textarea name="content" id="field-content" rows="3" class="input-field"
                                   data-i18n-placeholder="descriptionPlaceholder"
                                   placeholder="Краткое описание документа...">{{ old('content') }}</textarea>
                     </div>
@@ -644,7 +1097,7 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // ===== ПЕРЕВОДЫ / TRANSLATIONS / ТАРҶУМАҲО =====
+        // ===== ПЕРЕВОДЫ =====
         const translations = {
             ru: {
                 back: "Назад",
@@ -765,48 +1218,37 @@
             }
         };
 
-        // ===== Получение текущего языка =====
-        function getCurrentLang() {
-            return localStorage.getItem('docsign_lang')
-                || localStorage.getItem('app-lang')
-                || 'ru';
+        // ===== CSRF токен =====
+        function getCsrfToken() {
+            const metaTag = document.querySelector('meta[name="csrf-token"]');
+            if (metaTag) return metaTag.getAttribute('content');
+            const csrfInput = document.querySelector('input[name="_token"]');
+            if (csrfInput) return csrfInput.value;
+            const match = document.cookie.match(/XSRF-TOKEN=([^;]+)/);
+            return match ? decodeURIComponent(match[1]) : '';
         }
 
-        // ===== Применение переводов =====
+        // ===== Язык =====
+        function getCurrentLang() {
+            return localStorage.getItem('docsign_lang') || localStorage.getItem('app-lang') || 'ru';
+        }
+
         function applyTranslations() {
             const lang = getCurrentLang();
             const t = translations[lang] || translations['ru'];
-
-            // Обновляем все элементы с data-i18n
             document.querySelectorAll('[data-i18n]').forEach(el => {
                 const key = el.getAttribute('data-i18n');
-                if (t[key] !== undefined) {
-                    el.textContent = t[key];
-                }
+                if (t[key] !== undefined) el.textContent = t[key];
             });
-
-            // Обновляем placeholder-ы
             document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
                 const key = el.getAttribute('data-i18n-placeholder');
-                if (t[key] !== undefined) {
-                    el.setAttribute('placeholder', t[key]);
-                }
+                if (t[key] !== undefined) el.setAttribute('placeholder', t[key]);
             });
-
-            // Обновляем title-ы
-            document.querySelectorAll('[data-i18n-title]').forEach(el => {
-                const key = el.getAttribute('data-i18n-title');
-                if (t[key] !== undefined) {
-                    el.setAttribute('title', t[key]);
-                }
-            });
-
             return t;
         }
 
         let currentT = applyTranslations();
 
-        // ===== Слушатель смены языка =====
         window.addEventListener('docsign:lang-changed', function(e) {
             if (e.detail && e.detail.lang) {
                 localStorage.setItem('docsign_lang', e.detail.lang);
@@ -815,11 +1257,11 @@
             currentT = applyTranslations();
         });
 
-        // === Данные пользователей из Laravel ===
+        // === Данные пользователей ===
         const teamUsers = @json($teamUsersArray ?? []);
         const otherUsers = @json($otherUsersArray ?? []);
 
-        // === Переключение режимов отправки ===
+        // === Режимы отправки ===
         const modeBtns = document.querySelectorAll('.mode-btn');
         const modeBlocks = document.querySelectorAll('.receiver-block');
         const modeInput = document.getElementById('receiver_mode');
@@ -828,11 +1270,9 @@
             btn.addEventListener('click', function() {
                 modeBtns.forEach(b => b.classList.remove('active'));
                 modeBlocks.forEach(b => b.classList.add('hidden'));
-
                 this.classList.add('active');
                 const mode = this.dataset.mode;
                 modeInput.value = mode;
-
                 const block = document.getElementById('mode-' + mode);
                 if (block) block.classList.remove('hidden');
             });
@@ -848,7 +1288,7 @@
             });
         }
 
-        // === ПОИСК ПОЛЬЗОВАТЕЛЕЙ КОМАНДЫ ===
+        // === Поиск пользователей команды ===
         const teamSearch = document.getElementById('team-search');
         const teamList = document.getElementById('team-list');
         const teamSelected = document.getElementById('team-selected');
@@ -859,9 +1299,7 @@
         if (teamSearch && teamList) {
             teamSearch.addEventListener('focus', function() {
                 const query = this.value.trim().toLowerCase();
-                if (query.length >= 2) {
-                    filterTeamUsers(query);
-                }
+                if (query.length >= 2) filterTeamUsers(query);
             });
 
             teamSearch.addEventListener('input', function() {
@@ -884,7 +1322,6 @@
                 });
 
                 teamList.innerHTML = '';
-
                 if (filtered.length === 0) {
                     teamList.innerHTML = `<div class="dropdown-empty">${t.usersNotFound}</div>`;
                 } else {
@@ -930,7 +1367,6 @@
             function updateTeamSelected() {
                 const t = translations[getCurrentLang()] || translations['ru'];
                 teamSelected.innerHTML = '';
-
                 if (selectedTeam.length === 0) {
                     teamSelected.innerHTML = `<span style="font-size:10px;color:#8892a6;" data-i18n="selectedPlaceholder">${t.selectedPlaceholder}</span>`;
                 } else {
@@ -945,13 +1381,12 @@
                         teamSelected.appendChild(chip);
                     });
                 }
-
                 teamReceivers.value = selectedTeam.map(u => u.id).join(',');
                 teamError.style.display = 'none';
             }
         }
 
-        // === ПОИСК ПОЛЬЗОВАТЕЛЕЙ ДРУГОЙ КОМАНДЫ ===
+        // === Поиск пользователей другой команды ===
         const companySearch = document.getElementById('company-search');
         const companyList = document.getElementById('company-list');
         const companySelected = document.getElementById('company-selected');
@@ -961,9 +1396,7 @@
         if (companySearch && companyList) {
             companySearch.addEventListener('focus', function() {
                 const query = this.value.trim().toLowerCase();
-                if (query.length >= 2) {
-                    filterCompanyUsers(query);
-                }
+                if (query.length >= 2) filterCompanyUsers(query);
             });
 
             companySearch.addEventListener('input', function() {
@@ -985,7 +1418,6 @@
                 });
 
                 companyList.innerHTML = '';
-
                 if (filtered.length === 0) {
                     companyList.innerHTML = `<div class="dropdown-empty">${t.usersNotFound}</div>`;
                 } else {
@@ -1013,11 +1445,14 @@
                                     <button type="button" id="clear-company">&times;</button>
                                 </span>
                             `;
-                            document.getElementById('clear-company').addEventListener('click', function() {
-                                selectedCompany = null;
-                                companyReceiver.value = '';
-                                companySelected.innerHTML = '';
-                            });
+                            const clearBtn = document.getElementById('clear-company');
+                            if (clearBtn) {
+                                clearBtn.addEventListener('click', function() {
+                                    selectedCompany = null;
+                                    companyReceiver.value = '';
+                                    companySelected.innerHTML = '';
+                                });
+                            }
                             companySearch.value = '';
                             companyList.classList.add('hidden');
                         });
@@ -1034,30 +1469,230 @@
             });
         }
 
-        // === Валидация при отправке ===
+        // === Валидация формы ===
         const form = document.getElementById('documentForm');
         form.addEventListener('submit', function(e) {
             const t = translations[getCurrentLang()] || translations['ru'];
             const mode = modeInput.value;
-
             if (!mode) {
                 e.preventDefault();
                 alert(t.alertSelectMode);
                 return;
             }
-
             if (mode === 'select_team' && selectedTeam.length === 0) {
                 e.preventDefault();
                 teamError.style.display = 'block';
                 return;
             }
-
             if (mode === 'other_company' && !selectedCompany) {
                 e.preventDefault();
                 alert(t.alertSelectCompany);
                 return;
             }
         });
+
+        // === ИИ ГЕНЕРАТОР ===
+        const generateBtn = document.getElementById('generateBtn');
+        const aiPrompt = document.getElementById('aiPrompt');
+        const aiStatus = document.getElementById('aiStatus');
+        const aiQuestions = document.getElementById('aiQuestions');
+        const questionsList = document.getElementById('questionsList');
+        const submitAnswers = document.getElementById('submitAnswers');
+        const aiResult = document.getElementById('aiResult');
+        const downloadLink = document.getElementById('downloadLink');
+        const aiError = document.getElementById('aiError');
+
+        let currentSessionId = null;
+
+        // Отправка запроса к ИИ
+        async function sendAIRequest(payload) {
+            const csrfToken = getCsrfToken();
+            if (!csrfToken) {
+                throw new Error('CSRF токен не найден. Обновите страницу.');
+            }
+
+            console.log('📤 Отправляем запрос:', payload);
+
+            const response = await fetch('/ai/generate-document', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken,
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: JSON.stringify(payload)
+            });
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error('❌ Server error:', response.status, errorText);
+                throw new Error(`Ошибка сервера: ${response.status}`);
+            }
+
+            const data = await response.json();
+            console.log('✅ Ответ сервера:', data);
+            return data;
+        }
+
+        // Заполнение полей формы
+        function fillFormFields(data) {
+            console.log('📝 Заполняем поля данными:', data);
+
+            if (!data) {
+                console.error('❌ Данные пустые!');
+                return;
+            }
+
+            const fields = {
+                'field-number': data.number,
+                'field-type': data.type,
+                'field-title': data.title,
+                'field-content': data.content,
+                'field-deadline': data.deadline,
+                'field-status': data.status
+            };
+
+            Object.keys(fields).forEach(fieldId => {
+                const field = document.getElementById(fieldId);
+                const value = fields[fieldId];
+
+                if (field && value) {
+                    field.value = value;
+                    console.log(`✓ Заполнено: ${fieldId} =`, value);
+
+                    // Анимация
+                    field.style.borderColor = 'rgba(34,197,94,0.5)';
+                    field.style.boxShadow = '0 0 0 2px rgba(34,197,94,0.15)';
+                    setTimeout(() => {
+                        field.style.borderColor = '';
+                        field.style.boxShadow = '';
+                    }, 3000);
+                }
+            });
+
+            console.log('✅ Все поля заполнены!');
+        }
+
+        // Показ вопросов
+        function showQuestions(questions) {
+            questionsList.innerHTML = '';
+            questions.forEach((q, index) => {
+                const item = document.createElement('div');
+                item.className = 'question-item';
+                item.innerHTML = `
+                    <div class="question-text">${q}</div>
+                    <input type="text" class="question-input" placeholder="Ваш ответ...">
+                `;
+                questionsList.appendChild(item);
+            });
+            aiQuestions.classList.remove('hidden');
+        }
+
+        // Показ ошибки
+        function showError(message) {
+            if (aiError) {
+                aiError.textContent = message;
+                aiError.classList.remove('hidden');
+                setTimeout(() => {
+                    aiError.classList.add('hidden');
+                }, 5000);
+            }
+        }
+
+        // Обработчик кнопки генерации
+        if (generateBtn) {
+            generateBtn.addEventListener('click', async function() {
+                const prompt = aiPrompt.value.trim();
+                if (!prompt) {
+                    showError('Введите описание документа');
+                    return;
+                }
+
+                const format = document.querySelector('input[name="ai_format"]:checked').value;
+
+                aiResult.classList.add('hidden');
+                aiQuestions.classList.add('hidden');
+                aiError.classList.add('hidden');
+                aiStatus.classList.remove('hidden');
+                generateBtn.disabled = true;
+
+                try {
+                    const data = await sendAIRequest({
+                        prompt: prompt,
+                        format: format,
+                        session_id: currentSessionId
+                    });
+
+                    aiStatus.classList.add('hidden');
+                    generateBtn.disabled = false;
+
+                    if (data.status === 'success') {
+                        if (data.needs_questions) {
+                            currentSessionId = data.session_id;
+                            showQuestions(data.questions);
+                        } else {
+                            console.log('🎯 Заполняем поля формы...');
+                            fillFormFields(data.document_data);
+
+                            if (data.download_url) {
+                                downloadLink.href = data.download_url;
+                                downloadLink.download = '';
+                                console.log('📥 URL для скачивания:', data.download_url);
+                            }
+                            aiResult.classList.remove('hidden');
+                        }
+                    } else {
+                        showError(data.message || 'Ошибка генерации документа');
+                    }
+                } catch (error) {
+                    aiStatus.classList.add('hidden');
+                    generateBtn.disabled = false;
+                    showError('Ошибка: ' + error.message);
+                    console.error('❌ AI Generation Error:', error);
+                }
+            });
+        }
+
+        // Обработчик отправки ответов
+        if (submitAnswers) {
+            submitAnswers.addEventListener('click', async function() {
+                const answers = {};
+                document.querySelectorAll('.question-input').forEach((input, index) => {
+                    answers[`question_${index}`] = input.value.trim();
+                });
+
+                aiQuestions.classList.add('hidden');
+                aiStatus.classList.remove('hidden');
+                submitAnswers.disabled = true;
+
+                try {
+                    const data = await sendAIRequest({
+                        session_id: currentSessionId,
+                        answers: answers
+                    });
+
+                    aiStatus.classList.add('hidden');
+                    submitAnswers.disabled = false;
+
+                    if (data.status === 'success') {
+                        fillFormFields(data.document_data);
+                        if (data.download_url) {
+                            downloadLink.href = data.download_url;
+                            downloadLink.download = '';
+                        }
+                        aiResult.classList.remove('hidden');
+                    } else {
+                        showError(data.message || 'Ошибка генерации документа');
+                    }
+                } catch (error) {
+                    aiStatus.classList.add('hidden');
+                    submitAnswers.disabled = false;
+                    showError('Ошибка: ' + error.message);
+                    console.error('❌ AI Generation Error:', error);
+                }
+            });
+        }
     });
 </script>
 

@@ -4,7 +4,6 @@ namespace App\Http\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
-
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Symfony\Component\HttpFoundation\Response;
@@ -16,8 +15,11 @@ class UpdateUserOnlineStatus
         if (Auth::check()) {
             $user = Auth::user();
 
-            // Обновляем last_seen_at напрямую через DB (быстрее и надёжнее)
-            if (!$user->last_seen_at || now()->diffInMinutes($user->last_seen_at) >= 1) {
+            // ✅ ПРАВИЛЬНАЯ проверка: обновляем раз в минуту
+            $shouldUpdate = !$user->last_seen_at ||
+                $user->last_seen_at->lt(now()->subMinute());
+
+            if ($shouldUpdate) {
                 DB::table('users')
                     ->where('id', $user->id)
                     ->update(['last_seen_at' => now()]);

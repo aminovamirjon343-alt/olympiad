@@ -673,100 +673,64 @@ $overdueCount = $signatures->filter(fn($s) => !$s->signed_at && $s->expires_at &
         margin: 0;
     }
 
-    /* Pagination */
+    /* ============================================ */
+    /* === ПРОСТАЯ ПАГИНАЦИЯ (ТОЛЬКО PREV/NEXT) === */
+    /* ============================================ */
     .pagination-wrapper {
         max-width: 1400px;
-        margin: 32px auto 0;
-    }
-
-    .pagination-wrapper nav {
+        margin: 40px auto 0;
         display: flex;
         justify-content: center;
-        gap: 4px;
-        flex-wrap: wrap;
+        align-items: center;
+        gap: 12px;
+        padding: 0 16px;
     }
 
-    .pagination-wrapper a,
-    .pagination-wrapper span {
-        padding: 8px 14px;
-        border-radius: 8px;
-        font-size: 12px;
-        font-weight: 600;
+    .pagination-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 140px;
+        height: 44px;
+        padding: 0 24px;
+        border-radius: 10px;
+        font-size: 13px;
+        font-weight: 700;
+        font-family: 'Inter', sans-serif;
         color: var(--muted);
         background: rgba(255,255,255,0.03);
         border: 1px solid var(--line);
         text-decoration: none;
-        transition: all 0.2s ease;
+        transition: all 0.25s ease;
+        cursor: pointer;
+        letter-spacing: 0.5px;
     }
 
-    .pagination-wrapper a:hover {
+    .pagination-btn:hover:not(.disabled) {
         color: var(--text);
-        border-color: rgba(var(--glow), 0.4);
-        background: rgba(var(--glow), 0.08);
+        border-color: rgba(var(--glow), 0.5);
+        background: rgba(var(--glow), 0.1);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 16px -4px rgba(var(--glow), 0.3);
     }
 
-    .pagination-wrapper span[aria-current="page"] {
-        color: #fff;
-        background: linear-gradient(180deg, rgba(var(--glow), 0.25), rgba(var(--glow), 0.08));
-        border-color: rgba(var(--glow), 0.4);
-        box-shadow: 0 0 12px rgba(var(--glow), 0.25);
-    }
-
-    .pagination-wrapper .relative {
-        display: contents;
-    }
-
-    .pagination-wrapper .flex {
-        display: contents;
-    }
-
-    .pagination-wrapper .items-center {
-        display: contents;
-    }
-
-    .pagination-wrapper .rounded-md {
-        border-radius: 8px;
-    }
-
-    .pagination-wrapper .border {
-        border: 1px solid var(--line);
-    }
-
-    .pagination-wrapper .bg-white {
-        background: rgba(255,255,255,0.03);
-    }
-
-    .pagination-wrapper .text-gray-500 {
-        color: var(--muted);
-    }
-
-    .pagination-wrapper .text-gray-700 {
-        color: var(--text);
-    }
-
-    .pagination-wrapper .hover\:bg-gray-50:hover {
-        background: rgba(var(--glow), 0.08);
-    }
-
-    .pagination-wrapper .hover\:text-gray-700:hover {
-        color: var(--text);
-    }
-
-    .pagination-wrapper .active a {
-        color: #fff;
-        background: linear-gradient(180deg, rgba(var(--glow), 0.25), rgba(var(--glow), 0.08));
-        border-color: rgba(var(--glow), 0.4);
-    }
-
-    .pagination-wrapper .disabled span {
-        opacity: 0.4;
+    .pagination-btn.disabled {
+        opacity: 0.3;
         cursor: not-allowed;
+        pointer-events: none;
     }
 
     /* Responsive */
     @media (max-width: 768px) {
         .sig-page { padding: 20px 16px; }
         .sig-title { font-size: 22px; }
+
+        .pagination-btn {
+            min-width: 120px;
+            height: 40px;
+            padding: 0 18px;
+            font-size: 12px;
+        }
     }
 </style>
 
@@ -965,10 +929,20 @@ $overdueCount = $signatures->filter(fn($s) => !$s->signed_at && $s->expires_at &
         @endforelse
     </div>
 
-    {{-- Pagination --}}
+    {{-- Pagination - только Previous и Next --}}
     @if($signatures->hasPages())
     <div class="pagination-wrapper">
-        {{ $signatures->links() }}
+        @if($signatures->onFirstPage())
+        <span class="pagination-btn disabled">« Previous</span>
+        @else
+        <a href="{{ $signatures->previousPageUrl() }}" class="pagination-btn">« Previous</a>
+        @endif
+
+        @if($signatures->hasMorePages())
+        <a href="{{ $signatures->nextPageUrl() }}" class="pagination-btn">Next »</a>
+        @else
+        <span class="pagination-btn disabled">Next »</span>
+        @endif
     </div>
     @endif
 </div>
@@ -1065,34 +1039,28 @@ $overdueCount = $signatures->filter(fn($s) => !$s->signed_at && $s->expires_at &
         function applySignRegistryTranslations(lang) {
             const dict = SIGN_REGISTRY_TRANSLATIONS[lang] || SIGN_REGISTRY_TRANSLATIONS.ru;
 
-            // 1) Переводим все элементы с data-i18n
             document.querySelectorAll('[data-i18n]').forEach(el => {
                 const key = el.getAttribute('data-i18n');
                 if (dict[key] !== undefined) el.textContent = dict[key];
             });
 
-            // 2) Переводим placeholder
             document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
                 const key = el.getAttribute('data-i18n-placeholder');
                 if (dict[key] !== undefined) el.setAttribute('placeholder', dict[key]);
             });
 
-            // 3) Переводим title (подсказки)
             document.querySelectorAll('[data-i18n-title]').forEach(el => {
                 const key = el.getAttribute('data-i18n-title');
                 if (dict[key] !== undefined) el.setAttribute('title', dict[key]);
             });
 
-            // 4) Обновляем обработчики confirm для кнопок удаления
             document.querySelectorAll('[data-confirm-i18n]').forEach(el => {
                 const key = el.getAttribute('data-confirm-i18n');
                 const message = dict[key] || 'Are you sure?';
 
-                // Клонируем элемент, чтобы сбросить старые обработчики
                 const newEl = el.cloneNode(true);
                 el.parentNode.replaceChild(newEl, el);
 
-                // Вешаем новый обработчик с актуальным переводом
                 newEl.addEventListener('click', function (e) {
                     if (!confirm(message)) {
                         e.preventDefault();

@@ -27,12 +27,10 @@
                 <div class="col-md-4 text-md-end mt-3 mt-md-0">
                     <div class="header-actions">
 
-                        <button class="btn btn-primary-custom btn-glow" onclick="showPage('documents', 'create')">
-                            <a href="{{route('documents.create')}}">
-                                <i class="bi bi-plus-lg me-2"></i>
-
-                                <span data-i18n="createDocument">Новый документ</span>
-                            </a>
+                        <button class="btn btn-primary-custom btn-glow"
+                                onclick="window.location.href='{{ route('documents.create') }}'">
+                            <i class="bi bi-plus-lg me-2"></i>
+                            <span data-i18n="createDocument">Новый документ</span>
                         </button>
                     </div>
                 </div>
@@ -279,6 +277,158 @@
                                 </div>
                             </div>
                         </td>
+                        <style>
+                            /* Контейнер кнопок */
+.action-btns {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    justify-content: flex-end;
+}
+
+/* Базовые стили кнопок */
+.action-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.05);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-decoration: none;
+}
+
+.action-btn i {
+    font-size: 16px;
+    color: #fff;
+}
+
+/* Кнопка редактирования */
+.action-btn-edit {
+    background: rgba(79, 140, 255, 0.15);
+    border-color: rgba(79, 140, 255, 0.3);
+}
+
+.action-btn-edit:hover {
+    background: rgba(79, 140, 255, 0.3);
+    border-color: #4f8cff;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(79, 140, 255, 0.3);
+}
+
+.action-btn-edit i {
+    color: #4f8cff;
+}
+
+/* Кнопка удаления */
+.action-btn-delete {
+    background: rgba(255, 107, 107, 0.15);
+    border-color: rgba(255, 107, 107, 0.3);
+}
+
+.action-btn-delete:hover {
+    background: rgba(255, 107, 107, 0.3);
+    border-color: #ff6b6b;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(255, 107, 107, 0.3);
+}
+
+.action-btn-delete i {
+    color: #ff6b6b;
+}
+
+/* Модальное окно */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.modal-box {
+    background: #1a1f2e;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+    padding: 24px;
+    max-width: 400px;
+    width: 90%;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+}
+
+.modal-title {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 18px;
+    font-weight: 600;
+    color: #fff;
+    margin: 0 0 12px 0;
+}
+
+.modal-title i {
+    color: #ff6b6b;
+    font-size: 24px;
+}
+
+.modal-desc {
+    font-size: 14px;
+    color: #8892a6;
+    margin: 0 0 24px 0;
+    line-height: 1.5;
+}
+
+.modal-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+}
+
+.modal-btn {
+    padding: 10px 20px;
+    border-radius: 8px;
+    border: none;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.modal-btn-cancel {
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+}
+
+.modal-btn-cancel:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.modal-btn-delete {
+    background: #ff6b6b;
+    color: #fff;
+}
+
+.modal-btn-delete:hover {
+    background: #ff5252;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(255, 107, 107, 0.4);
+}
+
+/* Alpine.js x-cloak */
+[x-cloak] {
+    display: none !important;
+}
+                        </style>
+                        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
                         <td class="counterparty-cell">{{ $doc->counterparty ?? 'Внутренний' }}</td>
                         <td class="type-cell">{{ $doc->type ?? 'Документ' }}</td>
                         <td>

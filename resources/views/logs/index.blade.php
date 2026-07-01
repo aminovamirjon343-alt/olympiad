@@ -174,6 +174,62 @@
             .glow-text {
                 text-shadow: 0 0 30px rgba(79, 140, 255, 0.3);
             }
+
+            /* ============================================ */
+            /* === ПАГИНАЦИЯ — ТОЛЬКО PREV/NEXT === */
+            /* ============================================ */
+            .pagination-wrapper {
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                gap: 12px;
+                margin-top: 24px;
+            }
+
+            .pagination-btn {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                min-width: 140px;
+                height: 44px;
+                padding: 0 24px;
+                border-radius: 10px;
+                font-size: 13px;
+                font-weight: 700;
+                font-family: 'Inter', sans-serif;
+                color: rgba(226, 232, 240, 0.9);
+                background: rgba(255, 255, 255, 0.035);
+                border: 1px solid rgba(255, 255, 255, 0.06);
+                text-decoration: none;
+                transition: all 0.25s ease;
+                cursor: pointer;
+                letter-spacing: 0.5px;
+                backdrop-filter: blur(10px);
+            }
+
+            .pagination-btn:hover:not(.disabled) {
+                color: #fff;
+                border-color: rgba(79, 140, 255, 0.4);
+                background: rgba(79, 140, 255, 0.1);
+                transform: translateY(-2px);
+                box-shadow: 0 8px 24px rgba(79, 140, 255, 0.3);
+            }
+
+            .pagination-btn.disabled {
+                opacity: 0.3;
+                cursor: not-allowed;
+                pointer-events: none;
+            }
+
+            /* Responsive */
+            @media (max-width: 768px) {
+                .pagination-btn {
+                    min-width: 120px;
+                    height: 40px;
+                    padding: 0 18px;
+                    font-size: 12px;
+                }
+            }
         </style>
 
         <div class="logs-page">
@@ -350,12 +406,20 @@
 
             </div>
 
-            {{-- PAGINATION --}}
+            {{-- Pagination - только Previous и Next --}}
             @if($logs->hasPages())
-            <div class="mt-6 flex justify-center">
-                <div class="glass-card px-4 py-3">
-                    {{ $logs->links() }}
-                </div>
+            <div class="pagination-wrapper">
+                @if($logs->onFirstPage())
+                <span class="pagination-btn disabled">« Previous</span>
+                @else
+                <a href="{{ $logs->previousPageUrl() }}" class="pagination-btn">« Previous</a>
+                @endif
+
+                @if($logs->hasMorePages())
+                <a href="{{ $logs->nextPageUrl() }}" class="pagination-btn">Next »</a>
+                @else
+                <span class="pagination-btn disabled">Next »</span>
+                @endif
             </div>
             @endif
 
@@ -504,5 +568,157 @@
         });
     });
 </script>
+<style>
+    /* Контейнер кнопок */
+.action-btns {
+display: flex;
+gap: 8px;
+align-items: center;
+justify-content: flex-end;
+}
+
+/* Базовые стили кнопок */
+.action-btn {
+display: inline-flex;
+align-items: center;
+justify-content: center;
+width: 36px;
+height: 36px;
+border-radius: 8px;
+border: 1px solid rgba(255, 255, 255, 0.1);
+background: rgba(255, 255, 255, 0.05);
+cursor: pointer;
+transition: all 0.2s ease;
+text-decoration: none;
+}
+
+.action-btn i {
+font-size: 16px;
+color: #fff;
+}
+
+/* Кнопка редактирования */
+.action-btn-edit {
+background: rgba(79, 140, 255, 0.15);
+border-color: rgba(79, 140, 255, 0.3);
+}
+
+.action-btn-edit:hover {
+background: rgba(79, 140, 255, 0.3);
+border-color: #4f8cff;
+transform: translateY(-2px);
+box-shadow: 0 4px 12px rgba(79, 140, 255, 0.3);
+}
+
+.action-btn-edit i {
+color: #4f8cff;
+}
+
+/* Кнопка удаления */
+.action-btn-delete {
+background: rgba(255, 107, 107, 0.15);
+border-color: rgba(255, 107, 107, 0.3);
+}
+
+.action-btn-delete:hover {
+background: rgba(255, 107, 107, 0.3);
+border-color: #ff6b6b;
+transform: translateY(-2px);
+box-shadow: 0 4px 12px rgba(255, 107, 107, 0.3);
+}
+
+.action-btn-delete i {
+color: #ff6b6b;
+}
+
+/* Модальное окно */
+.modal-overlay {
+position: fixed;
+top: 0;
+left: 0;
+right: 0;
+bottom: 0;
+background: rgba(0, 0, 0, 0.7);
+backdrop-filter: blur(4px);
+display: flex;
+align-items: center;
+justify-content: center;
+z-index: 1000;
+}
+
+.modal-box {
+background: #1a1f2e;
+border: 1px solid rgba(255, 255, 255, 0.1);
+border-radius: 16px;
+padding: 24px;
+max-width: 400px;
+width: 90%;
+box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+}
+
+.modal-title {
+display: flex;
+align-items: center;
+gap: 12px;
+font-size: 18px;
+font-weight: 600;
+color: #fff;
+margin: 0 0 12px 0;
+}
+
+.modal-title i {
+color: #ff6b6b;
+font-size: 24px;
+}
+
+.modal-desc {
+font-size: 14px;
+color: #8892a6;
+margin: 0 0 24px 0;
+line-height: 1.5;
+}
+
+.modal-actions {
+display: flex;
+gap: 12px;
+justify-content: flex-end;
+}
+
+.modal-btn {
+padding: 10px 20px;
+border-radius: 8px;
+border: none;
+font-size: 14px;
+font-weight: 600;
+cursor: pointer;
+transition: all 0.2s ease;
+}
+
+.modal-btn-cancel {
+background: rgba(255, 255, 255, 0.1);
+color: #fff;
+}
+
+.modal-btn-cancel:hover {
+background: rgba(255, 255, 255, 0.2);
+}
+
+.modal-btn-delete {
+background: #ff6b6b;
+color: #fff;
+}
+
+.modal-btn-delete:hover {
+background: #ff5252;
+transform: translateY(-1px);
+box-shadow: 0 4px 12px rgba(255, 107, 107, 0.4);
+}
+
+/* Alpine.js x-cloak */
+[x-cloak] {
+display: none !important;
+}
+</style>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 
 @endsection

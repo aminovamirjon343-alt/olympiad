@@ -501,11 +501,8 @@
 
 <div class="dash">
     {{-- Фоновые blob-ы --}}
-    <div class="dash-blob dash-blob-1"></div>
-    <div class="dash-blob dash-blob-2"></div>
-    <div class="dash-blob dash-blob-3"></div>
 
-    <div class="container-fluid p-0">
+
 
         {{-- === СЕКЦИЯ: АНАЛИТИКА ДОКУМЕНТООБОРОТА === --}}
         <div class="section-title">
@@ -514,9 +511,7 @@
         </div>
 
         <div class="mega-card">
-            <div class="stat-highlight"></div>
 
-            <div class="mega-divider"></div>
 
             <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
                 <div>
@@ -539,7 +534,7 @@
         <div class="mega-card">
             <div class="stat-highlight" style="background: radial-gradient(circle, rgba(168, 85, 247, 0.04) 0%, transparent 70%);"></div>
 
-            <div class="mega-divider"></div>
+
 
             <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
                 <div>

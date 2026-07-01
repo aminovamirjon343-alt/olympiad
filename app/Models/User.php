@@ -6,10 +6,12 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Contracts\Auth\CanResetPassword;
+use Illuminate\Auth\Passwords\CanResetPassword as CanResetPasswordTrait;
 
-class User extends Authenticatable
+class User extends Authenticatable implements CanResetPassword
 {
-    use HasFactory, Notifiable, SoftDeletes;
+    use HasFactory, Notifiable, SoftDeletes, CanResetPasswordTrait;
 
     protected $fillable = [
         'name',
@@ -25,13 +27,18 @@ class User extends Authenticatable
         'is_admin',
         'is_super_admin',
         'last_seen_at',
+        'email_verified_at',
     ];
 
-    protected $hidden = ['password', 'remember_token'];
+    protected $hidden = [
+        'password',
+        'remember_token',
+    ];
 
     protected $casts = [
         'email_verified_at' => 'datetime',
         'last_seen_at' => 'datetime',
+        'password' => 'hashed',
         'level' => 'integer',
         'is_admin' => 'boolean',
         'is_super_admin' => 'boolean',
@@ -43,6 +50,28 @@ class User extends Authenticatable
         'is_admin' => false,
         'is_super_admin' => false,
     ];
+
+    // ===== МЕТОДЫ ДЛЯ ВОССТАНОВЛЕНИЯ ПАРОЛЯ =====
+
+    /**
+     * Получить email для отправки ссылки восстановления пароля
+     * (требуется интерфейсом CanResetPassword)
+     */
+    public function getEmailForPasswordReset()
+    {
+        return $this->email;
+    }
+
+    /**
+     * Отправить уведомление о сбросе пароля
+     * (переопределяем для кастомизации, если нужно)
+     */
+    public function sendPasswordResetNotification($token)
+    {
+        $this->notify(new \Illuminate\Auth\Notifications\ResetPassword($token));
+    }
+
+    // ===== МЕТОДЫ ПРОВЕРКИ РОЛЕЙ =====
 
     public function isSuperAdmin(): bool
     {
@@ -61,8 +90,13 @@ class User extends Authenticatable
 
     public function isOnline(): bool
     {
-        return $this->last_seen_at && $this->last_seen_at->diffInMinutes(now()) < 5;
+        if (!$this->last_seen_at) {
+            return false;
+        }
+        return $this->last_seen_at->gt(now()->subMinutes(5));
     }
+
+    // ===== СВЯЗИ =====
 
     public function companyRelation()
     {
@@ -83,6 +117,8 @@ class User extends Authenticatable
     {
         return $this->hasMany(Document::class, 'created_by');
     }
+
+    // ===== АКСЕССУАРЫ =====
 
     public function getInitialsAttribute(): string
     {

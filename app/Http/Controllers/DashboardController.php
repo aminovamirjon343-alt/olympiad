@@ -20,18 +20,20 @@ class DashboardController extends Controller
         };
 
         // ===== СТАТИСТИКА (реальная) =====
+        // ===== СТАТИСТИКА (реальная) =====
+        // ===== СТАТИСТИКА (реальная) =====
         $stats = [
             'total'          => Document::where($userDocs)->count(),
             'active'         => Document::where($userDocs)->where('status', 'active')->count(),
             'draft'          => Document::where($userDocs)->where('status', 'draft')->count(),
-            'pending'        => Document::where($userDocs)->where('status', 'pending')->count(),
-            'waiting'        => Document::where($userDocs)->where('status', 'active')->count(), // ← active = на подписании
+            'pending'        => Document::where('receiver_id', $user->id)->where('status', 'active')->count(), // ← ИСПРАВЛЕНО: входящие на подписании
+            'waiting'        => Document::where($userDocs)->where('status', 'active')->count(),
             'signed'         => Document::where($userDocs)->where('status', 'completed')->count(),
+            'incoming'       => Document::where('receiver_id', $user->id)->whereIn('status', ['active', 'pending'])->count(),
             'users'          => User::count(),
             'new_users'      => User::whereMonth('created_at', now()->month)->count(),
             'pending_change' => 3,
         ];
-
         $totalDocs = $stats['total'];
 
         // ===== СПАРКЛАЙНЫ (реальные данные за 10 дней) =====
